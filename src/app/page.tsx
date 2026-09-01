@@ -124,46 +124,50 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#9d5f2f] via-[#8c4e24] to-[#6b3917] text-white py-16 sm:py-24 px-4 sm:px-6 lg:px-8 shadow-inner">
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#7e451b] via-[#653210] to-[#452008] text-white py-16 sm:py-24 px-4 sm:px-6 lg:px-8 shadow-inner">
         {/* Background decorative circles & pattern */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]"></div>
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-amber-400/20 blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-amber-600/30 blur-3xl pointer-events-none"></div>
+        <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px]"></div>
+        <div className="absolute -top-28 -right-28 w-96 h-96 rounded-full bg-amber-400/20 blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-28 -left-28 w-96 h-96 rounded-full bg-amber-600/30 blur-3xl pointer-events-none"></div>
 
         <div className="max-w-6xl mx-auto relative z-10 text-center">
-          {/* Emblem Logo */}
-          <div className="flex justify-center mb-5">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-stone-950/80 p-1 border-2 border-amber-400/60 shadow-2xl shadow-black/50 hover:scale-105 transition-transform flex items-center justify-center">
-              <img
-                src="/logo.png"
-                alt="Logo Resmi Hukum Keluarga A 2025"
-                className="w-full h-full object-contain rounded-full"
-              />
+          {/* Modern 3D Emblem Logo */}
+          <div className="flex justify-center mb-6">
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-amber-600 rounded-full blur-md opacity-40 group-hover:opacity-75 transition duration-500"></div>
+              <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-stone-950/90 p-1 ring-4 ring-amber-400/40 ring-offset-4 ring-offset-[#452008] shadow-2xl flex items-center justify-center transition-transform hover:scale-105">
+                <img
+                  src="/logo.png"
+                  alt="Logo Resmi Hukum Keluarga A 2025"
+                  className="w-full h-full object-contain rounded-full"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Badge */}
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-amber-200 text-xs font-semibold uppercase tracking-wider mb-6 shadow-sm">
+          {/* Badge Pill */}
+          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-amber-200 text-xs font-bold uppercase tracking-wider mb-5 shadow-inner">
             <GraduationCap className="w-4 h-4 text-amber-300" />
-            <span>Portal Resmi Kelas HK A 2025</span>
+            <span>Portal Akademik Resmi • Angkatan 2025</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-5 leading-tight">
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white mb-3 drop-shadow-sm">
             Hukum Keluarga A 2025
           </h1>
-          <p className="text-base sm:text-xl text-amber-100/90 font-medium max-w-3xl mx-auto mb-8 leading-relaxed">
-            Fakultas Syariah — <span className="font-semibold text-white">UIN Siber Syekh Nurjati Cirebon</span>
-            <br />
-            Sistem Informasi Akademik, Presensi Digital Mahasiswa & Repositori 11 Mata Kuliah
+          <p className="text-xs sm:text-sm font-bold tracking-widest text-amber-300/90 uppercase mb-3">
+            Fakultas Syariah — UIN Siber Syekh Nurjati Cirebon
+          </p>
+          <p className="text-sm sm:text-base text-amber-100/90 font-medium max-w-2xl mx-auto mb-8 leading-relaxed">
+            Sistem Informasi Akademik, Presensi Perkuliahan Digital Mahasiswa & Repositori 11 Mata Kuliah.
           </p>
 
           {/* Action CTAs */}
-          <div className="flex flex-wrap items-center justify-center gap-3.5">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             {auth ? (
               auth.role === 'ADMIN' ? (
                 <Link
                   href="/admin"
-                  className="px-6 py-3 rounded-xl bg-stone-900 hover:bg-black text-amber-300 font-bold text-sm shadow-xl hover:scale-105 transition-all flex items-center space-x-2 border border-amber-400/40"
+                  className="px-6 py-3.5 rounded-2xl bg-stone-900 hover:bg-black text-amber-300 font-extrabold text-sm shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 border border-amber-400/40"
                 >
                   <ShieldCheck className="w-4 h-4 text-amber-400" />
                   <span>Buka Dashboard Admin</span>
@@ -172,14 +176,14 @@ export default function HomePage() {
                 <>
                   <Link
                     href="/mahasiswa"
-                    className="px-6 py-3 rounded-xl bg-white hover:bg-amber-50 text-[#8c4e24] font-bold text-sm shadow-xl hover:scale-105 transition-all flex items-center space-x-2"
+                    className="px-6 py-3.5 rounded-2xl bg-white hover:bg-amber-50 text-[#8c4e24] font-black text-sm shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2"
                   >
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     <span>Presensi & Nilai Saya ({auth.name.split(' ')[0]})</span>
                   </Link>
                   <Link
                     href="/pj"
-                    className="px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-sm shadow-xl hover:scale-105 transition-all flex items-center space-x-2"
+                    className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-black text-sm shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2"
                   >
                     <Sparkles className="w-4 h-4" />
                     <span>Portal PJ Matakuliah</span>
@@ -190,14 +194,14 @@ export default function HomePage() {
               <>
                 <Link
                   href="/login"
-                  className="px-7 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-900 font-bold text-sm sm:text-base shadow-xl shadow-stone-950/20 hover:scale-105 transition-all flex items-center space-x-2.5"
+                  className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-black text-sm sm:text-base shadow-xl shadow-stone-950/40 hover:scale-105 active:scale-95 transition-all flex items-center space-x-2.5"
                 >
-                  <LogIn className="w-5 h-5 text-stone-900" />
+                  <LogIn className="w-5 h-5 text-stone-950" />
                   <span>Masuk Portal Presensi HK A</span>
                 </Link>
                 <button
                   onClick={() => setShowRosterModal(true)}
-                  className="px-6 py-3.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-semibold text-sm sm:text-base backdrop-blur-md border border-white/30 transition-all flex items-center space-x-2"
+                  className="px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm sm:text-base backdrop-blur-xl border border-white/20 hover:border-white/40 active:scale-95 transition-all flex items-center space-x-2"
                 >
                   <Users className="w-5 h-5 text-amber-200" />
                   <span>Daftar 30 Mahasiswa</span>
@@ -206,29 +210,29 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* Quick Stat Pill Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto mt-12 pt-8 border-t border-white/15 text-left">
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-3.5 border border-white/10">
-              <p className="text-[11px] text-amber-200 uppercase font-semibold">Total Mahasiswa</p>
-              <p className="text-xl sm:text-2xl font-bold text-white mt-0.5">{students.length} Mahasiswa</p>
-              <p className="text-[10px] text-amber-100/70">Terdaftar Resmi</p>
+          {/* Modern Quick Stat Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 max-w-4xl mx-auto mt-12 pt-8 border-t border-white/15 text-left">
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/15 hover:border-amber-400/40 shadow-sm transition-all">
+              <p className="text-[11px] text-amber-200 uppercase font-bold tracking-wider">Total Mahasiswa</p>
+              <p className="text-2xl sm:text-3xl font-black text-white mt-1 tracking-tight">{students.length}</p>
+              <p className="text-[10px] text-amber-100/70 font-medium mt-0.5">Terdaftar di Whitelist</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-3.5 border border-white/10">
-              <p className="text-[11px] text-amber-200 uppercase font-semibold">Mata Kuliah</p>
-              <p className="text-xl sm:text-2xl font-bold text-white mt-0.5">{courses.length} Matkul</p>
-              <p className="text-[10px] text-amber-100/70">Semester Ganjil</p>
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/15 hover:border-amber-400/40 shadow-sm transition-all">
+              <p className="text-[11px] text-amber-200 uppercase font-bold tracking-wider">Mata Kuliah</p>
+              <p className="text-2xl sm:text-3xl font-black text-white mt-1 tracking-tight">{courses.length}</p>
+              <p className="text-[10px] text-amber-100/70 font-medium mt-0.5">Semester Ganjil 2025</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-3.5 border border-white/10">
-              <p className="text-[11px] text-amber-200 uppercase font-semibold">Hari Ini</p>
-              <p className="text-xl sm:text-2xl font-bold text-white mt-0.5">
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/15 hover:border-amber-400/40 shadow-sm transition-all">
+              <p className="text-[11px] text-amber-200 uppercase font-bold tracking-wider">Hari Ini ({todayName})</p>
+              <p className="text-2xl sm:text-3xl font-black text-white mt-1 tracking-tight">
                 {todayCourses.length > 0 ? `${todayCourses.length} Kuliah` : 'Libur'}
               </p>
-              <p className="text-[10px] text-amber-100/70">{todayName}</p>
+              <p className="text-[10px] text-amber-100/70 font-medium mt-0.5">Jadwal Aktif</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-3.5 border border-white/10">
-              <p className="text-[11px] text-amber-200 uppercase font-semibold">Sistem Presensi</p>
-              <p className="text-xl sm:text-2xl font-bold text-emerald-300 mt-0.5">PIN & PJ</p>
-              <p className="text-[10px] text-amber-100/70">Terisolasi Aman</p>
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/15 hover:border-amber-400/40 shadow-sm transition-all">
+              <p className="text-[11px] text-amber-200 uppercase font-bold tracking-wider">Keamanan Presensi</p>
+              <p className="text-2xl sm:text-3xl font-black text-emerald-300 mt-1 tracking-tight">PIN & PJ</p>
+              <p className="text-[10px] text-amber-100/70 font-medium mt-0.5">Terisolasi Aman</p>
             </div>
           </div>
         </div>
@@ -238,28 +242,32 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-12">
         {/* Jadwal Kuliah Hari Ini */}
         <section id="jadwal" className="scroll-mt-24">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
-            <div>
-              <div className="flex items-center space-x-2">
-                <Calendar className="w-5 h-5 text-[#9d5f2f]" />
-                <h2 className="text-xl font-bold text-stone-900">Jadwal Kuliah Hari Ini ({todayName})</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 text-[#9d5f2f] flex items-center justify-center shadow-xs">
+                <Calendar className="w-5 h-5" />
               </div>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Rangkaian perkuliahan aktif kelas Hukum Keluarga A 2025 untuk hari ini.
-              </p>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
+                  Jadwal Kuliah Hari Ini ({todayName})
+                </h2>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Rangkaian perkuliahan aktif kelas Hukum Keluarga A 2025 untuk hari ini.
+                </p>
+              </div>
             </div>
-            <span className="text-xs font-semibold px-3 py-1 bg-amber-100 text-amber-900 rounded-full w-fit">
+            <span className="text-xs font-bold px-3.5 py-1.5 bg-amber-100 text-amber-900 rounded-full w-fit border border-amber-200/60 shadow-xs">
               Semester Ganjil 2025/2026
             </span>
           </div>
 
           {todayCourses.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 border border-stone-200 text-center shadow-sm">
-              <div className="w-12 h-12 rounded-full bg-stone-100 text-stone-400 mx-auto flex items-center justify-center mb-3">
+            <div className="bg-white rounded-3xl p-8 border border-stone-200 text-center shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-stone-100 text-stone-400 mx-auto flex items-center justify-center mb-3">
                 <Calendar className="w-6 h-6" />
               </div>
-              <h3 className="text-sm font-bold text-stone-700">Tidak Ada Jadwal Kuliah Hari Ini</h3>
-              <p className="text-xs text-stone-500 mt-1">
+              <h3 className="text-base font-bold text-stone-800">Tidak Ada Jadwal Kuliah Hari Ini</h3>
+              <p className="text-xs text-stone-500 mt-1 max-w-md mx-auto">
                 Hari ini ({todayName}) tidak ada perkuliahan terjadwal. Manfaatkan waktu untuk belajar mandiri atau mengerjakan tugas kelompok.
               </p>
             </div>
@@ -268,47 +276,49 @@ export default function HomePage() {
               {todayCourses.map((c) => (
                 <div
                   key={c.id}
-                  className="bg-gradient-to-br from-[#9d5f2f] via-[#8c4e24] to-[#753e1f] text-white rounded-2xl p-5 border border-amber-500/40 shadow-lg shadow-[#9d5f2f]/20 hover:scale-[1.02] hover:shadow-xl transition-all flex flex-col justify-between"
+                  className="bg-gradient-to-br from-[#8d5225] via-[#784019] to-[#5d2f0f] text-white rounded-3xl p-6 border border-amber-500/40 shadow-xl shadow-[#8d5225]/20 hover:scale-[1.01] hover:shadow-2xl transition-all flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex items-center justify-between text-xs mb-2.5">
-                      <span className="font-mono font-bold text-amber-200 bg-black/30 px-2.5 py-0.5 rounded border border-amber-300/30">
+                    <div className="flex items-center justify-between text-xs mb-3">
+                      <span className="font-mono font-bold text-amber-200 bg-black/35 px-3 py-1 rounded-xl border border-amber-300/30">
                         {c.code}
                       </span>
-                      <span className="font-bold text-amber-100/90 bg-white/15 px-2.5 py-0.5 rounded">
+                      <span className="font-bold text-amber-100/90 bg-white/15 px-3 py-1 rounded-xl">
                         {c.sks} SKS
                       </span>
                     </div>
-                    <h3 className="font-bold text-base sm:text-lg text-white mb-1 leading-snug">
+                    <h3 className="font-black text-lg sm:text-xl text-white mb-1.5 leading-snug tracking-tight">
                       {c.name}
                     </h3>
-                    <p className="text-xs text-amber-100/90 mb-3 font-medium">
+                    <p className="text-xs text-amber-100/90 mb-4 font-medium">
                       {c.dosen}
                     </p>
 
-                    <div className="space-y-2 text-xs text-amber-100/90 pt-3 border-t border-white/20">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
-                        <span className="text-white font-medium">{c.time}</span>
+                    <div className="space-y-2 pt-3 border-t border-white/20 text-xs">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-black/20 rounded-xl p-2.5 flex items-center space-x-2 border border-white/10">
+                          <Clock className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+                          <span className="text-white font-medium truncate">{c.time}</span>
+                        </div>
+                        <div className="bg-black/20 rounded-xl p-2.5 flex items-center space-x-2 border border-white/10">
+                          <GraduationCap className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+                          <span className="text-white font-medium truncate">{c.room}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <GraduationCap className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
-                        <span className="text-white font-medium">{c.room}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="bg-black/20 rounded-xl p-2.5 flex items-center space-x-2 border border-white/10">
                         <Users className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
-                        <span className="line-clamp-1 text-amber-100">PJ: {getPjNames(c.pjNims)}</span>
+                        <span className="line-clamp-1 text-amber-100 font-medium">PJ: {getPjNames(c.pjNims)}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-between">
+                  <div className="mt-5 pt-3 border-t border-white/20">
                     <button
                       onClick={() => setSelectedCourse(c)}
-                      className="text-xs font-bold text-amber-200 hover:text-white flex items-center space-x-1.5 group transition-colors"
+                      className="w-full py-2.5 px-4 rounded-xl bg-white/15 hover:bg-white/25 active:scale-98 text-amber-200 hover:text-white font-bold text-xs flex items-center justify-center space-x-2 transition-all border border-white/20 shadow-xs"
                     >
                       <span>Lihat Repositori & Materi</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -320,25 +330,29 @@ export default function HomePage() {
         {/* 11 Daftar Mata Kuliah & Repositori */}
         <section id="matakuliah" className="scroll-mt-24">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <div className="flex items-center space-x-2">
-                <BookOpen className="w-5 h-5 text-[#9d5f2f]" />
-                <h2 className="text-xl font-bold text-stone-900">11 Mata Kuliah & Penyimpanan Materi</h2>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 text-[#9d5f2f] flex items-center justify-center shadow-xs">
+                <BookOpen className="w-5 h-5" />
               </div>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Daftar lengkap mata kuliah HK A 2025 beserta RPS, modul, materi dosen, dan berkas tugas.
-              </p>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
+                  11 Mata Kuliah & Penyimpanan Materi
+                </h2>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Daftar lengkap mata kuliah HK A 2025 beserta RPS, modul, materi dosen, dan berkas tugas.
+                </p>
+              </div>
             </div>
 
-            {/* Search Input */}
+            {/* Modern Search Input */}
             <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
               <input
                 type="text"
                 placeholder="Cari mata kuliah atau dosen..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#9d5f2f] bg-white shadow-sm"
+                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-2xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#9d5f2f] bg-white shadow-xs"
               />
             </div>
           </div>
@@ -351,53 +365,49 @@ export default function HomePage() {
               return (
                 <div
                   key={c.id}
-                  className="bg-white rounded-2xl p-5 border border-stone-200/90 shadow-sm hover:shadow-md hover:border-[#9d5f2f]/60 transition-all flex flex-col justify-between group"
+                  className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-sm hover:shadow-xl hover:border-amber-400/60 transition-all flex flex-col justify-between group"
                 >
                   <div>
                     {/* Header: Code & Day */}
                     <div className="flex items-center justify-between text-xs mb-2">
-                      <span className="font-mono font-bold text-[#9d5f2f] bg-amber-50/80 px-2 py-0.5 rounded border border-amber-200/60">
+                      <span className="font-mono font-bold text-[#9d5f2f] bg-amber-50 px-3 py-1 rounded-xl border border-amber-200/70 shadow-2xs">
                         {c.code}
                       </span>
-                      <span className="text-[11px] font-semibold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[11px] font-bold text-stone-600 bg-stone-100 px-3 py-1 rounded-full">
                         {c.day}, {c.time.split('-')[0]}
                       </span>
                     </div>
 
                     {/* Name */}
-                    <h3 className="font-bold text-base text-stone-900 group-hover:text-[#9d5f2f] transition-colors mb-1">
+                    <h3 className="font-black text-base sm:text-lg text-stone-900 group-hover:text-[#9d5f2f] transition-colors mt-3 mb-1 leading-snug tracking-tight">
                       {c.name}
                     </h3>
-                    <p className="text-xs font-medium text-stone-600 mb-2.5">{c.dosen}</p>
+                    <p className="text-xs font-semibold text-stone-600 mb-2.5">{c.dosen}</p>
 
                     <p className="text-xs text-stone-500 line-clamp-2 leading-relaxed mb-4">
                       {c.description}
                     </p>
 
-                    {/* PJ and Info */}
-                    <div className="bg-stone-50/80 rounded-xl p-3 text-xs space-y-1.5 border border-stone-100">
-                      <div className="flex items-start justify-between">
-                        <span className="text-stone-400 font-medium">Penanggung Jawab:</span>
-                        <span className="font-semibold text-stone-800 text-right max-w-[170px] line-clamp-1">
+                    {/* Modern Info Container */}
+                    <div className="bg-stone-50/90 rounded-2xl p-3.5 text-xs space-y-2 border border-stone-100">
+                      <div className="flex items-center justify-between text-stone-600">
+                        <span className="font-medium text-stone-400">Bobot & Ruang:</span>
+                        <span className="font-bold text-stone-800">{c.sks} SKS • Ruang {c.room}</span>
+                      </div>
+                      <div className="flex items-start justify-between text-stone-600">
+                        <span className="font-medium text-stone-400">PJ Kelas:</span>
+                        <span className="font-bold text-[#8c4e24] text-right max-w-[160px] line-clamp-1">
                           {getPjNames(c.pjNims)}
                         </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-stone-400 font-medium">Bobot:</span>
-                        <span className="font-medium text-stone-700">{c.sks} SKS (Semester {c.semester})</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-stone-400 font-medium">Ruang:</span>
-                        <span className="font-medium text-stone-700 line-clamp-1">{c.room}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between gap-2">
+                  <div className="mt-5 pt-3 border-t border-stone-100 flex items-center justify-between gap-2">
                     <button
                       onClick={() => setSelectedCourse(c)}
-                      className="flex-1 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-[#9d5f2f] font-semibold text-xs transition-colors flex items-center justify-center space-x-1.5"
+                      className="flex-1 py-2.5 rounded-xl bg-amber-50 hover:bg-[#9d5f2f] text-[#9d5f2f] hover:text-white font-bold text-xs transition-all flex items-center justify-center space-x-1.5 border border-amber-200/70 hover:border-transparent active:scale-98 shadow-xs"
                     >
                       <FolderDown className="w-3.5 h-3.5" />
                       <span>Materi & Tugas ({courseMats.length})</span>
@@ -408,7 +418,7 @@ export default function HomePage() {
                         target="_blank"
                         rel="noreferrer"
                         title="Buka Folder Google Drive"
-                        className="p-2 rounded-xl border border-stone-200 text-stone-600 hover:text-[#9d5f2f] hover:bg-stone-50 transition-colors"
+                        className="p-2.5 rounded-xl border border-stone-200 text-stone-600 hover:text-[#9d5f2f] hover:bg-stone-50 transition-colors"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>

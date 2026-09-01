@@ -1,7 +1,15 @@
 import type { Metadata, Viewport } from 'next';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-jakarta',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Portal Kelas HK A 2025 | UIN Siber Syekh Nurjati Cirebon',
@@ -25,8 +33,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className="w-full">
-      <body className="min-h-screen w-full overflow-x-hidden flex flex-col bg-[#fbf8f5] text-stone-800 antialiased selection:bg-amber-200 selection:text-amber-900">
+    <html lang="id" className={`w-full ${jakarta.variable}`}>
+      <body className={`${jakarta.className} min-h-screen w-full overflow-x-hidden flex flex-col bg-[#fcfaf7] text-stone-800 antialiased selection:bg-amber-200 selection:text-amber-900 font-sans`}>
         <Navbar />
         <main className="flex-1 w-full flex flex-col">{children}</main>
         <Footer />
