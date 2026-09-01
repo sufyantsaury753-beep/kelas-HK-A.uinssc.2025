@@ -29,6 +29,7 @@ export function exportSingleSessionCsv(
   let izinCount = 0;
   let sakitCount = 0;
   let alpaCount = 0;
+  let dispensasiCount = 0;
 
   const studentRows = students.map((st, idx) => {
     const rec = records.find((r) => r.studentNim.trim() === st.nim.trim());
@@ -36,6 +37,7 @@ export function exportSingleSessionCsv(
     if (status === 'HADIR') hadirCount++;
     else if (status === 'IZIN') izinCount++;
     else if (status === 'SAKIT') sakitCount++;
+    else if (status === 'DISPENSASI') dispensasiCount++;
     else alpaCount++;
 
     const time = rec?.timestamp ? new Date(rec.timestamp).toLocaleTimeString('id-ID') : '-';
@@ -55,7 +57,7 @@ export function exportSingleSessionCsv(
   });
 
   const total = students.length;
-  const presentPct = total > 0 ? ((hadirCount / total) * 100).toFixed(1) : '0';
+  const presentPct = total > 0 ? (((hadirCount + dispensasiCount) / total) * 100).toFixed(1) : '0';
 
   const summaryRows = [
     [''],
@@ -64,8 +66,9 @@ export function exportSingleSessionCsv(
     ['Hadir', hadirCount.toString()],
     ['Izin', izinCount.toString()],
     ['Sakit', sakitCount.toString()],
+    ['Dispensasi', dispensasiCount.toString()],
     ['Alpa / Tanpa Keterangan', alpaCount.toString()],
-    ['Persentase Kehadiran', `${presentPct}%`],
+    ['Persentase Kehadiran (Hadir + Dispensasi)', `${presentPct}%`],
   ];
 
   const allRows = [...metaRows, ...studentRows, ...summaryRows];
@@ -100,8 +103,9 @@ export function exportMatrixAttendanceCsv(
     'HADIR',
     'IZIN',
     'SAKIT',
+    'DISPENSASI',
     'ALPA',
-    '% HADIR',
+    '% KEHADIRAN',
   ];
 
   const dataRows = students.map((st, idx) => {
@@ -109,6 +113,7 @@ export function exportMatrixAttendanceCsv(
     let izin = 0;
     let sakit = 0;
     let alpa = 0;
+    let dispensasi = 0;
 
     const sessionStatuses = sortedSessions.map((sess) => {
       const r = records.find((rec) => rec.sessionId === sess.id && rec.studentNim.trim() === st.nim.trim());
@@ -116,12 +121,13 @@ export function exportMatrixAttendanceCsv(
       if (stt === 'HADIR') hadir++;
       else if (stt === 'IZIN') izin++;
       else if (stt === 'SAKIT') sakit++;
+      else if (stt === 'DISPENSASI') dispensasi++;
       else alpa++;
-      return stt[0]; // H, I, S, A
+      return stt === 'DISPENSASI' ? 'D' : stt[0]; // H, I, S, D, A
     });
 
     const totalSessions = sortedSessions.length;
-    const pct = totalSessions > 0 ? ((hadir / totalSessions) * 100).toFixed(1) + '%' : '0%';
+    const pct = totalSessions > 0 ? (((hadir + dispensasi) / totalSessions) * 100).toFixed(1) + '%' : '0%';
 
     return [
       (idx + 1).toString(),
@@ -131,6 +137,7 @@ export function exportMatrixAttendanceCsv(
       hadir.toString(),
       izin.toString(),
       sakit.toString(),
+      dispensasi.toString(),
       alpa.toString(),
       pct,
     ];

@@ -91,9 +91,10 @@ export default function MahasiswaDashboard() {
   const myHadir = myRecords.filter((r) => r.status === 'HADIR').length;
   const myIzin = myRecords.filter((r) => r.status === 'IZIN').length;
   const mySakit = myRecords.filter((r) => r.status === 'SAKIT').length;
+  const myDispensasi = myRecords.filter((r) => r.status === 'DISPENSASI').length;
   const myAlpa = myRecords.filter((r) => r.status === 'ALPA').length;
   const totalRecorded = myRecords.length;
-  const overallPercentage = totalRecorded > 0 ? ((myHadir / totalRecorded) * 100).toFixed(0) : '100';
+  const overallPercentage = totalRecorded > 0 ? (((myHadir + myDispensasi) / totalRecorded) * 100).toFixed(0) : '100';
 
   const handleSelfCheckin = (session: AttendanceSession) => {
     setCheckinMsg(null);
@@ -398,6 +399,7 @@ export default function MahasiswaDashboard() {
             const cHadir = courseRecords.filter((r) => r.status === 'HADIR').length;
             const cIzin = courseRecords.filter((r) => r.status === 'IZIN').length;
             const cSakit = courseRecords.filter((r) => r.status === 'SAKIT').length;
+            const cDispensasi = courseRecords.filter((r) => r.status === 'DISPENSASI').length;
             const cAlpa = courseRecords.filter((r) => r.status === 'ALPA').length;
 
             return (

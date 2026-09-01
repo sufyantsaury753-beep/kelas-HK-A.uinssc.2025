@@ -30,7 +30,7 @@ export interface Course {
   whatsappGroupLink?: string;
 }
 
-export type AttendanceStatus = 'HADIR' | 'IZIN' | 'SAKIT' | 'ALPA';
+export type AttendanceStatus = 'HADIR' | 'IZIN' | 'SAKIT' | 'ALPA' | 'DISPENSASI';
 
 export interface AttendanceSession {
   id: string;

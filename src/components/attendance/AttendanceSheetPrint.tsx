@@ -24,6 +24,7 @@ export default function AttendanceSheetPrint({
   let izinCount = 0;
   let sakitCount = 0;
   let alpaCount = 0;
+  let dispensasiCount = 0;
 
   students.forEach((st) => {
     const rec = records.find((r) => r.studentNim.trim() === st.nim.trim());
@@ -31,11 +32,12 @@ export default function AttendanceSheetPrint({
     if (status === 'HADIR') hadirCount++;
     else if (status === 'IZIN') izinCount++;
     else if (status === 'SAKIT') sakitCount++;
+    else if (status === 'DISPENSASI') dispensasiCount++;
     else alpaCount++;
   });
 
   const total = students.length;
-  const pct = total > 0 ? ((hadirCount / total) * 100).toFixed(1) : '0';
+  const pct = total > 0 ? (((hadirCount + dispensasiCount) / total) * 100).toFixed(1) : '0';
 
   const handlePrint = () => {
     window.print();
@@ -176,6 +178,7 @@ export default function AttendanceSheetPrint({
                       {status === 'HADIR' && <span className="text-emerald-700">HADIR</span>}
                       {status === 'IZIN' && <span className="text-blue-700">IZIN</span>}
                       {status === 'SAKIT' && <span className="text-amber-700">SAKIT</span>}
+                      {status === 'DISPENSASI' && <span className="text-purple-700">DISPENSASI</span>}
                       {status === 'ALPA' && <span className="text-red-700">ALPA</span>}
                     </td>
                     <td className="border border-stone-300 px-2 py-1 text-center text-stone-500 font-mono text-[10px]">
@@ -198,6 +201,7 @@ export default function AttendanceSheetPrint({
               <span className="text-emerald-700 font-semibold">Hadir: {hadirCount}</span> |{' '}
               <span className="text-blue-700 font-semibold">Izin: {izinCount}</span> |{' '}
               <span className="text-amber-700 font-semibold">Sakit: {sakitCount}</span> |{' '}
+              <span className="text-purple-700 font-semibold">Dispensasi: {dispensasiCount}</span> |{' '}
               <span className="text-red-700 font-semibold">Alpa: {alpaCount}</span>
             </div>
             <div className="font-bold text-stone-900 mt-1 sm:mt-0">

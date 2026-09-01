@@ -1,6 +1,6 @@
 import React from 'react';
 import { AttendanceStatus, UserRole } from '@/lib/types';
-import { CheckCircle2, AlertCircle, Clock, XCircle, ShieldCheck, UserCheck, Sparkles } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Clock, XCircle, ShieldCheck, UserCheck, Sparkles, FileText } from 'lucide-react';
 
 export function AttendanceBadge({ status }: { status: AttendanceStatus }) {
   switch (status) {
@@ -30,6 +30,13 @@ export function AttendanceBadge({ status }: { status: AttendanceStatus }) {
         <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">
           <XCircle className="w-3.5 h-3.5 text-rose-600" />
           <span>Alpa</span>
+        </span>
+      );
+    case 'DISPENSASI':
+      return (
+        <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">
+          <FileText className="w-3.5 h-3.5 text-purple-600" />
+          <span>Dispensasi</span>
         </span>
       );
     default:
