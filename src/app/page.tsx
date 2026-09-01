@@ -19,6 +19,11 @@ import {
   ShieldCheck,
   CheckCircle2,
   Share2,
+  Upload,
+  Trash2,
+  Plus,
+  Download,
+  FileCheck,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, Announcement, Student, CourseMaterial, AuthSession } from '@/lib/types';
@@ -33,6 +38,79 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showRosterModal, setShowRosterModal] = useState(false);
+
+  // Upload Tugas & Berkas Form States
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadType, setUploadType] = useState<'TUGAS' | 'MAKALAH' | 'MODUL' | 'PPT' | 'RPS' | 'LINK'>('TUGAS');
+  const [uploadUploader, setUploadUploader] = useState('');
+  const [uploadUrl, setUploadUrl] = useState('');
+  const [uploadDesc, setUploadDesc] = useState('');
+  const [uploadFileSize, setUploadFileSize] = useState('');
+  const [uploadMode, setUploadMode] = useState<'FILE' | 'LINK'>('FILE');
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
+    setUploadFileSize(`${sizeInMb} MB`);
+    if (!uploadTitle.trim()) {
+      setUploadTitle(file.name.replace(/\.[^/.]+$/, ''));
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setUploadUrl(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveMaterial = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCourse) return;
+    if (!uploadTitle.trim()) {
+      alert('Mohon isi judul tugas/berkas.');
+      return;
+    }
+    if (!uploadUrl.trim()) {
+      alert('Mohon pilih file atau masukkan tautan tugas/berkas.');
+      return;
+    }
+
+    const finalUploader = uploadUploader.trim() || auth?.name || 'Mahasiswa HK A';
+
+    appStore.addMaterial({
+      courseId: selectedCourse.id,
+      title: uploadTitle.trim(),
+      type: uploadType,
+      url: uploadUrl.trim(),
+      description: uploadDesc.trim() || undefined,
+      uploadedBy: finalUploader,
+      fileSize: uploadFileSize || undefined,
+    });
+
+    setShowUploadForm(false);
+    setUploadTitle('');
+    setUploadUrl('');
+    setUploadDesc('');
+    setUploadFileSize('');
+    showToast('Tugas/berkas berhasil diunggah dan dapat diunduh oleh semua!');
+  };
+
+  const handleDeleteMaterial = (id: string, title: string) => {
+    if (!auth || auth.role !== 'ADMIN') return;
+    if (confirm(`Hapus berkas "${title}"? Tindakan ini akan menghapus berkas secara permanen.`)) {
+      appStore.deleteMaterial(id);
+      showToast('Berkas berhasil dihapus oleh Admin.');
+    }
+  };
 
   useEffect(() => {
     const updateData = () => {
@@ -442,66 +520,296 @@ export default function HomePage() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-bold text-stone-900 uppercase tracking-wider text-[11px]">
-                    Berkas Materi, Modul, & Makalah
-                  </h4>
-                  {selectedCourse.driveLink && (
-                    <a
-                      href={selectedCourse.driveLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[#9d5f2f] font-semibold hover:underline flex items-center space-x-1"
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <div>
+                    <h4 className="font-bold text-stone-900 uppercase tracking-wider text-[11px]">
+                      Berkas Materi, Modul, & Tugas Mahasiswa
+                    </h4>
+                    <p className="text-[11px] text-stone-500">
+                      Seluruh mahasiswa dapat mengunggah tugas dan mengunduh berkas perkuliahan.
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowUploadForm(!showUploadForm)}
+                      className="px-3 py-1.5 rounded-xl bg-[#9d5f2f] hover:bg-[#864d23] text-white font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-all"
                     >
-                      <span>Buka Folder Drive Lengkap</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{showUploadForm ? 'Tutup Form Upload' : '+ Upload Tugas / Berkas'}</span>
+                    </button>
+                    {selectedCourse.driveLink && (
+                      <a
+                        href={selectedCourse.driveLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs flex items-center space-x-1 transition-colors"
+                      >
+                        <span>Google Drive</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
                 </div>
 
+                {/* FORM UPLOAD TUGAS / BERKAS */}
+                {showUploadForm && (
+                  <form
+                    onSubmit={handleSaveMaterial}
+                    className="p-4 bg-amber-50/70 border border-amber-300/80 rounded-2xl mb-4 space-y-3 animate-in fade-in zoom-in-95 duration-150"
+                  >
+                    <div className="flex items-center justify-between border-b border-amber-200 pb-2">
+                      <span className="font-bold text-xs text-[#8c4e24] flex items-center space-x-1.5">
+                        <Upload className="w-4 h-4" />
+                        <span>Form Unggah Tugas / Berkas Baru</span>
+                      </span>
+                      <div className="inline-flex rounded-lg bg-white p-0.5 border border-amber-200 text-[10px]">
+                        <button
+                          type="button"
+                          onClick={() => setUploadMode('FILE')}
+                          className={`px-2.5 py-1 rounded-md font-bold transition-all ${
+                            uploadMode === 'FILE'
+                              ? 'bg-[#9d5f2f] text-white shadow-xs'
+                              : 'text-stone-600 hover:text-stone-900'
+                          }`}
+                        >
+                          Pilih File Langsung
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setUploadMode('LINK')}
+                          className={`px-2.5 py-1 rounded-md font-bold transition-all ${
+                            uploadMode === 'LINK'
+                              ? 'bg-[#9d5f2f] text-white shadow-xs'
+                              : 'text-stone-600 hover:text-stone-900'
+                          }`}
+                        >
+                          Tautan Link / Drive
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                          Judul Tugas / Berkas *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Contoh: Makalah Kelompok 1 - Faraidh"
+                          value={uploadTitle}
+                          onChange={(e) => setUploadTitle(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] text-xs bg-white"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                          Kategori Dokumen
+                        </label>
+                        <select
+                          value={uploadType}
+                          onChange={(e) => setUploadType(e.target.value as any)}
+                          className="w-full px-3 py-1.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] text-xs bg-white font-medium"
+                        >
+                          <option value="TUGAS">Tugas Mahasiswa</option>
+                          <option value="MAKALAH">Makalah Kelompok</option>
+                          <option value="PPT">Slide Presentasi (PPT)</option>
+                          <option value="MODUL">Modul Bahan Ajar</option>
+                          <option value="RPS">RPS & Silabus</option>
+                          <option value="LINK">Tautan Sumber Belajar</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                          Nama Pengunggah *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Nama Mahasiswa / Kelompok"
+                          value={uploadUploader}
+                          onChange={(e) => setUploadUploader(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] text-xs bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        {uploadMode === 'FILE' ? (
+                          <div>
+                            <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                              Pilih Berkas dari HP/Laptop (PDF, Docx, PPTX, dll) *
+                            </label>
+                            <input
+                              type="file"
+                              onChange={handleFileChange}
+                              className="w-full text-[11px] text-stone-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#9d5f2f] file:text-white hover:file:bg-[#864d23] cursor-pointer"
+                              required={!uploadUrl}
+                            />
+                            {uploadFileSize && (
+                              <p className="text-[10px] text-emerald-700 mt-1 font-medium">
+                                Ukuran berkas: {uploadFileSize}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <div>
+                            <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                              Tautan File / Google Drive Link *
+                            </label>
+                            <input
+                              type="url"
+                              placeholder="https://drive.google.com/..."
+                              value={uploadUrl}
+                              onChange={(e) => setUploadUrl(e.target.value)}
+                              className="w-full px-3 py-1.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] text-xs bg-white"
+                              required
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                        Keterangan Tambahan (Opsional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Contoh: Kelompok 1 (Raihan & Wahdan)"
+                        value={uploadDesc}
+                        onChange={(e) => setUploadDesc(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] text-xs bg-white"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-end space-x-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowUploadForm(false)}
+                        className="px-3 py-1.5 rounded-xl border border-stone-300 text-stone-700 text-xs font-semibold hover:bg-stone-100"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-1.5 rounded-xl bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold shadow-md shadow-[#9d5f2f]/20 flex items-center space-x-1.5"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Unggah Sekarang</span>
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* DAFTAR MATERI & TUGAS YANG BISA DIUNDUH */}
                 {materials.filter((m) => m.courseId === selectedCourse.id).length === 0 ? (
-                  <div className="text-center py-6 bg-stone-50 rounded-xl border border-dashed border-stone-200 text-stone-400">
-                    <FileText className="w-8 h-8 mx-auto mb-1 text-stone-300" />
-                    <p>Belum ada modul atau makalah yang diunggah untuk mata kuliah ini.</p>
-                    <p className="text-[10px] text-stone-400 mt-1">
-                      PJ mata kuliah dapat mengunggahnya melalui Portal PJ.
+                  <div className="text-center py-8 bg-stone-50 rounded-2xl border border-dashed border-stone-200 text-stone-400 space-y-1.5">
+                    <FileText className="w-8 h-8 mx-auto text-stone-300" />
+                    <p className="font-semibold text-stone-600">
+                      Belum ada tugas atau berkas yang diunggah untuk mata kuliah ini.
+                    </p>
+                    <p className="text-[11px] text-stone-400">
+                      Klik tombol <strong>&quot;+ Upload Tugas / Berkas&quot;</strong> di atas untuk mengunggah tugas pertama Anda!
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {materials
                       .filter((m) => m.courseId === selectedCourse.id)
-                      .map((mat) => (
-                        <div
-                          key={mat.id}
-                          className="flex items-center justify-between p-3 rounded-xl border border-stone-200 hover:border-amber-300 hover:bg-amber-50/40 transition-all bg-white"
-                        >
-                          <div className="flex items-start space-x-3">
-                            <div className="w-8 h-8 rounded-lg bg-amber-100 text-[#9d5f2f] flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <FileText className="w-4 h-4" />
+                      .map((mat) => {
+                        const isTask = mat.type === 'TUGAS';
+                        const isPaper = mat.type === 'MAKALAH';
+                        const isPpt = mat.type === 'PPT';
+
+                        return (
+                          <div
+                            key={mat.id}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl border border-stone-200 hover:border-amber-300 hover:bg-amber-50/20 transition-all bg-white gap-3 shadow-xs"
+                          >
+                            <div className="flex items-start space-x-3">
+                              <div
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                  isTask
+                                    ? 'bg-purple-100 text-purple-700'
+                                    : isPaper
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : isPpt
+                                    ? 'bg-orange-100 text-orange-700'
+                                    : 'bg-amber-100 text-[#9d5f2f]'
+                                }`}
+                              >
+                                <FileText className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <span
+                                    className={`text-[9px] font-bold px-2 py-0.2 rounded-full uppercase tracking-wider ${
+                                      isTask
+                                        ? 'bg-purple-100 text-purple-800'
+                                        : isPaper
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : isPpt
+                                        ? 'bg-orange-100 text-orange-800'
+                                        : 'bg-amber-100 text-amber-900'
+                                    }`}
+                                  >
+                                    {mat.type}
+                                  </span>
+                                  <p className="font-bold text-stone-900 text-xs sm:text-sm">
+                                    {mat.title}
+                                  </p>
+                                </div>
+                                {mat.description && (
+                                  <p className="text-[11px] text-stone-600 mt-0.5">
+                                    {mat.description}
+                                  </p>
+                                )}
+                                <p className="text-[10px] text-stone-400 mt-1 flex flex-wrap items-center gap-1">
+                                  <span>Diunggah oleh: <strong className="text-stone-600">{mat.uploadedBy}</strong></span>
+                                  <span>•</span>
+                                  <span>{mat.uploadedAt}</span>
+                                  {mat.fileSize && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="font-mono">{mat.fileSize}</span>
+                                    </>
+                                  )}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-bold text-stone-900">{mat.title}</p>
-                              {mat.description && (
-                                <p className="text-[11px] text-stone-500 mt-0.5">{mat.description}</p>
+
+                            {/* Actions: Unduh & Hapus (Admin) */}
+                            <div className="flex items-center space-x-2 self-end sm:self-center flex-shrink-0">
+                              <a
+                                href={mat.url}
+                                download={mat.title}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3.5 py-1.5 rounded-xl bg-stone-100 hover:bg-[#9d5f2f] hover:text-white font-bold text-stone-800 transition-all flex items-center space-x-1.5 text-xs shadow-xs"
+                              >
+                                <Download className="w-3.5 h-3.5 text-[#9d5f2f] group-hover:text-white" />
+                                <span>Unduh / Buka</span>
+                              </a>
+
+                              {/* Hapus Berkas: Khusus Admin */}
+                              {auth?.role === 'ADMIN' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMaterial(mat.id, mat.title)}
+                                  title="Hapus berkas ini (Akses Khusus Admin)"
+                                  className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4 text-rose-500" />
+                                </button>
                               )}
-                              <p className="text-[10px] text-stone-400 mt-1">
-                                Tipe: <span className="font-semibold text-[#9d5f2f]">{mat.type}</span> •
-                                Diunggah oleh: {mat.uploadedBy} ({mat.uploadedAt})
-                              </p>
                             </div>
                           </div>
-                          <a
-                            href={mat.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-[#9d5f2f] hover:text-white font-semibold text-stone-700 transition-colors flex items-center space-x-1 flex-shrink-0"
-                          >
-                            <span>Unduh</span>
-                            <FolderDown className="w-3.5 h-3.5" />
-                          </a>
-                        </div>
-                      ))}
+                        );
+                      })}
                   </div>
                 )}
               </div>
@@ -589,6 +897,14 @@ export default function HomePage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Floating Toast Notification */}
+      {toastMsg && (
+        <div className="fixed bottom-6 right-6 z-50 bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-amber-500/40 flex items-center space-x-2 text-xs font-semibold animate-in fade-in slide-in-from-bottom-5">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{toastMsg}</span>
         </div>
       )}
     </div>
