@@ -220,7 +220,7 @@ export default function HomePage() {
             <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/15 hover:border-amber-400/40 shadow-sm transition-all">
               <p className="text-[11px] text-amber-200 uppercase font-bold tracking-wider">Mata Kuliah</p>
               <p className="text-2xl sm:text-3xl font-black text-white mt-1 tracking-tight">{courses.length}</p>
-              <p className="text-[10px] text-amber-100/70 font-medium mt-0.5">Semester Ganjil 2025</p>
+              <p className="text-[10px] text-amber-100/70 font-medium mt-0.5">Semester Ganjil 2026/2027</p>
             </div>
             <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/15 hover:border-amber-400/40 shadow-sm transition-all">
               <p className="text-[11px] text-amber-200 uppercase font-bold tracking-wider">Hari Ini ({todayName})</p>
@@ -257,7 +257,7 @@ export default function HomePage() {
               </div>
             </div>
             <span className="text-xs font-bold px-3.5 py-1.5 bg-amber-100 text-amber-900 rounded-full w-fit border border-amber-200/60 shadow-xs">
-              Semester Ganjil 2025/2026
+              Semester Ganjil 2026/2027
             </span>
           </div>
 
