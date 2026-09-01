@@ -260,7 +260,7 @@ export default function PjDashboard() {
     if (!targetSession) return;
 
     appStore.batchMarkAll(targetSession.id, activeCourse.id, 'HADIR', 'PJ');
-    showToast('Seluruh 30 Mahasiswa ditandai HADIR!');
+    showToast(`Seluruh ${students.length} Mahasiswa ditandai HADIR!`);
     try {
       confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
     } catch {}
@@ -684,7 +684,7 @@ export default function PjDashboard() {
                         </div>
 
                         <h3 className="text-base sm:text-lg font-black text-stone-900 mt-2">
-                          Lembar Absensi 30 Mahasiswa — {activeCourse.name}
+                          Lembar Absensi {students.length} Mahasiswa — {activeCourse.name}
                         </h3>
                         <p className="text-xs text-stone-500 mt-0.5">
                           Klik tombol status pada masing-masing mahasiswa di bawah untuk mengubah kehadiran (Hadir, Izin, Sakit, Alfa, Dispensasi).

@@ -214,7 +214,7 @@ export default function HomePage() {
                   className="px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm sm:text-base backdrop-blur-xl border border-white/20 hover:border-white/40 active:scale-95 transition-all flex items-center space-x-2"
                 >
                   <Users className="w-5 h-5 text-amber-200" />
-                  <span>Daftar 30 Mahasiswa</span>
+                  <span>Daftar {students.length} Mahasiswa</span>
                 </button>
               </>
             )}
