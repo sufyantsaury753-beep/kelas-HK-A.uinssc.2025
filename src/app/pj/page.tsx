@@ -346,7 +346,8 @@ export default function PjDashboard() {
   });
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+    <>
+      <div className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 ${showPrintModal ? 'print:hidden' : ''}`}>
       {/* Toast Feedback */}
       {toastNotice && (
         <div className="fixed bottom-6 right-6 z-50 bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-amber-500/40 flex items-center space-x-2 text-xs font-semibold animate-in fade-in slide-in-from-bottom-5">
@@ -1399,6 +1400,8 @@ export default function PjDashboard() {
         </div>
       )}
 
+      </div>
+
       {/* Printable Sheet Official View Modal */}
       {showPrintModal && activeCourse && currentSession && (
         <AttendanceSheetPrint
@@ -1409,6 +1412,6 @@ export default function PjDashboard() {
           onClose={() => setShowPrintModal(false)}
         />
       )}
-    </div>
+    </>
   );
 }
