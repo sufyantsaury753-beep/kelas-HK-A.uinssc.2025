@@ -215,41 +215,47 @@ export default function HomePage() {
               {todayCourses.map((c) => (
                 <div
                   key={c.id}
-                  className="bg-white rounded-2xl p-5 border border-amber-200/80 shadow-md shadow-amber-900/5 hover:border-[#9d5f2f] transition-all flex flex-col justify-between"
+                  className="bg-gradient-to-br from-[#9d5f2f] via-[#8c4e24] to-[#753e1f] text-white rounded-2xl p-5 border border-amber-500/40 shadow-lg shadow-[#9d5f2f]/20 hover:scale-[1.02] hover:shadow-xl transition-all flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex items-center justify-between text-xs mb-2">
-                      <span className="font-mono font-bold text-[#9d5f2f] bg-amber-50 px-2 py-0.5 rounded">
+                    <div className="flex items-center justify-between text-xs mb-2.5">
+                      <span className="font-mono font-bold text-amber-200 bg-black/30 px-2.5 py-0.5 rounded border border-amber-300/30">
                         {c.code}
                       </span>
-                      <span className="font-semibold text-stone-500">{c.sks} SKS</span>
+                      <span className="font-bold text-amber-100/90 bg-white/15 px-2.5 py-0.5 rounded">
+                        {c.sks} SKS
+                      </span>
                     </div>
-                    <h3 className="font-bold text-base text-stone-900 mb-1">{c.name}</h3>
-                    <p className="text-xs text-stone-600 mb-3">{c.dosen}</p>
+                    <h3 className="font-bold text-base sm:text-lg text-white mb-1 leading-snug">
+                      {c.name}
+                    </h3>
+                    <p className="text-xs text-amber-100/90 mb-3 font-medium">
+                      {c.dosen}
+                    </p>
 
-                    <div className="space-y-1.5 text-xs text-stone-500 pt-3 border-t border-stone-100">
+                    <div className="space-y-2 text-xs text-amber-100/90 pt-3 border-t border-white/20">
                       <div className="flex items-center space-x-2">
-                        <Clock className="w-3.5 h-3.5 text-[#9d5f2f]" />
-                        <span>{c.time}</span>
+                        <Clock className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+                        <span className="text-white font-medium">{c.time}</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <GraduationCap className="w-3.5 h-3.5 text-[#9d5f2f]" />
-                        <span>{c.room}</span>
+                        <GraduationCap className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+                        <span className="text-white font-medium">{c.room}</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Users className="w-3.5 h-3.5 text-[#9d5f2f]" />
-                        <span className="line-clamp-1">PJ: {getPjNames(c.pjNims)}</span>
+                        <Users className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+                        <span className="line-clamp-1 text-amber-100">PJ: {getPjNames(c.pjNims)}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
+                  <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-between">
                     <button
                       onClick={() => setSelectedCourse(c)}
-                      className="text-xs font-semibold text-[#9d5f2f] hover:text-[#753e1f] flex items-center space-x-1"
+                      className="text-xs font-bold text-amber-200 hover:text-white flex items-center space-x-1.5 group transition-colors"
                     >
                       <span>Lihat Repositori & Materi</span>
-                      <ArrowRight className="w-3 h-3" />
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                     </button>
                   </div>
                 </div>
