@@ -23,10 +23,6 @@ import {
   Bell,
   Database,
   Calendar,
-  Clock,
-  MapPin,
-  Save,
-  Check,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, Student, Announcement, AuthSession, Gender } from '@/lib/types';
@@ -36,22 +32,12 @@ import confetti from 'canvas-confetti';
 export default function AdminDashboard() {
   const router = useRouter();
   const [auth, setAuth] = useState<AuthSession | null>(null);
-  const [activeTab, setActiveTab] = useState<'SCHEDULE' | 'PJ' | 'STUDENTS' | 'ANNOUNCEMENTS' | 'SETTINGS'>('SCHEDULE');
+  const [activeTab, setActiveTab] = useState<'PJ' | 'STUDENTS' | 'ANNOUNCEMENTS' | 'SETTINGS'>('PJ');
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [adminPin, setAdminPin] = useState<string>('');
-
-  // Course Schedule Edit State
-  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [editCourseDay, setEditCourseDay] = useState('Senin');
-  const [editCourseTime, setEditCourseTime] = useState('');
-  const [editCourseRoom, setEditCourseRoom] = useState('');
-  const [editCourseDosen, setEditCourseDosen] = useState('');
-  const [editCourseSks, setEditCourseSks] = useState<number>(2);
-  const [editCourseDrive, setEditCourseDrive] = useState('');
-  const [scheduleNotice, setScheduleNotice] = useState<string | null>(null);
 
   // Modals & Form States
   const [searchStudent, setSearchStudent] = useState('');
@@ -106,43 +92,6 @@ export default function AdminDashboard() {
       </div>
     );
   }
-
-  // Handle Open Edit Schedule Modal
-  const handleOpenEditSchedule = (course: Course) => {
-    setEditingCourse(course);
-    setEditCourseDay(course.day);
-    setEditCourseTime(course.time);
-    setEditCourseRoom(course.room);
-    setEditCourseDosen(course.dosen);
-    setEditCourseSks(course.sks);
-    setEditCourseDrive(course.driveLink || '');
-    setScheduleNotice(null);
-  };
-
-  // Handle Save Course Schedule
-  const handleSaveCourseSchedule = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCourse) return;
-
-    appStore.updateCourse(editingCourse.id, {
-      day: editCourseDay,
-      time: editCourseTime,
-      room: editCourseRoom,
-      dosen: editCourseDosen,
-      sks: Number(editCourseSks),
-      driveLink: editCourseDrive,
-    });
-
-    setScheduleNotice(`Jadwal dan ruang untuk "${editingCourse.name}" berhasil disimpan!`);
-    try {
-      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
-    } catch {}
-
-    setTimeout(() => {
-      setEditingCourse(null);
-      setScheduleNotice(null);
-    }, 1200);
-  };
 
   // Handle Add Student
   const handleAddStudent = (e: React.FormEvent) => {
@@ -216,6 +165,7 @@ export default function AdminDashboard() {
           setUploadError(res.error || 'Tidak dapat membaca tabel mahasiswa dari PDF.');
         }
       } else {
+        // Assume text / csv
         const text = await file.text();
         const res = parseCsvRoster(text);
         if (res.length > 0) {
@@ -282,7 +232,7 @@ export default function AdminDashboard() {
             Panel Kendali Utama Administrator
           </h1>
           <p className="text-xs sm:text-sm text-stone-400 mt-0.5">
-            Kelola hari, jam & ruang 11 mata kuliah, penugasan PJ, whitelist mahasiswa, dan pengumuman.
+            Kelola penugasan PJ 11 mata kuliah, whitelist mahasiswa dari PDF, pengumuman, dan sistem presensi.
           </p>
         </div>
 
@@ -306,18 +256,6 @@ export default function AdminDashboard() {
       {/* Navigation Tabs */}
       <div className="flex overflow-x-auto border-b border-stone-200 gap-2 pb-px scrollbar-none">
         <button
-          onClick={() => setActiveTab('SCHEDULE')}
-          className={`px-5 py-3 rounded-t-2xl text-xs sm:text-sm font-bold transition-all flex items-center space-x-2 border-b-2 ${
-            activeTab === 'SCHEDULE'
-              ? 'border-[#9d5f2f] text-[#9d5f2f] bg-white'
-              : 'border-transparent text-stone-500 hover:text-stone-800 hover:bg-stone-50'
-          }`}
-        >
-          <Calendar className="w-4 h-4" />
-          <span>Setting Jadwal & Ruang (11 MK)</span>
-        </button>
-
-        <button
           onClick={() => setActiveTab('PJ')}
           className={`px-5 py-3 rounded-t-2xl text-xs sm:text-sm font-bold transition-all flex items-center space-x-2 border-b-2 ${
             activeTab === 'PJ'
@@ -326,7 +264,7 @@ export default function AdminDashboard() {
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          <span>Penugasan PJ (11 MK)</span>
+          <span>Penugasan PJ (11 Mata Kuliah)</span>
         </button>
 
         <button
@@ -366,78 +304,7 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      {/* TAB 1: SETTING JADWAL & RUANG KULIAH (FITUR BARU SESUAI REQUEST) */}
-      {activeTab === 'SCHEDULE' && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-stone-900 flex items-center space-x-2">
-                <Calendar className="w-5 h-5 text-[#9d5f2f]" />
-                <span>Pengaturan Jadwal, Jam & Ruang Kuliah (11 Mata Kuliah)</span>
-              </h2>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Tentukan hari, jam (misal: <code>07:30 - 10:00</code>), dan ruang (misal: <code>Ruang 05 Fasya</code>).
-                Jadwal ini akan otomatis tampil dan ter-update setiap hari pada kartu jadwal di HP mahasiswa.
-              </p>
-            </div>
-            <span className="text-xs font-semibold px-3 py-1 bg-amber-100 text-amber-900 rounded-full w-fit">
-              Otomatis Update Harian
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {courses.map((crs) => (
-              <div
-                key={crs.id}
-                className="bg-white rounded-3xl p-5 border border-stone-200 shadow-sm hover:border-[#9d5f2f] transition-all flex flex-col justify-between group"
-              >
-                <div>
-                  <div className="flex items-center justify-between text-xs mb-2">
-                    <span className="font-mono font-bold text-[#9d5f2f] bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                      {crs.code}
-                    </span>
-                    <span className="font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full text-[11px]">
-                      {crs.day}
-                    </span>
-                  </div>
-
-                  <h3 className="font-bold text-base text-stone-900 group-hover:text-[#9d5f2f] transition-colors mb-1">
-                    {crs.name}
-                  </h3>
-                  <p className="text-xs text-stone-600 mb-3">{crs.dosen}</p>
-
-                  <div className="bg-stone-50 rounded-2xl p-3.5 border border-stone-100 space-y-2 text-xs">
-                    <div className="flex items-center space-x-2 text-stone-700">
-                      <Clock className="w-3.5 h-3.5 text-[#9d5f2f] flex-shrink-0" />
-                      <span className="font-semibold">{crs.time}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-stone-700">
-                      <MapPin className="w-3.5 h-3.5 text-[#9d5f2f] flex-shrink-0" />
-                      <span className="font-semibold line-clamp-1">{crs.room}</span>
-                    </div>
-                    <div className="flex items-center justify-between pt-1 border-t border-stone-200 text-[11px] text-stone-500">
-                      <span>Bobot: <strong>{crs.sks} SKS</strong></span>
-                      <span className="font-mono">Semester {crs.semester}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-stone-100">
-                  <button
-                    onClick={() => handleOpenEditSchedule(crs)}
-                    className="w-full py-2.5 bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                    <span>Ubah Jadwal & Ruang Kuliah</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: PENUGASAN PJ 11 MATA KULIAH */}
+      {/* TAB 1: PENUGASAN PJ 11 MATA KULIAH */}
       {activeTab === 'PJ' && (
         <div className="space-y-6">
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -530,7 +397,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* TAB 3: WHITELIST MAHASISWA & UPLOAD PDF */}
+      {/* TAB 2: WHITELIST MAHASISWA & UPLOAD PDF */}
       {activeTab === 'STUDENTS' && (
         <div className="space-y-6">
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -668,7 +535,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* TAB 4: PENGUMUMAN KELAS */}
+      {/* TAB 3: PENGUMUMAN KELAS */}
       {activeTab === 'ANNOUNCEMENTS' && (
         <div className="space-y-6">
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -718,9 +585,10 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* TAB 5: PENGATURAN & BACKUP */}
+      {/* TAB 4: PENGATURAN & BACKUP */}
       {activeTab === 'SETTINGS' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Change Admin PIN */}
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
             <div>
               <h3 className="text-base font-bold text-stone-900">Ganti Password Master Admin</h3>
@@ -766,6 +634,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          {/* Database Backup & Restore */}
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
             <div>
               <h3 className="text-base font-bold text-stone-900">Pencadangan & Pemulihan Data</h3>
@@ -803,156 +672,6 @@ export default function AdminDashboard() {
                 Reset Basis Data ke Kondisi Awal
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: EDIT JADWAL & RUANG MATA KULIAH */}
-      {editingCourse && (
-        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 duration-150">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[#9d5f2f] to-[#753e1f] p-5 text-white flex items-start justify-between">
-              <div>
-                <span className="text-xs font-mono bg-white/20 px-2 py-0.5 rounded text-amber-200">
-                  {editingCourse.code}
-                </span>
-                <h3 className="text-base font-bold mt-1">
-                  Atur Jadwal & Ruang: {editingCourse.name}
-                </h3>
-                <p className="text-xs text-amber-100/90 mt-0.5">
-                  Tentukan hari perkuliahan, jam masuk, dan lokasi ruangan kelas.
-                </p>
-              </div>
-              <button
-                onClick={() => setEditingCourse(null)}
-                className="text-white/80 hover:text-white p-1 rounded-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleSaveCourseSchedule} className="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
-              {scheduleNotice && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 flex items-center space-x-2">
-                  <Check className="w-4 h-4 text-emerald-600" />
-                  <span>{scheduleNotice}</span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-stone-700 mb-1">Hari Perkuliahan</label>
-                  <select
-                    value={editCourseDay}
-                    onChange={(e) => setEditCourseDay(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] bg-white font-medium"
-                    required
-                  >
-                    <option value="Senin">Senin</option>
-                    <option value="Selasa">Selasa</option>
-                    <option value="Rabu">Rabu</option>
-                    <option value="Kamis">Kamis</option>
-                    <option value="Jumat">Jumat</option>
-                    <option value="Sabtu">Sabtu</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-stone-700 mb-1">Bobot SKS</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={6}
-                    value={editCourseSks}
-                    onChange={(e) => setEditCourseSks(Number(e.target.value))}
-                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1">
-                  Jam Perkuliahan
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Contoh: 07:30 - 10:00 WIB"
-                    value={editCourseTime}
-                    onChange={(e) => setEditCourseTime(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] font-mono"
-                    required
-                  />
-                </div>
-                <p className="text-[10px] text-stone-400 mt-1">
-                  Format bebas, contoh: <code>07:30 - 10:00 WIB</code> atau <code>10:50 - 12:30</code>.
-                </p>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1">
-                  Ruang Perkuliahan / Gedung
-                </label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Ruang 05 Fasya / Gedung G - G 204"
-                  value={editCourseRoom}
-                  onChange={(e) => setEditCourseRoom(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
-                  required
-                />
-                <p className="text-[10px] text-stone-400 mt-1">
-                  Contoh: <code>Ruang 05 Fakultas Syariah</code> atau <code>Gedung G - G 204</code>.
-                </p>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1">
-                  Dosen Pengampu
-                </label>
-                <input
-                  type="text"
-                  placeholder="Nama lengkap dosen dan gelar..."
-                  value={editCourseDosen}
-                  onChange={(e) => setEditCourseDosen(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1">
-                  Tautan Google Drive / RPS (Opsional)
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://drive.google.com/..."
-                  value={editCourseDrive}
-                  onChange={(e) => setEditCourseDrive(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
-                />
-              </div>
-
-              <div className="pt-3 flex items-center space-x-2 border-t border-stone-100">
-                <button
-                  type="button"
-                  onClick={() => setEditingCourse(null)}
-                  className="w-1/3 py-2.5 border border-stone-300 rounded-xl hover:bg-stone-50 font-semibold"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="w-2/3 py-2.5 bg-[#9d5f2f] hover:bg-[#864d23] text-white font-bold rounded-xl shadow-md flex items-center justify-center space-x-1.5"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Simpan Perubahan Jadwal</span>
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

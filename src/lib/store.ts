@@ -365,10 +365,16 @@ class Store {
 
       if (isSupabaseConfigured()) {
         supabase.from('courses').update({
+          name: this.state.courses[idx].name,
           pj_nims: this.state.courses[idx].pjNims,
           dosen: this.state.courses[idx].dosen,
           room: this.state.courses[idx].room,
+          day: this.state.courses[idx].day,
+          time: this.state.courses[idx].time,
+          sks: this.state.courses[idx].sks,
+          description: this.state.courses[idx].description,
           drive_link: this.state.courses[idx].driveLink,
+          rps_link: this.state.courses[idx].rpsLink,
         }).eq('id', id).then();
       }
     }
