@@ -31,8 +31,12 @@ export function exportSingleSessionCsv(
   let alpaCount = 0;
   let dispensasiCount = 0;
 
+  const sessionRecords = records.filter(
+    (r) => !r.sessionId || r.sessionId === session.id
+  );
+
   const studentRows = students.map((st, idx) => {
-    const rec = records.find((r) => r.studentNim.trim() === st.nim.trim());
+    const rec = sessionRecords.find((r) => r.studentNim.trim() === st.nim.trim());
     const status = rec ? rec.status : 'ALPA';
     if (status === 'HADIR') hadirCount++;
     else if (status === 'IZIN') izinCount++;

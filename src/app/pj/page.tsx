@@ -709,7 +709,7 @@ export default function PjDashboard() {
                                   activeCourse,
                                   currentSession,
                                   students,
-                                  records
+                                  currentRecords
                                 )
                               }
                               className="px-3.5 py-2 bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 text-xs font-semibold rounded-xl shadow-xs transition-colors flex items-center space-x-1.5"
@@ -1408,7 +1408,7 @@ export default function PjDashboard() {
           course={activeCourse}
           session={currentSession}
           students={students}
-          records={records}
+          records={currentRecords}
           onClose={() => setShowPrintModal(false)}
         />
       )}

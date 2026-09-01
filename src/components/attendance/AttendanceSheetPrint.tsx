@@ -20,6 +20,11 @@ export default function AttendanceSheetPrint({
   records,
   onClose,
 }: AttendanceSheetPrintProps) {
+  // CRITICAL: Filter only records for THIS specific session!
+  const sessionRecords = records.filter(
+    (r) => !r.sessionId || r.sessionId === session.id
+  );
+
   let hadirCount = 0;
   let izinCount = 0;
   let sakitCount = 0;
@@ -27,7 +32,7 @@ export default function AttendanceSheetPrint({
   let dispensasiCount = 0;
 
   students.forEach((st) => {
-    const rec = records.find((r) => r.studentNim.trim() === st.nim.trim());
+    const rec = sessionRecords.find((r) => r.studentNim.trim() === st.nim.trim());
     const status = rec ? rec.status : 'ALPA';
     if (status === 'HADIR') hadirCount++;
     else if (status === 'IZIN') izinCount++;
@@ -44,7 +49,7 @@ export default function AttendanceSheetPrint({
   };
 
   const handleCsvDownload = () => {
-    exportSingleSessionCsv(course, session, students, records);
+    exportSingleSessionCsv(course, session, students, sessionRecords);
   };
 
   const pjStudents = students.filter((s) => course.pjNims.includes(s.nim));
@@ -189,7 +194,7 @@ export default function AttendanceSheetPrint({
             </thead>
             <tbody>
               {students.map((st, index) => {
-                const rec = records.find((r) => r.studentNim.trim() === st.nim.trim());
+                const rec = sessionRecords.find((r) => r.studentNim.trim() === st.nim.trim());
                 const status = rec ? rec.status : 'ALPA';
                 const time = rec?.timestamp
                   ? new Date(rec.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })

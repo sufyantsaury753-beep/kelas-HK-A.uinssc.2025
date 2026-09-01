@@ -203,16 +203,44 @@ class Store {
       // 4. Fetch Attendance Records
       const { data: remoteRecords } = await supabase.from('attendance_records').select('*');
       if (remoteRecords && remoteRecords.length > 0) {
-        this.state.records = remoteRecords.map((r: any) => ({
-          id: r.id,
-          sessionId: r.session_id,
-          courseId: r.course_id,
-          studentNim: r.student_nim,
-          status: r.status,
-          notes: r.notes || undefined,
-          timestamp: r.timestamp,
-          verifiedBy: r.verified_by || 'PJ',
-        }));
+        const remoteMapped: AttendanceRecord[] = remoteRecords.map((r: any) => {
+          const isDispensasi =
+            r.status === 'DISPENSASI' ||
+            (typeof r.notes === 'string' && r.notes.startsWith('[DISPENSASI]'));
+          return {
+            id: r.id,
+            sessionId: r.session_id,
+            courseId: r.course_id,
+            studentNim: r.student_nim,
+            status: (isDispensasi ? 'DISPENSASI' : r.status) as AttendanceStatus,
+            notes:
+              typeof r.notes === 'string' && r.notes.startsWith('[DISPENSASI]')
+                ? r.notes.replace('[DISPENSASI]', '').trim() || undefined
+                : r.notes || undefined,
+            timestamp: r.timestamp || new Date().toISOString(),
+            verifiedBy: r.verified_by || 'PJ',
+          };
+        });
+
+        // Smart merge: preserve active local changes if local timestamp is newer
+        const mergedRecords = [...this.state.records];
+        for (const rem of remoteMapped) {
+          const idx = mergedRecords.findIndex(
+            (lr) =>
+              lr.sessionId === rem.sessionId &&
+              lr.studentNim.trim() === rem.studentNim.trim()
+          );
+          if (idx >= 0) {
+            const localTime = new Date(mergedRecords[idx].timestamp || 0).getTime();
+            const remoteTime = new Date(rem.timestamp || 0).getTime();
+            if (remoteTime >= localTime) {
+              mergedRecords[idx] = rem;
+            }
+          } else {
+            mergedRecords.push(rem);
+          }
+        }
+        this.state.records = mergedRecords;
       }
 
       // 5. Fetch Announcements
@@ -505,7 +533,7 @@ class Store {
     });
   }
 
-  public setAttendanceRecord(
+  public async setAttendanceRecord(
     sessionId: string,
     courseId: string,
     studentNim: string,
@@ -518,6 +546,7 @@ class Store {
     );
 
     let recId = `rec-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
 
     if (existingIdx >= 0) {
       recId = this.state.records[existingIdx].id;
@@ -525,7 +554,7 @@ class Store {
         ...this.state.records[existingIdx],
         status,
         notes: notes !== undefined ? notes : this.state.records[existingIdx].notes,
-        timestamp: new Date().toISOString(),
+        timestamp: now,
         verifiedBy,
       };
     } else {
@@ -536,7 +565,7 @@ class Store {
         studentNim: studentNim.trim(),
         status,
         notes,
-        timestamp: new Date().toISOString(),
+        timestamp: now,
         verifiedBy,
       };
       this.state.records.push(newRecord);
@@ -544,23 +573,103 @@ class Store {
     this.save();
 
     if (isSupabaseConfigured()) {
-      supabase.from('attendance_records').upsert({
-        id: recId,
-        session_id: sessionId,
-        course_id: courseId,
-        student_nim: studentNim.trim(),
-        status,
-        notes,
-        verified_by: verifiedBy,
-      }, { onConflict: 'session_id, student_nim' }).then();
+      // Supabase table has check constraint: status IN ('HADIR', 'IZIN', 'SAKIT', 'ALPA')
+      // If status is DISPENSASI, store in Supabase as status: 'IZIN' with '[DISPENSASI]' in notes
+      const isDispensasi = status === 'DISPENSASI';
+      const supabaseStatus = isDispensasi ? 'IZIN' : status;
+      const actualNotes =
+        notes !== undefined
+          ? notes
+          : existingIdx >= 0
+          ? this.state.records[existingIdx].notes
+          : undefined;
+      const supabaseNotes = isDispensasi
+        ? actualNotes
+          ? `[DISPENSASI] ${actualNotes}`
+          : '[DISPENSASI]'
+        : actualNotes || null;
+
+      try {
+        await supabase.from('attendance_records').upsert(
+          {
+            id: recId,
+            session_id: sessionId,
+            course_id: courseId,
+            student_nim: studentNim.trim(),
+            status: supabaseStatus,
+            notes: supabaseNotes,
+            verified_by: verifiedBy,
+          },
+          { onConflict: 'session_id, student_nim' }
+        );
+      } catch (err) {
+        console.error('Error syncing record to Supabase:', err);
+      }
     }
   }
 
-  public batchMarkAll(sessionId: string, courseId: string, status: AttendanceStatus, verifiedBy: string) {
+  public async batchMarkAll(
+    sessionId: string,
+    courseId: string,
+    status: AttendanceStatus,
+    verifiedBy: string
+  ) {
     const allStudents = this.getStudents();
+    const isDispensasi = status === 'DISPENSASI';
+    const supabaseStatus = isDispensasi ? 'IZIN' : status;
+    const supabaseNotes = isDispensasi ? '[DISPENSASI]' : null;
+    const now = new Date().toISOString();
+
+    const upsertPayload: any[] = [];
+
     allStudents.forEach((student) => {
-      this.setAttendanceRecord(sessionId, courseId, student.nim, status, verifiedBy);
+      const existingIdx = this.state.records.findIndex(
+        (r) =>
+          r.sessionId === sessionId && r.studentNim.trim() === student.nim.trim()
+      );
+      let recId = `rec-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      if (existingIdx >= 0) {
+        recId = this.state.records[existingIdx].id;
+        this.state.records[existingIdx] = {
+          ...this.state.records[existingIdx],
+          status,
+          timestamp: now,
+          verifiedBy,
+        };
+      } else {
+        this.state.records.push({
+          id: recId,
+          sessionId,
+          courseId,
+          studentNim: student.nim.trim(),
+          status,
+          timestamp: now,
+          verifiedBy,
+        });
+      }
+
+      upsertPayload.push({
+        id: recId,
+        session_id: sessionId,
+        course_id: courseId,
+        student_nim: student.nim.trim(),
+        status: supabaseStatus,
+        notes: supabaseNotes,
+        verified_by: verifiedBy,
+      });
     });
+
+    this.save();
+
+    if (isSupabaseConfigured() && upsertPayload.length > 0) {
+      try {
+        await supabase
+          .from('attendance_records')
+          .upsert(upsertPayload, { onConflict: 'session_id, student_nim' });
+      } catch (err) {
+        console.error('Error batch syncing records to Supabase:', err);
+      }
+    }
   }
 
   // --- Materials ---

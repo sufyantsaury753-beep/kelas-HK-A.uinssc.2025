@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS attendance_records (
   session_id VARCHAR(60) REFERENCES attendance_sessions(id) ON DELETE CASCADE,
   course_id VARCHAR(50) REFERENCES courses(id) ON DELETE CASCADE,
   student_nim VARCHAR(20) REFERENCES students(nim) ON DELETE CASCADE,
-  status VARCHAR(10) NOT NULL CHECK (status IN ('HADIR', 'IZIN', 'SAKIT', 'ALPA')),
+  status VARCHAR(15) NOT NULL CHECK (status IN ('HADIR', 'IZIN', 'SAKIT', 'ALPA', 'DISPENSASI')),
   notes TEXT,
   verified_by VARCHAR(30) DEFAULT 'PJ',
   timestamp TIMESTAMPTZ DEFAULT NOW(),
