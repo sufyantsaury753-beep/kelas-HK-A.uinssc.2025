@@ -80,10 +80,9 @@ export default function HomePage() {
   };
 
   const handleDeleteMaterial = (id: string, title: string) => {
-    if (!auth || auth.role !== 'ADMIN') return;
     if (confirm(`Hapus berkas "${title}"? Tindakan ini akan menghapus berkas secara permanen.`)) {
       appStore.deleteMaterial(id);
-      showToast('Berkas berhasil dihapus oleh Admin.');
+      showToast(`Berkas "${title}" berhasil dihapus.`);
     }
   };
 
@@ -600,17 +599,15 @@ export default function HomePage() {
                                 <span>Unduh / Buka</span>
                               </a>
 
-                              {/* Hapus Berkas: Khusus Admin */}
-                              {auth?.role === 'ADMIN' && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteMaterial(mat.id, mat.title)}
-                                  title="Hapus berkas ini (Akses Khusus Admin)"
-                                  className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4 text-rose-500" />
-                                </button>
-                              )}
+                              {/* Tombol Hapus Berkas */}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMaterial(mat.id, mat.title)}
+                                title="Hapus berkas ini"
+                                className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4 text-rose-500" />
+                              </button>
                             </div>
                           </div>
                         );

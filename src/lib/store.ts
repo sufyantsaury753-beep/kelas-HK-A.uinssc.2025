@@ -199,16 +199,20 @@ class Store {
       // 6. Fetch Materials
       const { data: remoteMat } = await supabase.from('course_materials').select('*');
       if (remoteMat && remoteMat.length > 0) {
-        this.state.materials = remoteMat.map((m: any) => ({
+        const remoteList: CourseMaterial[] = remoteMat.map((m: any) => ({
           id: m.id,
           courseId: m.course_id,
           title: m.title,
           type: m.type,
           url: m.url,
           description: m.description || undefined,
-          uploadedBy: m.uploaded_by || 'PJ',
-          uploadedAt: m.uploaded_at || '2025-09-01',
+          uploadedBy: m.uploaded_by || 'Mahasiswa',
+          uploadedAt: m.uploaded_at || '2026-09-01',
         }));
+
+        const remoteIds = new Set(remoteList.map(r => r.id));
+        const localCustom = this.state.materials.filter(m => !remoteIds.has(m.id) && m.id.startsWith('mat-'));
+        this.state.materials = [...localCustom, ...remoteList];
       }
 
       this.save();
@@ -549,15 +553,18 @@ class Store {
     this.save();
 
     if (isSupabaseConfigured()) {
-      supabase.from('course_materials').insert({
+      supabase.from('course_materials').upsert({
         id,
         course_id: materialData.courseId,
         title: materialData.title,
         type: materialData.type,
         url: materialData.url,
-        description: materialData.description,
-        uploaded_by: materialData.uploadedBy,
-      }).then();
+        description: materialData.description || null,
+        uploaded_by: materialData.uploadedBy || 'Mahasiswa',
+        uploaded_at: newMaterial.uploadedAt,
+      }).then(({ error }) => {
+        if (error) console.error('Supabase material upload error:', error);
+      });
     }
 
     return newMaterial;
@@ -568,7 +575,9 @@ class Store {
     this.save();
 
     if (isSupabaseConfigured()) {
-      supabase.from('course_materials').delete().eq('id', id).then();
+      supabase.from('course_materials').delete().eq('id', id).then(({ error }) => {
+        if (error) console.error('Supabase material delete error:', error);
+      });
     }
   }
 
