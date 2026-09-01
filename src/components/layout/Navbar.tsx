@@ -59,8 +59,12 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-18 py-3">
           {/* Brand Logo & Name */}
           <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#9d5f2f] to-[#753e1f] text-white flex items-center justify-center shadow-md shadow-[#9d5f2f]/20 group-hover:scale-105 transition-transform">
-              <GraduationCap className="w-6 h-6" />
+            <div className="w-11 h-11 rounded-full bg-stone-950/90 border border-amber-500/50 p-0.5 shadow-md shadow-[#9d5f2f]/20 group-hover:scale-105 transition-transform flex-shrink-0 flex items-center justify-center">
+              <img
+                src="/logo.png"
+                alt="Logo HK A 2025"
+                className="w-full h-full object-contain rounded-full"
+              />
             </div>
             <div>
               <div className="flex items-center space-x-1.5">

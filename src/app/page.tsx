@@ -78,6 +78,17 @@ export default function HomePage() {
         <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-amber-600/30 blur-3xl pointer-events-none"></div>
 
         <div className="max-w-6xl mx-auto relative z-10 text-center">
+          {/* Emblem Logo */}
+          <div className="flex justify-center mb-5">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-stone-950/80 p-1 border-2 border-amber-400/60 shadow-2xl shadow-black/50 hover:scale-105 transition-transform flex items-center justify-center">
+              <img
+                src="/logo.png"
+                alt="Logo Resmi Hukum Keluarga A 2025"
+                className="w-full h-full object-contain rounded-full"
+              />
+            </div>
+          </div>
+
           {/* Badge */}
           <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-amber-200 text-xs font-semibold uppercase tracking-wider mb-6 shadow-sm">
             <GraduationCap className="w-4 h-4 text-amber-300" />

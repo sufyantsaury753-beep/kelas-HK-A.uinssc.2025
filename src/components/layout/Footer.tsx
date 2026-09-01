@@ -10,8 +10,12 @@ export default function Footer() {
           {/* Col 1: Identity */}
           <div className="space-y-4 md:col-span-2">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#9d5f2f] to-[#753e1f] text-white flex items-center justify-center shadow-lg">
-                <GraduationCap className="w-5 h-5" />
+              <div className="w-11 h-11 rounded-full bg-stone-950 border border-amber-500/40 p-0.5 shadow-lg flex-shrink-0 flex items-center justify-center">
+                <img
+                  src="/logo.png"
+                  alt="Logo HK A 2025"
+                  className="w-full h-full object-contain rounded-full"
+                />
               </div>
               <div>
                 <h3 className="text-base font-bold text-white tracking-wide">

@@ -166,8 +166,12 @@ export default function MahasiswaDashboard() {
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-start sm:items-center space-x-4">
-            <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner flex-shrink-0">
-              <GraduationCap className="w-9 h-9 text-amber-200" />
+            <div className="w-16 h-16 rounded-full bg-stone-950 p-1 flex items-center justify-center border border-amber-400/50 shadow-xl flex-shrink-0">
+              <img
+                src="/logo.png"
+                alt="Logo HK A 2025"
+                className="w-full h-full object-contain rounded-full"
+              />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">

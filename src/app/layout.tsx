@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   title: 'Portal Kelas HK A 2025 | UIN Siber Syekh Nurjati Cirebon',
   description: 'Sistem Informasi Akademik, Presensi Digital & Repositori 11 Mata Kuliah Kelas Hukum Keluarga A 2025, Fakultas Syariah, UIN Siber Syekh Nurjati Cirebon.',
   keywords: ['Hukum Keluarga A 2025', 'HK A 2025', 'UIN Siber Syekh Nurjati Cirebon', 'Cyber Islamic University', 'Presensi Kelas HK A'],
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({

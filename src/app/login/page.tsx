@@ -159,8 +159,12 @@ export default function LoginPage() {
         <div className="bg-gradient-to-r from-[#9d5f2f] via-[#8c4e24] to-[#753e1f] p-7 text-white text-center relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
           <div className="relative z-10">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center mb-3 shadow-inner border border-white/20">
-              <GraduationCap className="w-8 h-8 text-amber-200" />
+            <div className="w-16 h-16 mx-auto rounded-full bg-stone-950 p-1 flex items-center justify-center mb-3 shadow-lg border border-amber-400/50">
+              <img
+                src="/logo.png"
+                alt="Logo HK A 2025"
+                className="w-full h-full object-contain rounded-full"
+              />
             </div>
             <h2 className="text-xl font-bold tracking-tight">Portal Masuk HK A 2025</h2>
             <p className="text-xs text-amber-100/90 mt-1 font-medium">
