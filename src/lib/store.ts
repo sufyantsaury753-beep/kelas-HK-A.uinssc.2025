@@ -16,6 +16,7 @@ import {
   INITIAL_SESSIONS,
   INITIAL_RECORDS,
 } from './initialData';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 const STORAGE_KEY = 'hka2025_app_store_v1';
 const AUTH_KEY = 'hka2025_auth_session_v1';
@@ -45,11 +46,13 @@ function getInitialState(): AppState {
 class Store {
   private state: AppState;
   private listeners: Set<() => void> = new Set();
+  private isSyncingWithSupabase = false;
 
   constructor() {
     this.state = getInitialState();
     if (typeof window !== 'undefined') {
       this.load();
+      this.syncFromSupabase();
     }
   }
 
@@ -104,6 +107,118 @@ class Store {
     });
   }
 
+  // --- Background Bidirectional Cloud Sync with Supabase ---
+  public async syncFromSupabase() {
+    if (!isSupabaseConfigured() || this.isSyncingWithSupabase) return;
+    this.isSyncingWithSupabase = true;
+
+    try {
+      // 1. Fetch Students
+      const { data: remoteStudents } = await supabase.from('students').select('*');
+      if (remoteStudents && remoteStudents.length > 0) {
+        this.state.students = remoteStudents.map((s: any) => ({
+          nim: s.nim,
+          name: s.name,
+          gender: s.gender || 'L',
+          pin: s.pin || undefined,
+          isPinSet: Boolean(s.is_pin_set),
+          phone: s.phone || undefined,
+          status: s.status || 'AKTIF',
+          createdAt: s.created_at || '2025-09-01',
+        }));
+      }
+
+      // 2. Fetch Courses
+      const { data: remoteCourses } = await supabase.from('courses').select('*');
+      if (remoteCourses && remoteCourses.length > 0) {
+        this.state.courses = remoteCourses.map((c: any) => ({
+          id: c.id,
+          code: c.code,
+          name: c.name,
+          dosen: c.dosen,
+          sks: c.sks,
+          semester: c.semester || 3,
+          day: c.day,
+          time: c.time,
+          room: c.room,
+          pjNims: c.pj_nims || [],
+          description: c.description || '',
+          driveLink: c.drive_link || undefined,
+          rpsLink: c.rps_link || undefined,
+        }));
+      }
+
+      // 3. Fetch Sessions
+      const { data: remoteSessions } = await supabase.from('attendance_sessions').select('*');
+      if (remoteSessions && remoteSessions.length > 0) {
+        this.state.sessions = remoteSessions.map((s: any) => ({
+          id: s.id,
+          courseId: s.course_id,
+          meetingNumber: s.meeting_number,
+          date: s.date,
+          startTime: s.start_time,
+          endTime: s.end_time,
+          topic: s.topic,
+          dosenPresent: Boolean(s.dosen_present),
+          isOpenForSelfCheckin: Boolean(s.is_open_for_self_checkin),
+          checkinCode: s.checkin_code || undefined,
+          createdAt: s.created_at,
+          createdByNim: s.created_by_nim || 'ADMIN',
+        }));
+      }
+
+      // 4. Fetch Attendance Records
+      const { data: remoteRecords } = await supabase.from('attendance_records').select('*');
+      if (remoteRecords && remoteRecords.length > 0) {
+        this.state.records = remoteRecords.map((r: any) => ({
+          id: r.id,
+          sessionId: r.session_id,
+          courseId: r.course_id,
+          studentNim: r.student_nim,
+          status: r.status,
+          notes: r.notes || undefined,
+          timestamp: r.timestamp,
+          verifiedBy: r.verified_by || 'PJ',
+        }));
+      }
+
+      // 5. Fetch Announcements
+      const { data: remoteAnn } = await supabase.from('announcements').select('*');
+      if (remoteAnn && remoteAnn.length > 0) {
+        this.state.announcements = remoteAnn.map((a: any) => ({
+          id: a.id,
+          title: a.title,
+          content: a.content,
+          category: a.category,
+          author: a.author,
+          date: a.date,
+          pinned: Boolean(a.pinned),
+        }));
+      }
+
+      // 6. Fetch Materials
+      const { data: remoteMat } = await supabase.from('course_materials').select('*');
+      if (remoteMat && remoteMat.length > 0) {
+        this.state.materials = remoteMat.map((m: any) => ({
+          id: m.id,
+          courseId: m.course_id,
+          title: m.title,
+          type: m.type,
+          url: m.url,
+          description: m.description || undefined,
+          uploadedBy: m.uploaded_by || 'PJ',
+          uploadedAt: m.uploaded_at || '2025-09-01',
+        }));
+      }
+
+      this.save();
+    } catch (err) {
+      console.warn('Supabase background sync notice:', err);
+    } finally {
+      this.isSyncingWithSupabase = false;
+    }
+  }
+
   // --- Auth Session ---
   public getAuth(): AuthSession | null {
     if (typeof window === 'undefined') return null;
@@ -141,6 +256,16 @@ class Store {
     }
     this.state.students.push(student);
     this.save();
+
+    if (isSupabaseConfigured()) {
+      supabase.from('students').upsert({
+        nim: student.nim,
+        name: student.name,
+        gender: student.gender,
+        is_pin_set: student.isPinSet,
+        status: student.status,
+      }).then();
+    }
     return true;
   }
 
@@ -151,7 +276,6 @@ class Store {
       newStudents.forEach((ns) => {
         const idx = this.state.students.findIndex((s) => s.nim.trim() === ns.nim.trim());
         if (idx >= 0) {
-          // preserve existing PIN if already set
           this.state.students[idx] = {
             ...ns,
             pin: this.state.students[idx].pin || ns.pin,
@@ -163,6 +287,17 @@ class Store {
       });
     }
     this.save();
+
+    if (isSupabaseConfigured()) {
+      const dbRows = this.state.students.map((s) => ({
+        nim: s.nim,
+        name: s.name,
+        gender: s.gender,
+        is_pin_set: s.isPinSet,
+        status: s.status,
+      }));
+      supabase.from('students').upsert(dbRows).then();
+    }
   }
 
   public updateStudent(nim: string, updates: Partial<Student>) {
@@ -170,6 +305,16 @@ class Store {
     if (idx >= 0) {
       this.state.students[idx] = { ...this.state.students[idx], ...updates };
       this.save();
+
+      if (isSupabaseConfigured()) {
+        supabase.from('students').update({
+          name: this.state.students[idx].name,
+          gender: this.state.students[idx].gender,
+          is_pin_set: this.state.students[idx].isPinSet,
+          pin: this.state.students[idx].pin,
+          status: this.state.students[idx].status,
+        }).eq('nim', nim.trim()).then();
+      }
     }
   }
 
@@ -179,6 +324,13 @@ class Store {
       this.state.students[idx].pin = pin;
       this.state.students[idx].isPinSet = true;
       this.save();
+
+      if (isSupabaseConfigured()) {
+        supabase.from('students').update({
+          pin,
+          is_pin_set: true,
+        }).eq('nim', nim.trim()).then();
+      }
       return true;
     }
     return false;
@@ -186,11 +338,14 @@ class Store {
 
   public deleteStudent(nim: string) {
     this.state.students = this.state.students.filter((s) => s.nim.trim() !== nim.trim());
-    // remove from course PJs if assigned
     this.state.courses.forEach((c) => {
       c.pjNims = c.pjNims.filter((pNim) => pNim.trim() !== nim.trim());
     });
     this.save();
+
+    if (isSupabaseConfigured()) {
+      supabase.from('students').delete().eq('nim', nim.trim()).then();
+    }
   }
 
   // --- Courses ---
@@ -207,6 +362,15 @@ class Store {
     if (idx >= 0) {
       this.state.courses[idx] = { ...this.state.courses[idx], ...updates };
       this.save();
+
+      if (isSupabaseConfigured()) {
+        supabase.from('courses').update({
+          pj_nims: this.state.courses[idx].pjNims,
+          dosen: this.state.courses[idx].dosen,
+          room: this.state.courses[idx].room,
+          drive_link: this.state.courses[idx].driveLink,
+        }).eq('id', id).then();
+      }
     }
   }
 
@@ -215,6 +379,12 @@ class Store {
     if (idx >= 0) {
       this.state.courses[idx].pjNims = pjNims;
       this.save();
+
+      if (isSupabaseConfigured()) {
+        supabase.from('courses').update({
+          pj_nims: pjNims,
+        }).eq('id', courseId).then();
+      }
     }
   }
 
@@ -241,6 +411,23 @@ class Store {
     };
     this.state.sessions.unshift(newSession);
     this.save();
+
+    if (isSupabaseConfigured()) {
+      supabase.from('attendance_sessions').insert({
+        id,
+        course_id: sessionData.courseId,
+        meeting_number: sessionData.meetingNumber,
+        date: sessionData.date,
+        start_time: sessionData.startTime,
+        end_time: sessionData.endTime,
+        topic: sessionData.topic,
+        dosen_present: sessionData.dosenPresent,
+        is_open_for_self_checkin: sessionData.isOpenForSelfCheckin,
+        checkin_code: sessionData.checkinCode,
+        created_by_nim: sessionData.createdByNim,
+      }).then();
+    }
+
     return newSession;
   }
 
@@ -249,6 +436,14 @@ class Store {
     if (idx >= 0) {
       this.state.sessions[idx] = { ...this.state.sessions[idx], ...updates };
       this.save();
+
+      if (isSupabaseConfigured()) {
+        supabase.from('attendance_sessions').update({
+          is_open_for_self_checkin: this.state.sessions[idx].isOpenForSelfCheckin,
+          checkin_code: this.state.sessions[idx].checkinCode,
+          topic: this.state.sessions[idx].topic,
+        }).eq('id', sessionId).then();
+      }
     }
   }
 
@@ -256,6 +451,10 @@ class Store {
     this.state.sessions = this.state.sessions.filter((s) => s.id !== sessionId);
     this.state.records = this.state.records.filter((r) => r.sessionId !== sessionId);
     this.save();
+
+    if (isSupabaseConfigured()) {
+      supabase.from('attendance_sessions').delete().eq('id', sessionId).then();
+    }
   }
 
   // --- Attendance Records ---
@@ -279,7 +478,10 @@ class Store {
       (r) => r.sessionId === sessionId && r.studentNim.trim() === studentNim.trim()
     );
 
+    let recId = `rec-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+
     if (existingIdx >= 0) {
+      recId = this.state.records[existingIdx].id;
       this.state.records[existingIdx] = {
         ...this.state.records[existingIdx],
         status,
@@ -289,7 +491,7 @@ class Store {
       };
     } else {
       const newRecord: AttendanceRecord = {
-        id: `rec-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        id: recId,
         sessionId,
         courseId,
         studentNim: studentNim.trim(),
@@ -301,6 +503,18 @@ class Store {
       this.state.records.push(newRecord);
     }
     this.save();
+
+    if (isSupabaseConfigured()) {
+      supabase.from('attendance_records').upsert({
+        id: recId,
+        session_id: sessionId,
+        course_id: courseId,
+        student_nim: studentNim.trim(),
+        status,
+        notes,
+        verified_by: verifiedBy,
+      }, { onConflict: 'session_id, student_nim' }).then();
+    }
   }
 
   public batchMarkAll(sessionId: string, courseId: string, status: AttendanceStatus, verifiedBy: string) {
@@ -319,19 +533,37 @@ class Store {
   }
 
   public addMaterial(materialData: Omit<CourseMaterial, 'id' | 'uploadedAt'>): CourseMaterial {
+    const id = `mat-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const newMaterial: CourseMaterial = {
       ...materialData,
-      id: `mat-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id,
       uploadedAt: new Date().toISOString().split('T')[0],
     };
     this.state.materials.unshift(newMaterial);
     this.save();
+
+    if (isSupabaseConfigured()) {
+      supabase.from('course_materials').insert({
+        id,
+        course_id: materialData.courseId,
+        title: materialData.title,
+        type: materialData.type,
+        url: materialData.url,
+        description: materialData.description,
+        uploaded_by: materialData.uploadedBy,
+      }).then();
+    }
+
     return newMaterial;
   }
 
   public deleteMaterial(id: string) {
     this.state.materials = this.state.materials.filter((m) => m.id !== id);
     this.save();
+
+    if (isSupabaseConfigured()) {
+      supabase.from('course_materials').delete().eq('id', id).then();
+    }
   }
 
   // --- Announcements ---
@@ -340,19 +572,36 @@ class Store {
   }
 
   public addAnnouncement(announcementData: Omit<Announcement, 'id' | 'date'>): Announcement {
+    const id = `ann-${Date.now()}`;
     const newAnn: Announcement = {
       ...announcementData,
-      id: `ann-${Date.now()}`,
+      id,
       date: new Date().toISOString().split('T')[0],
     };
     this.state.announcements.unshift(newAnn);
     this.save();
+
+    if (isSupabaseConfigured()) {
+      supabase.from('announcements').insert({
+        id,
+        title: announcementData.title,
+        content: announcementData.content,
+        category: announcementData.category,
+        author: announcementData.author,
+        pinned: announcementData.pinned || false,
+      }).then();
+    }
+
     return newAnn;
   }
 
   public deleteAnnouncement(id: string) {
     this.state.announcements = this.state.announcements.filter((a) => a.id !== id);
     this.save();
+
+    if (isSupabaseConfigured()) {
+      supabase.from('announcements').delete().eq('id', id).then();
+    }
   }
 
   // --- Admin PIN ---
