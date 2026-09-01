@@ -23,6 +23,10 @@ import {
   Bell,
   Database,
   Calendar,
+  Clock,
+  MapPin,
+  Save,
+  Check,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, Student, Announcement, AuthSession, Gender } from '@/lib/types';
@@ -65,6 +69,54 @@ export default function AdminDashboard() {
   // Change Admin Pin
   const [newMasterPin, setNewMasterPin] = useState('');
   const [pinNotice, setPinNotice] = useState<string | null>(null);
+
+  // Course Edit Modal State (Setting Nama, Dosen, Hari, Jam & Ruang)
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [editCourseName, setEditCourseName] = useState('');
+  const [editCourseDosen, setEditCourseDosen] = useState('');
+  const [editCourseDay, setEditCourseDay] = useState('Senin');
+  const [editCourseTime, setEditCourseTime] = useState('');
+  const [editCourseRoom, setEditCourseRoom] = useState('');
+  const [editCourseSks, setEditCourseSks] = useState<number>(2);
+  const [editCourseDrive, setEditCourseDrive] = useState('');
+  const [courseEditNotice, setCourseEditNotice] = useState<string | null>(null);
+
+  const handleOpenEditCourse = (course: Course) => {
+    setEditingCourse(course);
+    setEditCourseName(course.name);
+    setEditCourseDosen(course.dosen);
+    setEditCourseDay(course.day);
+    setEditCourseTime(course.time);
+    setEditCourseRoom(course.room);
+    setEditCourseSks(course.sks);
+    setEditCourseDrive(course.driveLink || '');
+    setCourseEditNotice(null);
+  };
+
+  const handleSaveCourse = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCourse) return;
+
+    appStore.updateCourse(editingCourse.id, {
+      name: editCourseName.trim(),
+      dosen: editCourseDosen.trim(),
+      day: editCourseDay,
+      time: editCourseTime.trim(),
+      room: editCourseRoom.trim(),
+      sks: Number(editCourseSks),
+      driveLink: editCourseDrive.trim(),
+    });
+
+    setCourseEditNotice(`Data mata kuliah "${editCourseName}" berhasil disimpan!`);
+    try {
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+    } catch {}
+
+    setTimeout(() => {
+      setEditingCourse(null);
+      setCourseEditNotice(null);
+    }, 1000);
+  };
 
   useEffect(() => {
     const update = () => {
@@ -343,7 +395,16 @@ export default function AdminDashboard() {
                     <h3 className="font-bold text-base text-stone-900 group-hover:text-[#9d5f2f] transition-colors mb-1">
                       {crs.name}
                     </h3>
-                    <p className="text-xs text-stone-600 mb-3">{crs.dosen}</p>
+                    <p className="text-xs text-stone-600 mb-2">{crs.dosen}</p>
+
+                    {/* Schedule & Room info */}
+                    <div className="flex items-center space-x-2 text-[11px] text-stone-600 mb-3 bg-amber-50/70 p-2 rounded-xl border border-amber-200/60">
+                      <Clock className="w-3.5 h-3.5 text-[#9d5f2f] flex-shrink-0" />
+                      <span className="font-mono font-bold">{crs.time}</span>
+                      <span className="text-stone-300">•</span>
+                      <MapPin className="w-3.5 h-3.5 text-[#9d5f2f] flex-shrink-0" />
+                      <span className="font-semibold line-clamp-1">{crs.room}</span>
+                    </div>
 
                     {/* Assigned PJ List */}
                     <div className="bg-stone-50 rounded-2xl p-3.5 border border-stone-100 space-y-2">
@@ -380,13 +441,21 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Assign PJ Button */}
-                  <div className="mt-4 pt-3 border-t border-stone-100">
+                  {/* Action Buttons */}
+                  <div className="mt-4 pt-3 border-t border-stone-100 space-y-2">
+                    <button
+                      onClick={() => handleOpenEditCourse(crs)}
+                      className="w-full py-2 bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1.5"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Setting Mata Kuliah (Dosen, Jam & Ruang)</span>
+                    </button>
+
                     <button
                       onClick={() => setSelectedCourseForPj(crs)}
-                      className="w-full py-2.5 bg-stone-100 hover:bg-[#9d5f2f] hover:text-white text-stone-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5"
+                      className="w-full py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5"
                     >
-                      <UserPlus className="w-4 h-4" />
+                      <UserPlus className="w-3.5 h-3.5" />
                       <span>Atur & Tambah PJ Mata Kuliah</span>
                     </button>
                   </div>
@@ -994,6 +1063,162 @@ export default function AdminDashboard() {
                   className="w-2/3 py-2 bg-[#9d5f2f] text-white font-bold rounded-xl shadow-sm"
                 >
                   Publikasikan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: SETTING MATA KULIAH (NAMA, DOSEN, JAM & RUANG) */}
+      {editingCourse && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#9d5f2f] to-[#753e1f] p-5 text-white flex items-start justify-between">
+              <div>
+                <span className="text-xs font-mono bg-white/20 px-2 py-0.5 rounded text-amber-200">
+                  {editingCourse.code}
+                </span>
+                <h3 className="text-base font-bold mt-1">
+                  Setting Mata Kuliah: {editingCourse.name}
+                </h3>
+                <p className="text-xs text-amber-100/90 mt-0.5">
+                  Ubah nama mata kuliah, dosen, hari, jam perkuliahan, dan ruang kelas.
+                </p>
+              </div>
+              <button
+                onClick={() => setEditingCourse(null)}
+                className="text-white/80 hover:text-white p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveCourse} className="p-6 overflow-y-auto space-y-3.5 flex-1 text-xs">
+              {courseEditNotice && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 flex items-center space-x-2 font-semibold">
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span>{courseEditNotice}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">Nama Mata Kuliah</label>
+                <input
+                  type="text"
+                  value={editCourseName}
+                  onChange={(e) => setEditCourseName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">Dosen Pengampu</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Dr. H. Ahmad Dahlan, M.Ag."
+                  value={editCourseDosen}
+                  onChange={(e) => setEditCourseDosen(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">Hari Perkuliahan</label>
+                  <select
+                    value={editCourseDay}
+                    onChange={(e) => setEditCourseDay(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] bg-white font-medium"
+                  >
+                    <option value="Senin">Senin</option>
+                    <option value="Selasa">Selasa</option>
+                    <option value="Rabu">Rabu</option>
+                    <option value="Kamis">Kamis</option>
+                    <option value="Jumat">Jumat</option>
+                    <option value="Sabtu">Sabtu</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">Bobot SKS</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={6}
+                    value={editCourseSks}
+                    onChange={(e) => setEditCourseSks(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Jam Perkuliahan
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: 07.30 - 09.10 WIB"
+                  value={editCourseTime}
+                  onChange={(e) => setEditCourseTime(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] font-mono"
+                  required
+                />
+                <p className="text-[10px] text-stone-400 mt-0.5">
+                  Bisa diisi jam kuliah seperti <code>07.30 - 09.10 WIB</code> atau <code>07.30</code>.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Ruang Perkuliahan
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Ruang 05 Fasya / Gedung G - G 204"
+                  value={editCourseRoom}
+                  onChange={(e) => setEditCourseRoom(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                  required
+                />
+                <p className="text-[10px] text-stone-400 mt-0.5">
+                  Contoh: <code>Ruang 05 Fasya</code> atau <code>Ruang 204 Gedung FASYA</code>.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Tautan Google Drive / RPS (Opsional)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://drive.google.com/..."
+                  value={editCourseDrive}
+                  onChange={(e) => setEditCourseDrive(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                />
+              </div>
+
+              <div className="pt-3 flex items-center space-x-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingCourse(null)}
+                  className="w-1/3 py-2.5 border border-stone-300 rounded-xl hover:bg-stone-50 font-semibold"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="w-2/3 py-2.5 bg-[#9d5f2f] hover:bg-[#864d23] text-white font-bold rounded-xl shadow-sm flex items-center justify-center space-x-1.5"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Simpan Perubahan</span>
                 </button>
               </div>
             </form>
