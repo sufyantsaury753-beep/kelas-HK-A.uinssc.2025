@@ -24,6 +24,7 @@ import {
   Plus,
   Download,
   FileCheck,
+  Lock,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, Announcement, Student, CourseMaterial, AuthSession } from '@/lib/types';
@@ -49,6 +50,12 @@ export default function HomePage() {
   };
 
   const handleDirectFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!auth) {
+      alert('Akses Ditolak: Anda harus login sebagai Mahasiswa, PJ, atau Admin untuk mengunggah berkas.');
+      e.target.value = '';
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (!file || !selectedCourse) return;
 
@@ -80,6 +87,10 @@ export default function HomePage() {
   };
 
   const handleDeleteMaterial = (id: string, title: string) => {
+    if (!auth) {
+      alert('Akses Ditolak: Anda harus login untuk menghapus berkas.');
+      return;
+    }
     if (confirm(`Hapus berkas "${title}"? Tindakan ini akan menghapus berkas secara permanen.`)) {
       appStore.deleteMaterial(id);
       showToast(`Berkas "${title}" berhasil dihapus.`);
@@ -514,22 +525,32 @@ export default function HomePage() {
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <label
-                      className={`cursor-pointer px-4 py-2 rounded-xl text-white font-bold text-xs flex items-center space-x-2 shadow-md transition-all active:scale-95 ${
-                        isUploading
-                          ? 'bg-stone-400 cursor-not-allowed'
-                          : 'bg-[#9d5f2f] hover:bg-[#864d23] shadow-[#9d5f2f]/20'
-                      }`}
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span>{isUploading ? 'Mengunggah Berkas...' : 'Upload File / Tugas'}</span>
-                      <input
-                        type="file"
-                        onChange={handleDirectFileUpload}
-                        disabled={isUploading}
-                        className="hidden"
-                      />
-                    </label>
+                    {auth ? (
+                      <label
+                        className={`cursor-pointer px-4 py-2 rounded-xl text-white font-bold text-xs flex items-center space-x-2 shadow-md transition-all active:scale-95 ${
+                          isUploading
+                            ? 'bg-stone-400 cursor-not-allowed'
+                            : 'bg-[#9d5f2f] hover:bg-[#864d23] shadow-[#9d5f2f]/20'
+                        }`}
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>{isUploading ? 'Mengunggah Berkas...' : 'Upload File / Tugas'}</span>
+                        <input
+                          type="file"
+                          onChange={handleDirectFileUpload}
+                          disabled={isUploading}
+                          className="hidden"
+                        />
+                      </label>
+                    ) : (
+                      <Link
+                        href="/login"
+                        className="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-[#8c4e24] font-bold text-xs flex items-center space-x-1.5 transition-all border border-amber-200/80 shadow-xs"
+                      >
+                        <Lock className="w-3.5 h-3.5 text-[#9d5f2f]" />
+                        <span>Login untuk Upload</span>
+                      </Link>
+                    )}
 
                     {selectedCourse.driveLink && (
                       <a
@@ -599,15 +620,17 @@ export default function HomePage() {
                                 <span>Unduh / Buka</span>
                               </a>
 
-                              {/* Tombol Hapus Berkas */}
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteMaterial(mat.id, mat.title)}
-                                title="Hapus berkas ini"
-                                className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4 text-rose-500" />
-                              </button>
+                              {/* Tombol Hapus Berkas: Khusus yang sudah Login */}
+                              {auth && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMaterial(mat.id, mat.title)}
+                                  title="Hapus berkas ini"
+                                  className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4 text-rose-500" />
+                                </button>
+                              )}
                             </div>
                           </div>
                         );

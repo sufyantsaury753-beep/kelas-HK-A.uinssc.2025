@@ -53,6 +53,39 @@ class Store {
     if (typeof window !== 'undefined') {
       this.load();
       this.syncFromSupabase();
+      this.initRealtimeSync();
+    }
+  }
+
+  private initRealtimeSync() {
+    if (typeof window === 'undefined') return;
+
+    // Sync when tab gets focus
+    window.addEventListener('focus', () => {
+      this.syncFromSupabase();
+    });
+
+    // Periodic heartbeat sync every 5 seconds
+    setInterval(() => {
+      this.syncFromSupabase();
+    }, 5000);
+
+    // Supabase Realtime Channel
+    if (isSupabaseConfigured()) {
+      try {
+        supabase
+          .channel('schema-db-changes')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'course_materials' },
+            () => {
+              this.syncFromSupabase();
+            }
+          )
+          .subscribe();
+      } catch (e) {
+        console.warn('Realtime subscription notice:', e);
+      }
     }
   }
 
@@ -198,8 +231,8 @@ class Store {
 
       // 6. Fetch Materials
       const { data: remoteMat } = await supabase.from('course_materials').select('*');
-      if (remoteMat && remoteMat.length > 0) {
-        const remoteList: CourseMaterial[] = remoteMat.map((m: any) => ({
+      if (remoteMat) {
+        this.state.materials = remoteMat.map((m: any) => ({
           id: m.id,
           courseId: m.course_id,
           title: m.title,
@@ -209,10 +242,6 @@ class Store {
           uploadedBy: m.uploaded_by || 'Mahasiswa',
           uploadedAt: m.uploaded_at || '2026-09-01',
         }));
-
-        const remoteIds = new Set(remoteList.map(r => r.id));
-        const localCustom = this.state.materials.filter(m => !remoteIds.has(m.id) && m.id.startsWith('mat-'));
-        this.state.materials = [...localCustom, ...remoteList];
       }
 
       this.save();
