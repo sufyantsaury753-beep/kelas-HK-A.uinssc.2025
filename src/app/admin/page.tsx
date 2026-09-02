@@ -324,12 +324,14 @@ export default function AdminDashboard() {
     setAnnContent('');
   };
 
-  // Filtered students for student list
-  const filteredStudents = students.filter(
-    (s) =>
-      s.name.toLowerCase().includes(searchStudent.toLowerCase()) ||
-      s.nim.includes(searchStudent)
-  );
+  // Filtered students for student list (sorted by NIM ascending)
+  const filteredStudents = students
+    .filter(
+      (s) =>
+        s.name.toLowerCase().includes(searchStudent.toLowerCase()) ||
+        s.nim.includes(searchStudent)
+    )
+    .sort((a, b) => a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true }));
 
   return (
     <>
@@ -678,11 +680,13 @@ export default function AdminDashboard() {
           }
         };
 
-        const filteredRevStudents = students.filter(
-          (s) =>
-            s.name.toLowerCase().includes(searchRevStudent.toLowerCase()) ||
-            s.nim.includes(searchRevStudent)
-        );
+        const filteredRevStudents = students
+          .filter(
+            (s) =>
+              s.name.toLowerCase().includes(searchRevStudent.toLowerCase()) ||
+              s.nim.includes(searchRevStudent)
+          )
+          .sort((a, b) => a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true }));
 
         return (
           <div className="space-y-6">
@@ -1471,6 +1475,7 @@ export default function AdminDashboard() {
                     s.name.toLowerCase().includes(pjModalSearch.toLowerCase()) ||
                     s.nim.includes(pjModalSearch)
                 )
+                .sort((a, b) => a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true }))
                 .map((st) => {
                   const isChecked = selectedCourseForPj.pjNims.includes(st.nim);
 

@@ -49,7 +49,11 @@ export function exportSingleSessionCsv(
     (r) => !r.sessionId || r.sessionId === session.id
   );
 
-  const studentRows = students.map((st, idx) => {
+  const sortedStudents = [...students].sort((a, b) =>
+    a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true })
+  );
+
+  const studentRows = sortedStudents.map((st, idx) => {
     const rec = sessionRecords.find((r) => r.studentNim.trim() === st.nim.trim());
     const status = rec ? rec.status : 'ALPA';
     if (status === 'HADIR') hadirCount++;
@@ -126,7 +130,11 @@ export function exportMatrixAttendanceCsv(
     '% KEHADIRAN',
   ];
 
-  const dataRows = students.map((st, idx) => {
+  const sortedStudents = [...students].sort((a, b) =>
+    a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true })
+  );
+
+  const dataRows = sortedStudents.map((st, idx) => {
     let hadir = 0;
     let izin = 0;
     let sakit = 0;

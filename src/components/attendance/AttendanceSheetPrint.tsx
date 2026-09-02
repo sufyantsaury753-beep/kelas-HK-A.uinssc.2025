@@ -25,13 +25,18 @@ export default function AttendanceSheetPrint({
     (r) => !r.sessionId || r.sessionId === session.id
   );
 
+  // Strictly sort students by NIM ascending (e.g. 03, 04, 05, etc.)
+  const sortedStudents = [...students].sort((a, b) =>
+    a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true })
+  );
+
   let hadirCount = 0;
   let izinCount = 0;
   let sakitCount = 0;
   let alpaCount = 0;
   let dispensasiCount = 0;
 
-  students.forEach((st) => {
+  sortedStudents.forEach((st) => {
     const rec = sessionRecords.find((r) => r.studentNim.trim() === st.nim.trim());
     const status = rec ? rec.status : 'ALPA';
     if (status === 'HADIR') hadirCount++;
@@ -41,7 +46,7 @@ export default function AttendanceSheetPrint({
     else alpaCount++;
   });
 
-  const total = students.length;
+  const total = sortedStudents.length;
   const pct = total > 0 ? (((hadirCount + dispensasiCount) / total) * 100).toFixed(1) : '0';
 
   const handlePrint = () => {
@@ -212,7 +217,7 @@ export default function AttendanceSheetPrint({
               </tr>
             </thead>
             <tbody>
-              {students.map((st, index) => {
+              {sortedStudents.map((st, index) => {
                 const rec = sessionRecords.find((r) => r.studentNim.trim() === st.nim.trim());
                 const status = rec ? rec.status : 'ALPA';
                 const time = rec?.timestamp

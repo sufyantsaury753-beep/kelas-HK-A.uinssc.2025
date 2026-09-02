@@ -329,12 +329,14 @@ export default function PjDashboard() {
     showToast('Materi perkuliahan berhasil diunggah.');
   };
 
-  // Filtered students for attendance search
-  const filteredStudents = students.filter(
-    (s) =>
-      s.name.toLowerCase().includes(searchStudent.toLowerCase()) ||
-      s.nim.includes(searchStudent)
-  );
+  // Filtered students for attendance search (sorted strictly by NIM ascending)
+  const filteredStudents = students
+    .filter(
+      (s) =>
+        s.name.toLowerCase().includes(searchStudent.toLowerCase()) ||
+        s.nim.includes(searchStudent)
+    )
+    .sort((a, b) => a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true }));
 
   // Statistics for current session
   let hadirCount = 0;

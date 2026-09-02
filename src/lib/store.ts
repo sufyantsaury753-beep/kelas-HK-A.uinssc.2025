@@ -31,9 +31,16 @@ interface AppState {
   adminPin: string;
 }
 
+// Helper to sort students ascending by NIM (e.g. 03, 04, 05, etc.)
+export function sortStudentsByNim(studentsList: Student[]): Student[] {
+  return [...studentsList].sort((a, b) => {
+    return a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true });
+  });
+}
+
 function getInitialState(): AppState {
   return {
-    students: INITIAL_STUDENTS,
+    students: sortStudentsByNim(INITIAL_STUDENTS),
     courses: INITIAL_COURSES,
     sessions: INITIAL_SESSIONS,
     records: INITIAL_RECORDS,
@@ -95,7 +102,7 @@ class Store {
       if (saved) {
         const parsed = JSON.parse(saved);
         this.state = {
-          students: parsed.students || INITIAL_STUDENTS,
+          students: sortStudentsByNim(parsed.students || INITIAL_STUDENTS),
           courses: parsed.courses || INITIAL_COURSES,
           sessions: parsed.sessions || INITIAL_SESSIONS,
           records: parsed.records || INITIAL_RECORDS,
@@ -149,7 +156,7 @@ class Store {
       // 1. Fetch Students
       const { data: remoteStudents } = await supabase.from('students').select('*');
       if (remoteStudents && remoteStudents.length > 0) {
-        this.state.students = remoteStudents.map((s: any) => ({
+        this.state.students = sortStudentsByNim(remoteStudents.map((s: any) => ({
           nim: s.nim,
           name: s.name,
           gender: s.gender || 'L',
@@ -158,7 +165,7 @@ class Store {
           phone: s.phone || undefined,
           status: s.status || 'AKTIF',
           createdAt: s.created_at || '2025-09-01',
-        }));
+        })));
       }
 
       // 2. Fetch Courses
@@ -303,7 +310,7 @@ class Store {
 
   // --- Students Whitelist ---
   public getStudents(): Student[] {
-    return [...this.state.students];
+    return sortStudentsByNim(this.state.students);
   }
 
   public findStudentByNim(nim: string): Student | undefined {
@@ -316,6 +323,7 @@ class Store {
       return false;
     }
     this.state.students.push(student);
+    this.state.students = sortStudentsByNim(this.state.students);
     this.save();
 
     if (isSupabaseConfigured()) {
@@ -332,7 +340,7 @@ class Store {
 
   public importStudents(newStudents: Student[], replace: boolean = false) {
     if (replace) {
-      this.state.students = newStudents;
+      this.state.students = sortStudentsByNim(newStudents);
     } else {
       newStudents.forEach((ns) => {
         const idx = this.state.students.findIndex((s) => s.nim.trim() === ns.nim.trim());
@@ -346,6 +354,7 @@ class Store {
           this.state.students.push(ns);
         }
       });
+      this.state.students = sortStudentsByNim(this.state.students);
     }
     this.save();
 
