@@ -60,7 +60,11 @@ export default function AttendanceSheetPrint({
 
   const formattedDate = (() => {
     try {
-      const d = new Date(session.date);
+      const parts = session.date.split('-');
+      const d =
+        parts.length === 3
+          ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+          : new Date(session.date);
       if (isNaN(d.getTime())) return `${course.day}, ${session.date}`;
       return d.toLocaleDateString('id-ID', {
         weekday: 'long',
@@ -70,6 +74,23 @@ export default function AttendanceSheetPrint({
       });
     } catch {
       return `${course.day}, ${session.date}`;
+    }
+  })();
+
+  const formattedDateOnly = (() => {
+    try {
+      const parts = session.date.split('-');
+      const d =
+        parts.length === 3
+          ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+          : new Date(session.date);
+      return d.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    } catch {
+      return session.date;
     }
   })();
 
@@ -257,7 +278,7 @@ export default function AttendanceSheetPrint({
 
             <div className="text-center space-y-16">
               <p className="text-stone-800 font-medium">
-                Cirebon, {new Date(session.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br />
+                Cirebon, {formattedDateOnly}<br />
                 Penanggung Jawab (PJ) Mata Kuliah
               </p>
               <div className="pt-2 border-b border-stone-900 w-52 mx-auto">

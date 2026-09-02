@@ -76,9 +76,17 @@ export default function PjDashboard() {
   // Notification feedback
   const [toastNotice, setToastNotice] = useState<string | null>(null);
 
+  // Helper for accurate local date string YYYY-MM-DD (immune to UTC offset issues)
+  const getLocalDateString = (d: Date = new Date()): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   // New session manual form
   const [newMeetingNum, setNewMeetingNum] = useState<number>(1);
-  const [newDate, setNewDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [newDate, setNewDate] = useState<string>(getLocalDateString());
   const [newStartTime, setNewStartTime] = useState<string>('08:00');
   const [newEndTime, setNewEndTime] = useState<string>('09:40');
   const [newTopic, setNewTopic] = useState<string>('');
@@ -97,7 +105,7 @@ export default function PjDashboard() {
   // Real-time day & date information
   const today = useMemo(() => new Date(), []);
   const todayDayName = useMemo(() => INDONESIAN_DAYS[today.getDay()], [today]);
-  const todayDateStr = useMemo(() => today.toISOString().split('T')[0], [today]);
+  const todayDateStr = useMemo(() => getLocalDateString(today), [today]);
   const todayFormatted = useMemo(
     () =>
       today.toLocaleDateString('id-ID', {

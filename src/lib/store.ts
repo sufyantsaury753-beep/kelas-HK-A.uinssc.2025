@@ -506,9 +506,14 @@ class Store {
 
       if (isSupabaseConfigured()) {
         supabase.from('attendance_sessions').update({
+          date: this.state.sessions[idx].date,
+          meeting_number: this.state.sessions[idx].meetingNumber,
+          start_time: this.state.sessions[idx].startTime,
+          end_time: this.state.sessions[idx].endTime,
           is_open_for_self_checkin: this.state.sessions[idx].isOpenForSelfCheckin,
           checkin_code: this.state.sessions[idx].checkinCode,
           topic: this.state.sessions[idx].topic,
+          dosen_present: this.state.sessions[idx].dosenPresent,
         }).eq('id', sessionId).then();
       }
     }
