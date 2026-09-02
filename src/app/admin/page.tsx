@@ -23,25 +23,59 @@ import {
   Bell,
   Database,
   Calendar,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Printer,
+  ArrowRight,
   Clock,
   MapPin,
   Save,
   Check,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
-import { Course, Student, Announcement, AuthSession, Gender } from '@/lib/types';
+import {
+  Course,
+  Student,
+  Announcement,
+  AuthSession,
+  Gender,
+  AttendanceSession,
+  AttendanceRecord,
+  AttendanceStatus,
+} from '@/lib/types';
 import { parsePdfRoster, parseCsvRoster } from '@/lib/pdfParser';
+import AttendanceSheetPrint from '@/components/attendance/AttendanceSheetPrint';
+import { exportSingleSessionCsv } from '@/lib/exportUtils';
 import confetti from 'canvas-confetti';
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [auth, setAuth] = useState<AuthSession | null>(null);
-  const [activeTab, setActiveTab] = useState<'PJ' | 'STUDENTS' | 'ANNOUNCEMENTS' | 'SETTINGS'>('PJ');
+  const [activeTab, setActiveTab] = useState<'PJ' | 'REVISI_ABSENSI' | 'STUDENTS' | 'ANNOUNCEMENTS' | 'SETTINGS'>('PJ');
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [adminPin, setAdminPin] = useState<string>('');
+  const [sessions, setSessions] = useState<AttendanceSession[]>([]);
+  const [records, setRecords] = useState<AttendanceRecord[]>([]);
+
+  // Helper local date string YYYY-MM-DD
+  const getLocalDateString = (d: Date = new Date()): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  // Calendar & Attendance Intervention State
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
+  const [selectedRevDate, setSelectedRevDate] = useState<string>(getLocalDateString());
+  const [selectedRevCourseId, setSelectedRevCourseId] = useState<string>('');
+  const [searchRevStudent, setSearchRevStudent] = useState<string>('');
+  const [toastRev, setToastRev] = useState<string | null>(null);
+  const [showRevPrintModal, setShowRevPrintModal] = useState<boolean>(false);
 
   // Modals & Form States
   const [searchStudent, setSearchStudent] = useState('');
@@ -130,6 +164,8 @@ export default function AdminDashboard() {
       setStudents(appStore.getStudents());
       setAnnouncements(appStore.getAnnouncements());
       setAdminPin(appStore.getAdminPin());
+      setSessions(appStore.getSessions());
+      setRecords(appStore.getRecords());
     };
 
     update();
@@ -320,6 +356,18 @@ export default function AdminDashboard() {
         </button>
 
         <button
+          onClick={() => setActiveTab('REVISI_ABSENSI')}
+          className={`px-5 py-3 rounded-t-2xl text-xs sm:text-sm font-bold transition-all flex items-center space-x-2 border-b-2 ${
+            activeTab === 'REVISI_ABSENSI'
+              ? 'border-[#9d5f2f] text-[#9d5f2f] bg-white'
+              : 'border-transparent text-stone-500 hover:text-stone-800 hover:bg-stone-50'
+          }`}
+        >
+          <CalendarDays className="w-4 h-4 text-amber-500" />
+          <span>Intervensi Kalender Absensi</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('STUDENTS')}
           className={`px-5 py-3 rounded-t-2xl text-xs sm:text-sm font-bold transition-all flex items-center space-x-2 border-b-2 ${
             activeTab === 'STUDENTS'
@@ -466,7 +514,621 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* TAB 2: WHITELIST MAHASISWA & UPLOAD PDF */}
+      {/* TAB 2: INTERVENSI KALENDER ABSENSI */}
+      {activeTab === 'REVISI_ABSENSI' && (() => {
+        // 1. Calendar Calculations
+        const calYear = calendarMonth.getFullYear();
+        const calMonth = calendarMonth.getMonth();
+        const MONTH_NAMES_ID = [
+          'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+          'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        const DAY_NAMES_SHORT = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+        const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+        // Day index for the 1st of this month (Monday=0 ... Sunday=6)
+        const firstDayIdx = (new Date(calYear, calMonth, 1).getDay() + 6) % 7;
+
+        // 2. Selected Date Calculations
+        const parts = selectedRevDate.split('-').map(Number);
+        const selDateObj = parts.length === 3 ? new Date(parts[0], parts[1] - 1, parts[2]) : new Date();
+        const INDO_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const selDayName = INDO_DAYS[selDateObj.getDay()];
+        const selDateFormatted = `${selDayName}, ${String(selDateObj.getDate()).padStart(2, '0')} ${MONTH_NAMES_ID[selDateObj.getMonth()]} ${selDateObj.getFullYear()}`;
+
+        // Sessions that exist on selectedRevDate
+        const dateSessions = sessions.filter((s) => s.date === selectedRevDate);
+
+        // Courses scheduled on selDayName OR has a session on selectedRevDate
+        const relevantCourses = courses.filter(
+          (c) =>
+            c.day.toLowerCase().trim() === selDayName.toLowerCase().trim() ||
+            dateSessions.some((s) => s.courseId === c.id)
+        );
+
+        // Active selected course
+        const activeRevCourse =
+          relevantCourses.find((c) => c.id === selectedRevCourseId) ||
+          relevantCourses[0] ||
+          courses[0];
+
+        // Active session for selected course on selectedRevDate
+        const activeRevSession =
+          dateSessions.find((s) => s.courseId === activeRevCourse?.id) || null;
+
+        // Active records for this session
+        const activeRevRecords = activeRevSession
+          ? records.filter((r) => r.sessionId === activeRevSession.id)
+          : [];
+
+        // Counters
+        let hadirCount = 0;
+        let izinCount = 0;
+        let sakitCount = 0;
+        let dispensasiCount = 0;
+        let alpaCount = 0;
+
+        students.forEach((st) => {
+          const r = activeRevRecords.find((rec) => rec.studentNim.trim() === st.nim.trim());
+          const stt = r ? r.status : 'ALPA';
+          if (stt === 'HADIR') hadirCount++;
+          else if (stt === 'IZIN') izinCount++;
+          else if (stt === 'SAKIT') sakitCount++;
+          else if (stt === 'DISPENSASI') dispensasiCount++;
+          else alpaCount++;
+        });
+
+        const totalStudents = students.length;
+
+        // Handlers
+        const handlePrevMonth = () => {
+          setCalendarMonth(new Date(calYear, calMonth - 1, 1));
+        };
+
+        const handleNextMonth = () => {
+          setCalendarMonth(new Date(calYear, calMonth + 1, 1));
+        };
+
+        const handleJumpToday = () => {
+          const now = new Date();
+          setCalendarMonth(now);
+          setSelectedRevDate(getLocalDateString(now));
+        };
+
+        const handleStatusClick = (studentNim: string, newStatus: AttendanceStatus, notes?: string) => {
+          if (!activeRevSession || !activeRevCourse) return;
+          appStore.setAttendanceRecord(
+            activeRevSession.id,
+            activeRevCourse.id,
+            studentNim,
+            newStatus,
+            'ADMIN (Revisi)',
+            notes
+          );
+          setToastRev(`Presensi NIM ${studentNim} direvisi menjadi ${newStatus}!`);
+          setTimeout(() => setToastRev(null), 3000);
+        };
+
+        const handleMarkAllHadir = () => {
+          if (!activeRevSession || !activeRevCourse) return;
+          appStore.batchMarkAll(activeRevSession.id, activeRevCourse.id, 'HADIR', 'ADMIN (Revisi)');
+          setToastRev(`Semua ${students.length} mahasiswa ditandai HADIR!`);
+          setTimeout(() => setToastRev(null), 3000);
+        };
+
+        const handleCreateSessionForDate = () => {
+          if (!activeRevCourse) return;
+          const courseSessions = sessions.filter((s) => s.courseId === activeRevCourse.id);
+          const nextMeetingNumber = courseSessions.length + 1;
+          const timeParts = activeRevCourse.time.replace('WIB', '').split('-');
+          const startTime = timeParts[0]?.trim() || '08:00';
+          const endTime = timeParts[1]?.trim() || '09:40';
+
+          const created = appStore.createSession({
+            courseId: activeRevCourse.id,
+            meetingNumber: nextMeetingNumber,
+            date: selectedRevDate,
+            startTime,
+            endTime,
+            topic: `Perkuliahan Pertemuan ke-${nextMeetingNumber}`,
+            dosenPresent: true,
+            isOpenForSelfCheckin: false,
+            createdByNim: auth.nim || 'ADMIN',
+          });
+
+          appStore.batchMarkAll(created.id, activeRevCourse.id, 'HADIR', 'ADMIN (Revisi)');
+          setSelectedRevCourseId(activeRevCourse.id);
+          setToastRev(`Sesi pertemuan ke-${nextMeetingNumber} berhasil dibuat untuk tanggal ${selectedRevDate}!`);
+          setTimeout(() => setToastRev(null), 3000);
+        };
+
+        const handleDeleteRevSession = () => {
+          if (!activeRevSession) return;
+          if (confirm(`Hapus sesi pertemuan tanggal ${selectedRevDate} untuk mata kuliah ${activeRevCourse.name}?`)) {
+            appStore.deleteSession(activeRevSession.id);
+            setToastRev('Sesi pertemuan berhasil dihapus.');
+            setTimeout(() => setToastRev(null), 3000);
+          }
+        };
+
+        const filteredRevStudents = students.filter(
+          (s) =>
+            s.name.toLowerCase().includes(searchRevStudent.toLowerCase()) ||
+            s.nim.includes(searchRevStudent)
+        );
+
+        return (
+          <div className="space-y-6">
+            {/* Toast Feedback */}
+            {toastRev && (
+              <div className="p-4 bg-emerald-600 text-white rounded-2xl shadow-lg flex items-center justify-between text-xs font-bold animate-fade-in">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                  <span>{toastRev}</span>
+                </div>
+                <button onClick={() => setToastRev(null)} className="text-white/80 hover:text-white">✕</button>
+              </div>
+            )}
+
+            {/* Top Overview & Instructions */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 flex items-center space-x-1">
+                    <Calendar className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Mode Intervensi Absensi Superadmin</span>
+                  </span>
+                  <span className="text-xs text-stone-500 font-mono">Revisi & Backfill Tanggal</span>
+                </div>
+                <h2 className="text-lg font-bold text-stone-900 mt-1">
+                  Kalender Intervensi & Koreksi Absensi Perkuliahan
+                </h2>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Pilih tanggal mana saja pada kalender (hari ini atau lampau). Sistem otomatis membuka jadwal hari tersebut dan mengizinkan Anda merevisi kehadiran mahasiswa.
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handleJumpToday}
+                  className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold rounded-xl transition-all flex items-center space-x-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Lompat ke Hari Ini</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Layout Grid: Left Calendar Widget + Right Intervention Workspace */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              
+              {/* LEFT COLUMN: INTERACTIVE MONTHLY CALENDAR */}
+              <div className="lg:col-span-5 bg-white rounded-3xl p-5 sm:p-6 border border-stone-200 shadow-sm space-y-4">
+                {/* Calendar Navigation Header */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-black text-stone-900">
+                      {MONTH_NAMES_ID[calMonth]} {calYear}
+                    </h3>
+                    <p className="text-[11px] text-stone-500">Klik tanggal untuk membuka absensi</p>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      onClick={handlePrevMonth}
+                      className="p-2 rounded-xl hover:bg-stone-100 text-stone-600 transition-colors"
+                      title="Bulan Sebelumnya"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={handleNextMonth}
+                      className="p-2 rounded-xl hover:bg-stone-100 text-stone-600 transition-colors"
+                      title="Bulan Berikutnya"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Day Names Header */}
+                <div className="grid grid-cols-7 gap-1 text-center font-bold text-[11px] text-stone-400 py-1 border-b border-stone-100">
+                  {DAY_NAMES_SHORT.map((dn, idx) => (
+                    <div key={idx} className={idx >= 5 ? 'text-rose-400' : ''}>{dn}</div>
+                  ))}
+                </div>
+
+                {/* Calendar Days Grid */}
+                <div className="grid grid-cols-7 gap-1.5 pt-1">
+                  {/* Empty cells for padding */}
+                  {Array.from({ length: firstDayIdx }).map((_, i) => (
+                    <div key={`empty-${i}`} className="h-10 rounded-xl bg-stone-50/50" />
+                  ))}
+
+                  {/* Month days */}
+                  {Array.from({ length: daysInMonth }).map((_, i) => {
+                    const dayNum = i + 1;
+                    const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                    const isSelected = dateStr === selectedRevDate;
+                    const isToday = dateStr === getLocalDateString();
+                    const daySessions = sessions.filter((s) => s.date === dateStr);
+                    const hasSession = daySessions.length > 0;
+
+                    return (
+                      <button
+                        key={dateStr}
+                        onClick={() => {
+                          setSelectedRevDate(dateStr);
+                          setSelectedRevCourseId('');
+                        }}
+                        className={`h-11 rounded-2xl flex flex-col items-center justify-center relative transition-all text-xs font-bold ${
+                          isSelected
+                            ? 'bg-[#9d5f2f] text-white shadow-md shadow-[#9d5f2f]/30 scale-105 z-10'
+                            : isToday
+                            ? 'bg-amber-50 text-[#9d5f2f] border-2 border-amber-400 hover:bg-amber-100'
+                            : hasSession
+                            ? 'bg-emerald-50/80 text-emerald-900 hover:bg-emerald-100 border border-emerald-200'
+                            : 'hover:bg-stone-100 text-stone-700'
+                        }`}
+                      >
+                        <span>{dayNum}</span>
+                        {/* Indicator dot if session exists */}
+                        {hasSession && (
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full mt-0.5 ${
+                              isSelected ? 'bg-amber-300' : 'bg-emerald-600'
+                            }`}
+                            title={`${daySessions.length} sesi absensi`}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Calendar Legend */}
+                <div className="pt-3 border-t border-stone-100 flex flex-wrap items-center justify-between text-[11px] text-stone-500 gap-2">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    <span>Ada Sesi Absensi</span>
+                  </div>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="w-2.5 h-2.5 rounded-md border-2 border-amber-400 bg-amber-50" />
+                    <span>Hari Ini</span>
+                  </div>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="w-2.5 h-2.5 rounded-md bg-[#9d5f2f]" />
+                    <span>Terpilih</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: ATTENDANCE REVISION WORKSPACE */}
+              <div className="lg:col-span-7 space-y-5">
+                {/* Active Date Header Card */}
+                <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200 shadow-sm space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-black px-3 py-1 rounded-full bg-[#9d5f2f] text-white">
+                          📅 {selDateFormatted}
+                        </span>
+                        <span className="text-xs font-bold text-stone-500">
+                          {dateSessions.length} Sesi Terbuka
+                        </span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-black text-stone-900 mt-2">
+                        Jadwal & Presensi Hari {selDayName}
+                      </h3>
+                    </div>
+
+                    {/* Quick Date Picker */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-stone-500 font-medium">Ubah Tanggal:</span>
+                      <input
+                        type="date"
+                        value={selectedRevDate}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            setSelectedRevDate(e.target.value);
+                            setSelectedRevCourseId('');
+                          }
+                        }}
+                        className="bg-stone-50 border border-stone-300 rounded-xl px-2 py-1 text-xs font-bold text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#9d5f2f]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Course Selector for Selected Day */}
+                  {relevantCourses.length === 0 ? (
+                    <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 text-center text-xs text-stone-500">
+                      Tidak ada jadwal kuliah reguler pada hari {selDayName}. Anda dapat memilih mata kuliah lain di bawah jika ada kelas pengganti.
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="text-xs font-bold text-stone-700 block mb-2">
+                        Pilih Mata Kuliah Hari {selDayName}:
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {relevantCourses.map((c) => {
+                          const isCur = c.id === activeRevCourse?.id;
+                          const hasSess = dateSessions.some((s) => s.courseId === c.id);
+
+                          return (
+                            <button
+                              key={c.id}
+                              onClick={() => setSelectedRevCourseId(c.id)}
+                              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+                                isCur
+                                  ? 'bg-stone-900 text-white shadow-md'
+                                  : 'bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-200'
+                              }`}
+                            >
+                              <span>{c.name}</span>
+                              {hasSess ? (
+                                <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500 text-white font-black">
+                                  ✓ Sesi Ada
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-stone-200 text-stone-600">
+                                  Kosong
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* ACTIVE COURSE INTERVENTION WORKSPACE */}
+                {activeRevCourse && (
+                  <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200 shadow-sm space-y-5">
+                    {/* Course Details & Actions Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-900">
+                            {activeRevCourse.code} • {activeRevCourse.sks} SKS
+                          </span>
+                          <span className="text-xs text-stone-500 font-mono">
+                            {activeRevCourse.time} • {activeRevCourse.room}
+                          </span>
+                        </div>
+                        <h4 className="text-base font-black text-stone-900 mt-1">
+                          {activeRevCourse.name}
+                        </h4>
+                        <p className="text-xs text-stone-500">
+                          Dosen Pengampu: <strong>{activeRevCourse.dosen}</strong>
+                        </p>
+                      </div>
+
+                      {/* Export / Print Actions if session exists */}
+                      {activeRevSession && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => setShowRevPrintModal(true)}
+                            className="px-3 py-1.5 bg-stone-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition-all flex items-center space-x-1.5 shadow-xs"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Cetak PDF</span>
+                          </button>
+                          <button
+                            onClick={() =>
+                              exportSingleSessionCsv(
+                                activeRevCourse,
+                                activeRevSession,
+                                students,
+                                activeRevRecords
+                              )
+                            }
+                            className="px-3 py-1.5 bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 text-xs font-semibold rounded-xl shadow-xs transition-colors flex items-center space-x-1.5"
+                          >
+                            <Download className="w-3.5 h-3.5 text-emerald-700" />
+                            <span>Unduh CSV</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* CASE 1: SESSION EXISTS */}
+                    {activeRevSession ? (
+                      <div className="space-y-4">
+                        {/* Session Metadata Banner */}
+                        <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                          <div>
+                            <div className="flex items-center space-x-2 font-bold text-amber-950">
+                              <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900">
+                                Pertemuan Ke-{activeRevSession.meetingNumber}
+                              </span>
+                              <span>{activeRevSession.topic}</span>
+                            </div>
+                            <p className="text-amber-800 text-[11px] mt-1">
+                              Waktu: {activeRevSession.startTime} - {activeRevSession.endTime} WIB • Dosen Hadir: {activeRevSession.dosenPresent ? 'Ya' : 'Tidak'}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={handleDeleteRevSession}
+                              className="px-2.5 py-1 text-rose-700 hover:bg-rose-100 rounded-lg text-xs font-semibold transition-colors flex items-center space-x-1"
+                              title="Hapus sesi ini"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Hapus Sesi</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Status Summary Counters & Bulk Mark Hadir */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 rounded-2xl bg-stone-50 border border-stone-200">
+                          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                            <span className="font-bold text-stone-600 mr-1 text-[11px]">Rekap:</span>
+                            <span className="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-900 font-bold text-[11px]">
+                              Hadir: {hadirCount}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-lg bg-blue-100 text-blue-900 font-bold text-[11px]">
+                              Izin: {izinCount}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 font-bold text-[11px]">
+                              Sakit: {sakitCount}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-lg bg-purple-100 text-purple-900 font-bold text-[11px]">
+                              Dispen: {dispensasiCount}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-lg bg-rose-100 text-rose-900 font-bold text-[11px]">
+                              Alfa: {alpaCount}
+                            </span>
+                          </div>
+
+                          <button
+                            onClick={handleMarkAllHadir}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center space-x-1.5 self-start sm:self-auto"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Tandai Semua Hadir</span>
+                          </button>
+                        </div>
+
+                        {/* Student Search */}
+                        <div className="relative">
+                          <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            placeholder="Cari nama atau NIM mahasiswa yang ingin direvisi..."
+                            value={searchRevStudent}
+                            onChange={(e) => setSearchRevStudent(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 rounded-xl border border-stone-300 text-xs focus:ring-2 focus:ring-[#9d5f2f] focus:outline-none"
+                          />
+                        </div>
+
+                        {/* Student Attendance List Table for Revision */}
+                        <div className="border border-stone-200 rounded-2xl overflow-hidden">
+                          <div className="max-h-96 overflow-y-auto">
+                            <table className="w-full text-left text-xs">
+                              <thead className="bg-stone-100 text-stone-700 font-bold uppercase tracking-wider text-[10px] sticky top-0 z-10 border-b border-stone-200">
+                                <tr>
+                                  <th className="py-2.5 px-3 text-center w-10">No</th>
+                                  <th className="py-2.5 px-3 w-28">NIM</th>
+                                  <th className="py-2.5 px-3">Nama Mahasiswa</th>
+                                  <th className="py-2.5 px-3 text-center w-64">Intervensi Status</th>
+                                  <th className="py-2.5 px-3 w-40">Keterangan</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-stone-100 bg-white">
+                                {filteredRevStudents.map((st, index) => {
+                                  const rec = activeRevRecords.find(
+                                    (r) => r.studentNim.trim() === st.nim.trim()
+                                  );
+                                  const curStatus = rec ? rec.status : 'ALPA';
+
+                                  return (
+                                    <tr key={st.nim} className="hover:bg-stone-50/80 transition-colors">
+                                      <td className="py-2.5 px-3 text-center text-stone-400 text-[11px]">
+                                        {index + 1}
+                                      </td>
+                                      <td className="py-2.5 px-3 font-mono text-[#9d5f2f] font-bold">
+                                        {st.nim}
+                                      </td>
+                                      <td className="py-2.5 px-3 font-semibold text-stone-900">
+                                        <div>{st.name}</div>
+                                        {rec?.verifiedBy && (
+                                          <span className="text-[10px] font-normal text-stone-400">
+                                            Oleh: {rec.verifiedBy}
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="py-2 px-3 text-center">
+                                        <div className="inline-flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200">
+                                          {(['HADIR', 'IZIN', 'SAKIT', 'DISPENSASI', 'ALPA'] as AttendanceStatus[]).map((statusOption) => {
+                                            const isSelected = curStatus === statusOption;
+                                            return (
+                                              <button
+                                                key={statusOption}
+                                                onClick={() => handleStatusClick(st.nim, statusOption, rec?.notes)}
+                                                className={`px-2 py-1 rounded-lg text-[10px] font-extrabold transition-all ${
+                                                  isSelected
+                                                    ? statusOption === 'HADIR'
+                                                      ? 'bg-emerald-600 text-white shadow-xs'
+                                                      : statusOption === 'IZIN'
+                                                      ? 'bg-blue-600 text-white shadow-xs'
+                                                      : statusOption === 'SAKIT'
+                                                      ? 'bg-amber-600 text-white shadow-xs'
+                                                      : statusOption === 'DISPENSASI'
+                                                      ? 'bg-purple-600 text-white shadow-xs'
+                                                      : 'bg-rose-600 text-white shadow-xs'
+                                                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
+                                                }`}
+                                              >
+                                                {statusOption === 'DISPENSASI' ? 'DISPEN' : statusOption}
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </td>
+                                      <td className="py-2 px-3">
+                                        <input
+                                          type="text"
+                                          placeholder="Catatan..."
+                                          defaultValue={rec?.notes || ''}
+                                          onBlur={(e) => {
+                                            if (e.target.value !== (rec?.notes || '')) {
+                                              handleStatusClick(st.nim, curStatus, e.target.value);
+                                            }
+                                          }}
+                                          className="w-full px-2 py-1 rounded-lg border border-stone-200 text-[11px] focus:ring-1 focus:ring-[#9d5f2f] focus:outline-none"
+                                        />
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* CASE 2: NO SESSION YET FOR THIS COURSE ON SELECTED DATE */
+                      <div className="py-12 px-6 rounded-3xl border-2 border-dashed border-stone-200 text-center space-y-4 bg-stone-50/50">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto shadow-sm">
+                          <CalendarDays className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-bold text-stone-900">
+                            Belum Ada Sesi Presensi Tercatat
+                          </h4>
+                          <p className="text-xs text-stone-500 max-w-md mx-auto mt-1">
+                            Mata kuliah <strong>{activeRevCourse.name}</strong> belum memiliki berita acara atau lembar presensi pada tanggal <strong>{selDateFormatted}</strong>.
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleCreateSessionForDate}
+                          className="px-5 py-2.5 bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold rounded-xl shadow-md transition-all inline-flex items-center space-x-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Buka / Buat Sesi Presensi untuk Tanggal Ini</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Print Official Sheet Modal */}
+            {showRevPrintModal && activeRevCourse && activeRevSession && (
+              <AttendanceSheetPrint
+                course={activeRevCourse}
+                session={activeRevSession}
+                students={students}
+                records={activeRevRecords}
+                onClose={() => setShowRevPrintModal(false)}
+              />
+            )}
+          </div>
+        );
+      })()}
+
+      {/* TAB 3: WHITELIST MAHASISWA & UPLOAD PDF */}
       {activeTab === 'STUDENTS' && (
         <div className="space-y-6">
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
