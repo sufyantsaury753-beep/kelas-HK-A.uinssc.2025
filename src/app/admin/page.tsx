@@ -133,23 +133,39 @@ export default function AdminDashboard() {
 
   // Course Edit Modal State (Setting Nama, Dosen, Hari, Jam & Ruang)
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [editCourseCode, setEditCourseCode] = useState('');
   const [editCourseName, setEditCourseName] = useState('');
   const [editCourseDosen, setEditCourseDosen] = useState('');
   const [editCourseDay, setEditCourseDay] = useState('Senin');
   const [editCourseTime, setEditCourseTime] = useState('');
   const [editCourseRoom, setEditCourseRoom] = useState('');
   const [editCourseSks, setEditCourseSks] = useState<number>(2);
+  const [editCourseSemester, setEditCourseSemester] = useState<number>(3);
   const [editCourseDrive, setEditCourseDrive] = useState('');
   const [courseEditNotice, setCourseEditNotice] = useState<string | null>(null);
 
+  // Add Course Modal State
+  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
+  const [newCourseCode, setNewCourseCode] = useState('');
+  const [newCourseName, setNewCourseName] = useState('');
+  const [newCourseDosen, setNewCourseDosen] = useState('');
+  const [newCourseDay, setNewCourseDay] = useState('Senin');
+  const [newCourseTime, setNewCourseTime] = useState('07:30 - 09:10 WIB');
+  const [newCourseRoom, setNewCourseRoom] = useState('G 204');
+  const [newCourseSks, setNewCourseSks] = useState<number>(2);
+  const [newCourseSemester, setNewCourseSemester] = useState<number>(4);
+  const [newCourseDrive, setNewCourseDrive] = useState('');
+
   const handleOpenEditCourse = (course: Course) => {
     setEditingCourse(course);
-    setEditCourseName(course.name);
-    setEditCourseDosen(course.dosen);
-    setEditCourseDay(course.day);
-    setEditCourseTime(course.time);
-    setEditCourseRoom(course.room);
-    setEditCourseSks(course.sks);
+    setEditCourseCode(course.code || '');
+    setEditCourseName(course.name || '');
+    setEditCourseDosen(course.dosen || '');
+    setEditCourseDay(course.day || 'Senin');
+    setEditCourseTime(course.time || '');
+    setEditCourseRoom(course.room || '');
+    setEditCourseSks(course.sks !== undefined && course.sks !== null ? course.sks : 2);
+    setEditCourseSemester(course.semester || 3);
     setEditCourseDrive(course.driveLink || '');
     setCourseEditNotice(null);
   };
@@ -159,12 +175,14 @@ export default function AdminDashboard() {
     if (!editingCourse) return;
 
     appStore.updateCourse(editingCourse.id, {
+      code: editCourseCode.trim() || editingCourse.code,
       name: editCourseName.trim(),
       dosen: editCourseDosen.trim(),
       day: editCourseDay,
       time: editCourseTime.trim(),
       room: editCourseRoom.trim(),
       sks: Number(editCourseSks),
+      semester: Number(editCourseSemester) || 3,
       driveLink: editCourseDrive.trim(),
     });
 
@@ -177,6 +195,63 @@ export default function AdminDashboard() {
       setEditingCourse(null);
       setCourseEditNotice(null);
     }, 1000);
+  };
+
+  const handleCreateCourse = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCourseName.trim() || !newCourseCode.trim()) {
+      alert('Nama dan Kode Mata Kuliah wajib diisi!');
+      return;
+    }
+
+    // Generate unique slug id
+    const baseSlug = newCourseName
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    const courseId = baseSlug || `mk-${Date.now()}`;
+
+    const newCourse: Course = {
+      id: courseId,
+      code: newCourseCode.trim().toUpperCase(),
+      name: newCourseName.trim(),
+      dosen: newCourseDosen.trim() || '-',
+      day: newCourseDay,
+      time: newCourseTime.trim() || '07:30 - 09:10 WIB',
+      room: newCourseRoom.trim() || 'G 204',
+      sks: Number(newCourseSks),
+      semester: Number(newCourseSemester) || 4,
+      pjNims: [],
+      description: `Mata kuliah ${newCourseName.trim()} Semester ${newCourseSemester || 4}`,
+      driveLink: newCourseDrive.trim() || '',
+      enrolledStudentNims: students.map((s) => s.nim),
+    };
+
+    const success = appStore.addCourse(newCourse);
+    if (success) {
+      setShowAddCourseModal(false);
+      setNewCourseCode('');
+      setNewCourseName('');
+      setNewCourseDosen('');
+      setNewCourseDrive('');
+      try {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+      } catch {}
+      alert(`Mata kuliah "${newCourse.name}" (${newCourse.code}) berhasil ditambahkan!`);
+    } else {
+      alert(`Gagal: Mata kuliah dengan ID "${courseId}" sudah terdaftar.`);
+    }
+  };
+
+  const handleDeleteCourse = (course: Course) => {
+    const confirmation = confirm(
+      `Apakah Anda yakin ingin MENGHAPUS mata kuliah "${course.name}" (${course.code})?\n\nPERHATIAN:\nSeluruh riwayat presensi, sesi pertemuan, dan materi terkait mata kuliah ini akan ikut terhapus secara permanen.`
+    );
+    if (!confirmation) return;
+
+    appStore.deleteCourse(course.id);
+    alert(`Mata kuliah "${course.name}" berhasil dihapus.`);
   };
 
   // Course Enrollment Modal State (KRS / Peserta MK)
@@ -395,7 +470,7 @@ export default function AdminDashboard() {
             Panel Kendali Utama Administrator
           </h1>
           <p className="text-xs sm:text-sm text-stone-400 mt-0.5">
-            Kelola penugasan PJ 11 mata kuliah, whitelist mahasiswa dari PDF, pengumuman, dan sistem presensi.
+            Kelola mata kuliah ({courses.length} MK), penugasan PJ, whitelist mahasiswa, pengumuman, dan sistem presensi.
           </p>
         </div>
 
@@ -427,7 +502,7 @@ export default function AdminDashboard() {
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          <span>Penugasan PJ (11 Mata Kuliah)</span>
+          <span>Penugasan PJ & Mata Kuliah ({courses.length})</span>
         </button>
 
         <button
@@ -479,21 +554,30 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      {/* TAB 1: PENUGASAN PJ 11 MATA KULIAH */}
+      {/* TAB 1: PENUGASAN PJ & KELOLA MATA KULIAH */}
       {activeTab === 'PJ' && (
         <div className="space-y-6">
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-stone-900">
-                Distribusi Penanggung Jawab (PJ) Per Mata Kuliah
+                Kelola Mata Kuliah & Penugasan PJ ({courses.length} Mata Kuliah)
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                Admin dapat memilih siapa saja dari keseluruhan {students.length} mahasiswa kelas untuk menjadi PJ di masing-masing 11 mata kuliah.
+                Admin dapat menambah mata kuliah baru, mengubah data perkuliahan (SKS, nama, dosen, semester), mengatur PJ, hingga menghapus mata kuliah untuk semester berikutnya.
               </p>
             </div>
-            <span className="text-xs font-semibold px-3 py-1 bg-amber-100 text-amber-900 rounded-full w-fit">
-              11 Mata Kuliah Terdaftar
-            </span>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                onClick={() => setShowAddCourseModal(true)}
+                className="px-4 py-2.5 bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold rounded-2xl shadow-md transition-all flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tambah Mata Kuliah</span>
+              </button>
+              <span className="text-xs font-semibold px-3 py-2 bg-amber-100 text-amber-900 rounded-2xl w-fit">
+                {courses.length} Terdaftar
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -511,7 +595,7 @@ export default function AdminDashboard() {
                         {crs.code}
                       </span>
                       <span className="text-[11px] font-semibold text-stone-500">
-                        {crs.sks} SKS • {crs.day}
+                        {crs.sks} SKS • Smt {crs.semester || 3} • {crs.day}
                       </span>
                     </div>
 
@@ -590,6 +674,14 @@ export default function AdminDashboard() {
                       <span>
                         Atur Peserta Mahasiswa ({crs.enrolledStudentNims && crs.enrolledStudentNims.length > 0 ? crs.enrolledStudentNims.length : students.length} Mhs)
                       </span>
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteCourse(crs)}
+                      className="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl border border-rose-200/80 transition-all flex items-center justify-center space-x-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Hapus Mata Kuliah Ini</span>
                     </button>
                   </div>
                 </div>
@@ -1843,15 +1935,27 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1">Nama Mata Kuliah</label>
-                <input
-                  type="text"
-                  value={editCourseName}
-                  onChange={(e) => setEditCourseName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
-                  required
-                />
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-1">
+                  <label className="block font-semibold text-stone-700 mb-1">Kode MK</label>
+                  <input
+                    type="text"
+                    value={editCourseCode}
+                    onChange={(e) => setEditCourseCode(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] font-mono uppercase"
+                    required
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block font-semibold text-stone-700 mb-1">Nama Mata Kuliah</label>
+                  <input
+                    type="text"
+                    value={editCourseName}
+                    onChange={(e) => setEditCourseName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                    required
+                  />
+                </div>
               </div>
 
               <div>
@@ -1866,7 +1970,34 @@ export default function AdminDashboard() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">Semester</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={8}
+                    value={editCourseSemester}
+                    onChange={(e) => setEditCourseSemester(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">Bobot SKS</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={6}
+                    value={editCourseSks}
+                    onChange={(e) => setEditCourseSks(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                    required
+                  />
+                  <p className="text-[10px] text-stone-400 mt-0.5">Bisa 0 SKS</p>
+                </div>
+
                 <div>
                   <label className="block font-semibold text-stone-700 mb-1">Hari Perkuliahan</label>
                   <select
@@ -1881,19 +2012,6 @@ export default function AdminDashboard() {
                     <option value="Jumat">Jumat</option>
                     <option value="Sabtu">Sabtu</option>
                   </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-stone-700 mb-1">Bobot SKS</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={6}
-                    value={editCourseSks}
-                    onChange={(e) => setEditCourseSks(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
-                    required
-                  />
                 </div>
               </div>
 
@@ -1958,6 +2076,175 @@ export default function AdminDashboard() {
                 >
                   <Save className="w-4 h-4" />
                   <span>Simpan Perubahan</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: TAMBAH MATA KULIAH BARU */}
+      {showAddCourseModal && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#9d5f2f] to-[#753e1f] p-5 text-white flex items-start justify-between">
+              <div>
+                <span className="text-xs font-mono bg-white/20 px-2 py-0.5 rounded text-amber-200 uppercase">
+                  Mata Kuliah Baru
+                </span>
+                <h3 className="text-base font-bold mt-1">
+                  Tambah Mata Kuliah Baru
+                </h3>
+                <p className="text-xs text-amber-100/90 mt-0.5">
+                  Tambahkan mata kuliah baru untuk semester ini atau semester depan.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowAddCourseModal(false)}
+                className="text-white/80 hover:text-white p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleCreateCourse} className="p-6 overflow-y-auto space-y-3.5 flex-1 text-xs">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-1">
+                  <label className="block font-semibold text-stone-700 mb-1">Kode MK</label>
+                  <input
+                    type="text"
+                    placeholder="HKI-401"
+                    value={newCourseCode}
+                    onChange={(e) => setNewCourseCode(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] font-mono uppercase"
+                    required
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block font-semibold text-stone-700 mb-1">Nama Mata Kuliah</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Hukum Acara Perdata"
+                    value={newCourseName}
+                    onChange={(e) => setNewCourseName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">Dosen Pengampu</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Dr. H. Ahmad Dahlan, M.Ag."
+                  value={newCourseDosen}
+                  onChange={(e) => setNewCourseDosen(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">Semester</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={8}
+                    value={newCourseSemester}
+                    onChange={(e) => setNewCourseSemester(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">Bobot SKS</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={6}
+                    value={newCourseSks}
+                    onChange={(e) => setNewCourseSks(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                    required
+                  />
+                  <p className="text-[10px] text-stone-400 mt-0.5">Bisa 0 SKS</p>
+                </div>
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">Hari Kuliah</label>
+                  <select
+                    value={newCourseDay}
+                    onChange={(e) => setNewCourseDay(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] bg-white font-medium"
+                  >
+                    <option value="Senin">Senin</option>
+                    <option value="Selasa">Selasa</option>
+                    <option value="Rabu">Rabu</option>
+                    <option value="Kamis">Kamis</option>
+                    <option value="Jumat">Jumat</option>
+                    <option value="Sabtu">Sabtu</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Jam Perkuliahan
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: 07.30 - 09.10 WIB"
+                  value={newCourseTime}
+                  onChange={(e) => setNewCourseTime(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] font-mono"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Ruang Perkuliahan
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Ruang 204 Gedung FASYA"
+                  value={newCourseRoom}
+                  onChange={(e) => setNewCourseRoom(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Tautan Google Drive / RPS (Opsional)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://drive.google.com/..."
+                  value={newCourseDrive}
+                  onChange={(e) => setNewCourseDrive(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                />
+              </div>
+
+              <div className="pt-3 flex items-center space-x-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddCourseModal(false)}
+                  className="w-1/3 py-2.5 border border-stone-300 rounded-xl hover:bg-stone-50 font-semibold"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="w-2/3 py-2.5 bg-[#9d5f2f] hover:bg-[#864d23] text-white font-bold rounded-xl shadow-sm flex items-center justify-center space-x-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Mata Kuliah</span>
                 </button>
               </div>
             </form>

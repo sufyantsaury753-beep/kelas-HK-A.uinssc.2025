@@ -129,7 +129,7 @@ export default function Navbar() {
               href="/#matakuliah"
               className="px-3.5 py-2 rounded-lg text-sm font-medium text-stone-600 hover:text-[#9d5f2f] hover:bg-stone-50 transition-colors"
             >
-              11 Mata Kuliah
+              Mata Kuliah
             </Link>
             <button
               type="button"
@@ -252,7 +252,7 @@ export default function Navbar() {
               onClick={() => setIsMobileMenuOpen(false)}
               className="px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-[#9d5f2f] text-sm font-medium"
             >
-              11 Mata Kuliah & Repositori
+              Mata Kuliah & Repositori
             </Link>
             <Link
               href="/#pengumuman"
@@ -277,7 +277,7 @@ export default function Navbar() {
                 </div>
                 <div>
                   <p className="leading-tight text-stone-900 font-bold">Jadwal Kuliah Seminggu</p>
-                  <p className="text-[10px] text-stone-500 font-normal mt-0.5">Senin s.d. Sabtu • 11 Mata Kuliah</p>
+                  <p className="text-[10px] text-stone-500 font-normal mt-0.5">Senin s.d. Sabtu • {courses.length} Mata Kuliah</p>
                 </div>
               </div>
               <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 border border-amber-300">

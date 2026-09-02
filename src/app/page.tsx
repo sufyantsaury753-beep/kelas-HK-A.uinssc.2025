@@ -177,7 +177,7 @@ export default function HomePage() {
             Fakultas Syariah — UIN Siber Syekh Nurjati Cirebon
           </p>
           <p className="text-sm sm:text-base text-amber-100/90 font-medium max-w-2xl mx-auto mb-8 leading-relaxed">
-            Sistem Informasi Akademik, Presensi Perkuliahan Digital Mahasiswa & Repositori 11 Mata Kuliah.
+            Sistem Informasi Akademik, Presensi Perkuliahan Digital Mahasiswa & Repositori Perkuliahan.
           </p>
 
           {/* Action CTAs */}
@@ -355,7 +355,7 @@ export default function HomePage() {
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
-                  11 Mata Kuliah & Penyimpanan Materi
+                  {courses.length} Mata Kuliah & Repositori Materi
                 </h2>
                 <p className="text-xs text-stone-500 mt-0.5">
                   Daftar lengkap mata kuliah HK A 2025 beserta RPS, modul, materi dosen, dan berkas tugas.

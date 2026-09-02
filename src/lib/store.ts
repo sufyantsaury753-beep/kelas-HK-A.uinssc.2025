@@ -446,6 +446,59 @@ class Store {
     return this.state.courses.find((c) => c.id === id);
   }
 
+  public addCourse(course: Course): boolean {
+    const existing = this.getCourseById(course.id);
+    if (existing) {
+      return false;
+    }
+    this.state.courses.push(course);
+    this.save();
+
+    if (isSupabaseConfigured()) {
+      const payload: any = {
+        id: course.id,
+        code: course.code,
+        name: course.name,
+        dosen: course.dosen,
+        sks: course.sks,
+        semester: course.semester || 3,
+        day: course.day,
+        time: course.time,
+        room: course.room,
+        pj_nims: course.pjNims || [],
+        description: course.description || '',
+        drive_link: course.driveLink || '',
+        rps_link: course.rpsLink || null,
+      };
+      if (course.enrolledStudentNims) {
+        payload.enrolled_student_nims = course.enrolledStudentNims;
+      }
+      supabase.from('courses').insert(payload).then();
+    }
+    this.notify();
+    return true;
+  }
+
+  public deleteCourse(courseId: string): boolean {
+    const idx = this.state.courses.findIndex((c) => c.id === courseId);
+    if (idx < 0) return false;
+
+    this.state.courses.splice(idx, 1);
+    this.state.sessions = this.state.sessions.filter((s) => s.courseId !== courseId);
+    this.state.records = this.state.records.filter((r) => r.courseId !== courseId);
+    this.state.materials = this.state.materials.filter((m) => m.courseId !== courseId);
+    this.save();
+
+    if (isSupabaseConfigured()) {
+      supabase.from('courses').delete().eq('id', courseId).then();
+      supabase.from('attendance_sessions').delete().eq('course_id', courseId).then();
+      supabase.from('attendance_records').delete().eq('course_id', courseId).then();
+      supabase.from('course_materials').delete().eq('course_id', courseId).then();
+    }
+    this.notify();
+    return true;
+  }
+
   public updateCourse(id: string, updates: Partial<Course>) {
     const idx = this.state.courses.findIndex((c) => c.id === id);
     if (idx >= 0) {
@@ -454,6 +507,7 @@ class Store {
 
       if (isSupabaseConfigured()) {
         const updatePayload: any = {
+          code: this.state.courses[idx].code,
           name: this.state.courses[idx].name,
           pj_nims: this.state.courses[idx].pjNims,
           dosen: this.state.courses[idx].dosen,
@@ -461,6 +515,7 @@ class Store {
           day: this.state.courses[idx].day,
           time: this.state.courses[idx].time,
           sks: this.state.courses[idx].sks,
+          semester: this.state.courses[idx].semester,
           description: this.state.courses[idx].description,
           drive_link: this.state.courses[idx].driveLink,
           rps_link: this.state.courses[idx].rpsLink,

@@ -383,14 +383,14 @@ export default function MahasiswaDashboard() {
           <div>
             <h2 className="text-lg font-bold text-stone-900 flex items-center space-x-2">
               <BookOpen className="w-5 h-5 text-[#9d5f2f]" />
-              <span>Rekapitulasi Kehadiran 11 Mata Kuliah</span>
+              <span>Rekapitulasi Kehadiran Mata Kuliah ({courses.length})</span>
             </h2>
             <p className="text-xs text-stone-500 mt-0.5">
               Klik pada mata kuliah untuk melihat rincian kehadiran tiap pertemuan (Pertemuan 1 - 16).
             </p>
           </div>
           <span className="text-xs font-semibold px-3 py-1 rounded-full bg-stone-100 text-stone-700">
-            Total: 11 Mata Kuliah
+            Total: {courses.length} Mata Kuliah
           </span>
         </div>
 
