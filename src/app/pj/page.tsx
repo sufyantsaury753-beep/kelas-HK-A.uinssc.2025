@@ -49,12 +49,30 @@ const INDONESIAN_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 
 
 export default function PjDashboard() {
   const router = useRouter();
-  const [auth, setAuth] = useState<AuthSession | null>(null);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [sessions, setSessions] = useState<AttendanceSession[]>([]);
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [materials, setMaterials] = useState<CourseMaterial[]>([]);
+  const [auth, setAuth] = useState<AuthSession | null>(() => {
+    if (typeof window !== 'undefined') return appStore.getAuth();
+    return null;
+  });
+  const [courses, setCourses] = useState<Course[]>(() => {
+    if (typeof window !== 'undefined') return appStore.getCourses();
+    return [];
+  });
+  const [students, setStudents] = useState<Student[]>(() => {
+    if (typeof window !== 'undefined') return appStore.getStudents();
+    return [];
+  });
+  const [sessions, setSessions] = useState<AttendanceSession[]>(() => {
+    if (typeof window !== 'undefined') return appStore.getSessions();
+    return [];
+  });
+  const [records, setRecords] = useState<AttendanceRecord[]>(() => {
+    if (typeof window !== 'undefined') return appStore.getRecords();
+    return [];
+  });
+  const [materials, setMaterials] = useState<CourseMaterial[]>(() => {
+    if (typeof window !== 'undefined') return appStore.getMaterials();
+    return [];
+  });
 
   // Selected Course
   const [activeCourseId, setActiveCourseId] = useState<string>('');
@@ -183,15 +201,17 @@ export default function PjDashboard() {
     }, 3000);
   };
 
-  if (!auth) {
+  const activeCourse = courses.find((c) => c.id === activeCourseId) || courses[0];
+
+  if (!auth || !activeCourse) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-[#9d5f2f] border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-[70vh] flex flex-col items-center justify-center space-y-3">
+        <div className="w-10 h-10 border-4 border-[#9d5f2f] border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-xs text-stone-500 font-semibold animate-pulse">Menyiapkan Portal Penanggung Jawab...</p>
       </div>
     );
   }
 
-  const activeCourse = courses.find((c) => c.id === activeCourseId) || courses[0];
   const userNim = auth.nim || '';
   const isAdmin = auth.role === 'ADMIN';
 
@@ -416,13 +436,13 @@ export default function PjDashboard() {
   };
 
   // Filtered students for attendance search (sorted strictly by NIM ascending)
-  const filteredStudents = enrolledCourseStudents
+  const filteredStudents = (enrolledCourseStudents || [])
     .filter(
       (s) =>
-        s.name.toLowerCase().includes(searchStudent.toLowerCase()) ||
-        s.nim.includes(searchStudent)
+        (s?.name || '').toLowerCase().includes(searchStudent.toLowerCase()) ||
+        (s?.nim || '').includes(searchStudent)
     )
-    .sort((a, b) => a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true }));
+    .sort((a, b) => (a?.nim || '').trim().localeCompare((b?.nim || '').trim(), undefined, { numeric: true }));
 
   // Statistics for current session
   let hadirCount = 0;
@@ -431,8 +451,9 @@ export default function PjDashboard() {
   let alpaCount = 0;
   let dispensasiCount = 0;
 
-  enrolledCourseStudents.forEach((st) => {
-    const rec = currentRecords.find((r) => r.studentNim.trim() === st.nim.trim());
+  (enrolledCourseStudents || []).forEach((st) => {
+    const cleanStNim = (st?.nim || '').trim();
+    const rec = (currentRecords || []).find((r) => (r?.studentNim || '').trim() === cleanStNim);
     const status = rec ? rec.status : 'ALPA';
     if (status === 'HADIR') hadirCount++;
     else if (status === 'IZIN') izinCount++;
