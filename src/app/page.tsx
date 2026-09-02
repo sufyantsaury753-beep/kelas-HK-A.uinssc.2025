@@ -112,8 +112,8 @@ export default function HomePage() {
   }, []);
 
   // Helper to extract start time in minutes (e.g., "09:10 - 10:50 WIB" -> 9*60 + 10 = 550)
-  const parseStartTime = (timeStr: string): number => {
-    if (!timeStr) return 9999;
+  const parseStartTime = (timeStr?: string): number => {
+    if (!timeStr || typeof timeStr !== 'string') return 9999;
     const match = timeStr.match(/(\d{1,2})[:.](\d{2})/);
     if (!match) return 9999;
     return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
@@ -122,21 +122,22 @@ export default function HomePage() {
   // Today's day in Indonesian
   const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   const todayName = dayNames[new Date().getDay()];
-  const todayCourses = courses
-    .filter((c) => c.day.toLowerCase().trim() === todayName.toLowerCase().trim())
-    .sort((a, b) => parseStartTime(a.time) - parseStartTime(b.time));
+  const todayCourses = (courses || [])
+    .filter((c) => (c?.day || '').toLowerCase().trim() === todayName.toLowerCase().trim())
+    .sort((a, b) => parseStartTime(a?.time) - parseStartTime(b?.time));
 
-  const filteredCourses = courses.filter(
+  const filteredCourses = (courses || []).filter(
     (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.dosen.toLowerCase().includes(searchQuery.toLowerCase())
+      (c?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c?.code || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c?.dosen || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getPjNames = (pjNims: string[]) => {
-    const pjs = students.filter((s) => pjNims.includes(s.nim));
+  const getPjNames = (pjNims?: string[]) => {
+    if (!pjNims || !Array.isArray(pjNims) || pjNims.length === 0) return 'Belum ditugaskan';
+    const pjs = (students || []).filter((s) => s?.nim && pjNims.includes(s.nim.trim()));
     if (pjs.length === 0) return 'Belum ditugaskan';
-    return pjs.map((p) => p.name).join(', ');
+    return pjs.map((p) => p.name || p.nim).join(', ');
   };
 
   return (
@@ -197,7 +198,7 @@ export default function HomePage() {
                     className="px-6 py-3.5 rounded-2xl bg-white hover:bg-amber-50 text-[#8c4e24] font-black text-sm shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2"
                   >
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Presensi & Nilai Saya ({auth.name.split(' ')[0]})</span>
+                    <span>Presensi & Nilai Saya ({(auth.name || 'Mahasiswa').split(' ')[0]})</span>
                   </Link>
                   <Link
                     href="/pj"

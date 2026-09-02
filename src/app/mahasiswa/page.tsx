@@ -78,24 +78,24 @@ export default function MahasiswaDashboard() {
   }
 
   // Student assigned PJ courses
-  const studentNim = auth.nim || '';
-  const myPjCourses = courses.filter((c) =>
-    c.pjNims.some((pNim) => pNim.trim() === studentNim.trim())
+  const studentNim = (auth.nim || '').trim();
+  const myPjCourses = (courses || []).filter((c) =>
+    Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === studentNim)
   );
 
   // Active sessions open for self checkin (only for courses this student takes)
-  const openSessions = sessions.filter((s) => {
-    if (!s.isOpenForSelfCheckin) return false;
-    const crs = courses.find((c) => c.id === s.courseId);
+  const openSessions = (sessions || []).filter((s) => {
+    if (!s?.isOpenForSelfCheckin) return false;
+    const crs = (courses || []).find((c) => c?.id === s.courseId);
     if (!crs) return false;
-    if (crs.enrolledStudentNims && crs.enrolledStudentNims.length > 0) {
-      return crs.enrolledStudentNims.some((n) => n.trim() === studentNim.trim());
+    if (Array.isArray(crs.enrolledStudentNims) && crs.enrolledStudentNims.length > 0) {
+      return crs.enrolledStudentNims.some((n) => (n || '').trim() === studentNim);
     }
     return true;
   });
 
   // Calculate student attendance statistics
-  const myRecords = records.filter((r) => r.studentNim.trim() === studentNim.trim());
+  const myRecords = (records || []).filter((r) => (r?.studentNim || '').trim() === studentNim);
   const myHadir = myRecords.filter((r) => r.status === 'HADIR').length;
   const myIzin = myRecords.filter((r) => r.status === 'IZIN').length;
   const mySakit = myRecords.filter((r) => r.status === 'SAKIT').length;
@@ -425,7 +425,7 @@ export default function MahasiswaDashboard() {
                 >
                   <div className="flex items-start space-x-3.5">
                     <div className="w-10 h-10 rounded-xl bg-amber-100 text-[#9d5f2f] flex items-center justify-center font-bold font-mono text-xs flex-shrink-0 mt-0.5">
-                      {c.code.split('-')[1] || c.code}
+                      {(c?.code || 'MK').split('-')[1] || c?.code || 'MK'}
                     </div>
                     <div>
                       <div className="flex items-center space-x-2">

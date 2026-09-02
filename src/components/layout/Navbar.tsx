@@ -48,8 +48,9 @@ export default function Navbar() {
       setStudents(appStore.getStudents());
 
       if (currentAuth?.nim) {
-        const isPj = allCourses.some((c) =>
-          c.pjNims.some((pNim) => pNim.trim() === currentAuth.nim?.trim())
+        const cleanUserNim = (currentAuth.nim || '').trim();
+        const isPj = (allCourses || []).some((c) =>
+          Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === cleanUserNim)
         );
         setHasPjRole(isPj);
       } else {
@@ -215,7 +216,7 @@ export default function Navbar() {
           <div className="flex md:hidden items-center space-x-2">
             {auth && (
               <span className="text-xs font-bold px-2 py-1 rounded bg-amber-100 text-amber-900">
-                {auth.name.split(' ')[0]}
+                {(auth.name || 'User').split(' ')[0]}
               </span>
             )}
             <button
@@ -383,7 +384,7 @@ export default function Navbar() {
               {/* Modal Body */}
               <div className="overflow-y-auto p-4 sm:p-6 space-y-4 bg-stone-50/60">
                 {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map((day) => {
-                  const dayCourses = courses.filter((c) => c.day.toLowerCase() === day.toLowerCase());
+                  const dayCourses = (courses || []).filter((c) => (c?.day || '').toLowerCase() === day.toLowerCase());
                   const isWeekend = day === 'Minggu';
 
                   return (

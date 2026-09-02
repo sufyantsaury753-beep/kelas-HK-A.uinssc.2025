@@ -32,9 +32,12 @@ interface AppState {
 }
 
 // Helper to sort students ascending by NIM (e.g. 03, 04, 05, etc.)
-export function sortStudentsByNim(studentsList: Student[]): Student[] {
+export function sortStudentsByNim(studentsList?: Student[] | null): Student[] {
+  if (!studentsList || !Array.isArray(studentsList)) return [];
   return [...studentsList].sort((a, b) => {
-    return a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true });
+    const nimA = (a?.nim || '').trim();
+    const nimB = (b?.nim || '').trim();
+    return nimA.localeCompare(nimB, undefined, { numeric: true });
   });
 }
 
@@ -102,12 +105,22 @@ class Store {
       if (saved) {
         const parsed = JSON.parse(saved);
         this.state = {
-          students: sortStudentsByNim(parsed.students || INITIAL_STUDENTS),
-          courses: parsed.courses || INITIAL_COURSES,
-          sessions: parsed.sessions || INITIAL_SESSIONS,
-          records: parsed.records || INITIAL_RECORDS,
-          materials: parsed.materials || INITIAL_MATERIALS,
-          announcements: parsed.announcements || INITIAL_ANNOUNCEMENTS,
+          students: sortStudentsByNim(Array.isArray(parsed.students) && parsed.students.length > 0 ? parsed.students : INITIAL_STUDENTS),
+          courses: Array.isArray(parsed.courses) && parsed.courses.length > 0
+            ? parsed.courses.map((c: any) => ({
+                ...c,
+                pjNims: Array.isArray(c?.pjNims) ? c.pjNims.filter(Boolean) : [],
+                day: c?.day || 'Senin',
+                time: c?.time || '07:30 - 09:10 WIB',
+                code: c?.code || 'HKI-000',
+                name: c?.name || 'Mata Kuliah',
+                dosen: c?.dosen || '-',
+              }))
+            : INITIAL_COURSES,
+          sessions: Array.isArray(parsed.sessions) ? parsed.sessions : INITIAL_SESSIONS,
+          records: Array.isArray(parsed.records) ? parsed.records : INITIAL_RECORDS,
+          materials: Array.isArray(parsed.materials) ? parsed.materials : INITIAL_MATERIALS,
+          announcements: Array.isArray(parsed.announcements) ? parsed.announcements : INITIAL_ANNOUNCEMENTS,
           adminPin: parsed.adminPin || 'adminhk2025',
         };
       } else {
@@ -314,9 +327,10 @@ class Store {
     return sortStudentsByNim(this.state.students);
   }
 
-  public findStudentByNim(nim: string): Student | undefined {
+  public findStudentByNim(nim?: string | null): Student | undefined {
+    if (!nim || typeof nim !== 'string') return undefined;
     const clean = nim.trim();
-    return this.state.students.find((s) => s.nim.trim() === clean);
+    return this.state.students.find((s) => (s?.nim || '').trim() === clean);
   }
 
   public addStudent(student: Student): boolean {
@@ -477,11 +491,11 @@ class Store {
   public getCourseEnrolledStudents(courseId: string): Student[] {
     const course = this.getCourseById(courseId);
     const allStudents = this.getStudents();
-    if (!course || !course.enrolledStudentNims || course.enrolledStudentNims.length === 0) {
+    if (!course || !Array.isArray(course.enrolledStudentNims) || course.enrolledStudentNims.length === 0) {
       return allStudents;
     }
-    const cleanNims = new Set(course.enrolledStudentNims.map((n) => n.trim()));
-    return allStudents.filter((s) => cleanNims.has(s.nim.trim()));
+    const cleanNims = new Set(course.enrolledStudentNims.map((n) => (n || '').trim()));
+    return allStudents.filter((s) => cleanNims.has((s?.nim || '').trim()));
   }
 
   public assignPj(courseId: string, pjNims: string[]) {

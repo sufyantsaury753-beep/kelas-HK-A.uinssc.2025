@@ -78,14 +78,15 @@ export default function LoginPage() {
 
     // Success: Log in
     const courses = appStore.getCourses();
-    const assignedCourses = courses
-      .filter((c) => c.pjNims.some((pNim) => pNim.trim() === student.nim.trim()))
+    const cleanStudentNim = (student.nim || '').trim();
+    const assignedCourses = (courses || [])
+      .filter((c) => Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === cleanStudentNim))
       .map((c) => c.id);
 
     appStore.setAuth({
       role: assignedCourses.length > 0 ? 'PJ' : 'MAHASISWA',
       nim: student.nim,
-      name: student.name,
+      name: student.name || 'Mahasiswa HK A',
       assignedCourseIds: assignedCourses,
       isLoggedIn: true,
     });
@@ -103,14 +104,15 @@ export default function LoginPage() {
 
     // Now log in
     const courses = appStore.getCourses();
-    const assignedCourses = courses
-      .filter((c) => c.pjNims.some((pNim) => pNim.trim() === pendingStudent.nim.trim()))
+    const cleanPendingNim = (pendingStudent.nim || '').trim();
+    const assignedCourses = (courses || [])
+      .filter((c) => Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === cleanPendingNim))
       .map((c) => c.id);
 
     appStore.setAuth({
       role: assignedCourses.length > 0 ? 'PJ' : 'MAHASISWA',
       nim: pendingStudent.nim,
-      name: pendingStudent.name,
+      name: pendingStudent.name || 'Mahasiswa HK A',
       assignedCourseIds: assignedCourses,
       isLoggedIn: true,
     });

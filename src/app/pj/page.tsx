@@ -138,9 +138,10 @@ export default function PjDashboard() {
 
       // Auto-select first course assigned to this PJ if not yet set
       if (!activeCourseId) {
-        const myCourse = allCourses.find((c) =>
-          currentAuth.role === 'ADMIN' ||
-          c.pjNims.some((pNim) => pNim.trim() === currentAuth.nim?.trim())
+        const cleanUserNim = (currentAuth?.nim || '').trim();
+        const myCourse = (allCourses || []).find((c) =>
+          currentAuth?.role === 'ADMIN' ||
+          (Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === cleanUserNim))
         );
         if (myCourse) {
           setActiveCourseId(myCourse.id);
@@ -223,12 +224,15 @@ export default function PjDashboard() {
   // Authorization Check: PJ assigned or Superadmin
   const isUserAssignedToActiveCourse =
     isAdmin ||
-    (activeCourse &&
-      activeCourse.pjNims.some((pNim) => pNim.trim() === userNim.trim()));
+    Boolean(
+      activeCourse &&
+      Array.isArray(activeCourse.pjNims) &&
+      activeCourse.pjNims.some((pNim) => (pNim || '').trim() === userNim)
+    );
 
   // Check if today is the scheduled day for the active course
   const isCourseDayToday = activeCourse
-    ? activeCourse.day.toLowerCase().trim().includes(todayDayName.toLowerCase().trim())
+    ? (activeCourse.day || '').toLowerCase().trim().includes(todayDayName.toLowerCase().trim())
     : false;
 
   // Attendance is unlocked only on the course day (or when admin explicitly enables simulation)
@@ -477,9 +481,9 @@ export default function PjDashboard() {
             {courses.map((c) => {
               const isAssigned =
                 isAdmin ||
-                c.pjNims.some((pNim) => pNim.trim() === userNim.trim());
+                (Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === userNim));
               const isSelected = c.id === activeCourseId;
-              const isTodayMK = c.day.toLowerCase().trim().includes(todayDayName.toLowerCase().trim());
+              const isTodayMK = (c?.day || '').toLowerCase().trim().includes(todayDayName.toLowerCase().trim());
 
               return (
                 <button
