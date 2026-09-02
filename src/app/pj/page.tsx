@@ -64,6 +64,8 @@ export default function PjDashboard() {
 
   // Admin bypass toggle to simulate and test attendance on any day
   const [adminSimulateOpen, setAdminSimulateOpen] = useState(false);
+  // PJ bypass toggle to open attendance on replacement / testing / non-scheduled days
+  const [pjManualOverride, setPjManualOverride] = useState(false);
 
   // Active view tab: 'ABSENSI' | 'ARSIP' | 'MATERI'
   const [activeTab, setActiveTab] = useState<'ABSENSI' | 'ARSIP' | 'MATERI'>('ABSENSI');
@@ -136,25 +138,43 @@ export default function PjDashboard() {
       setRecords(appStore.getRecords());
       setMaterials(appStore.getMaterials());
 
-      // Auto-select first course assigned to this PJ if not yet set
-      if (!activeCourseId) {
-        const cleanUserNim = (currentAuth?.nim || '').trim();
-        const myCourse = (allCourses || []).find((c) =>
-          currentAuth?.role === 'ADMIN' ||
-          (Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === cleanUserNim))
-        );
-        if (myCourse) {
-          setActiveCourseId(myCourse.id);
-        } else if (allCourses.length > 0) {
-          setActiveCourseId(allCourses[0].id);
-        }
+      // Find courses assigned to this PJ
+      const cleanUserNim = (currentAuth?.nim || '').trim();
+      const myCourses = (allCourses || []).filter((c) =>
+        currentAuth?.role === 'ADMIN' ||
+        (Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === cleanUserNim))
+      );
+
+      // Auto-promote to PJ role if student is assigned as PJ to any course
+      if (myCourses.length > 0 && currentAuth?.role === 'MAHASISWA') {
+        const promotedAuth = {
+          ...currentAuth,
+          role: 'PJ' as const,
+          assignedCourseIds: myCourses.map((c) => c.id),
+        };
+        appStore.setAuth(promotedAuth);
+        setAuth(promotedAuth);
       }
+
+      // Auto-select course: prioritize the PJ's assigned course
+      setActiveCourseId((prev) => {
+        if (currentAuth?.role === 'ADMIN') {
+          return prev || (allCourses[0]?.id ?? '');
+        }
+        if (prev && myCourses.some((c) => c.id === prev)) {
+          return prev;
+        }
+        if (myCourses.length > 0) {
+          return myCourses[0].id;
+        }
+        return prev || (allCourses[0]?.id ?? '');
+      });
     };
 
     update();
     const unsub = appStore.subscribe(update);
     return () => unsub();
-  }, [router, activeCourseId]);
+  }, [router]);
 
   const showToast = (msg: string) => {
     setToastNotice(msg);
@@ -184,6 +204,15 @@ export default function PjDashboard() {
     }
     return students;
   }, [activeCourse, students]);
+
+  // Courses that this user is assigned to as PJ (or all if admin)
+  const myAssignedCourses = useMemo(() => {
+    const cleanUserNim = (auth?.nim || '').trim();
+    return courses.filter((c) =>
+      isAdmin ||
+      (Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === cleanUserNim))
+    );
+  }, [courses, auth, isAdmin]);
 
   const handleOpenEnrollModal = () => {
     if (!activeCourse) return;
@@ -235,9 +264,6 @@ export default function PjDashboard() {
     ? (activeCourse.day || '').toLowerCase().trim().includes(todayDayName.toLowerCase().trim())
     : false;
 
-  // Attendance is unlocked only on the course day (or when admin explicitly enables simulation)
-  const isAttendanceUnlocked = isCourseDayToday || (isAdmin && adminSimulateOpen);
-
   // Sessions for the active course
   const activeCourseSessions = sessions
     .filter((s) => s.courseId === activeCourse?.id)
@@ -245,6 +271,13 @@ export default function PjDashboard() {
 
   // Existing session for today (if any)
   const todaySession = activeCourseSessions.find((s) => s.date === todayDateStr);
+
+  // Attendance is unlocked if today is the scheduled day, or a session is already ongoing today, or PJ/admin explicitly opens it
+  const isAttendanceUnlocked =
+    isCourseDayToday ||
+    Boolean(todaySession) ||
+    (isAdmin && adminSimulateOpen) ||
+    pjManualOverride;
 
   // Current session to display: either explicitly selected, today's session, or latest session
   const currentSession =
@@ -478,63 +511,89 @@ export default function PjDashboard() {
         {/* Scrollable Course Pill Row */}
         <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
           <div className="flex gap-2 min-w-max">
-            {courses.map((c) => {
-              const isAssigned =
-                isAdmin ||
-                (Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === userNim));
-              const isSelected = c.id === activeCourseId;
-              const isTodayMK = (c?.day || '').toLowerCase().trim().includes(todayDayName.toLowerCase().trim());
+            {[...courses]
+              .sort((a, b) => {
+                const aAssigned = isAdmin || (Array.isArray(a?.pjNims) && a.pjNims.some((p) => (p || '').trim() === userNim));
+                const bAssigned = isAdmin || (Array.isArray(b?.pjNims) && b.pjNims.some((p) => (p || '').trim() === userNim));
+                if (aAssigned && !bAssigned) return -1;
+                if (!aAssigned && bAssigned) return 1;
+                return 0;
+              })
+              .map((c) => {
+                const isAssigned =
+                  isAdmin ||
+                  (Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === userNim));
+                const isSelected = c.id === activeCourseId;
+                const isTodayMK = (c?.day || '').toLowerCase().trim().includes(todayDayName.toLowerCase().trim());
 
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => {
-                    setActiveCourseId(c.id);
-                    setActiveSessionId('');
-                  }}
-                  className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all border flex items-center space-x-2 ${
-                    isSelected
-                      ? isAssigned
-                        ? 'bg-[#9d5f2f] text-white border-[#8c4e24] shadow-md shadow-[#9d5f2f]/20 scale-105'
-                        : 'bg-stone-800 text-amber-300 border-stone-900 scale-105'
-                      : isAssigned
-                      ? 'bg-white text-stone-800 border-amber-300 hover:border-[#9d5f2f] hover:bg-amber-50/50'
-                      : 'bg-stone-100 text-stone-400 border-stone-200 hover:bg-stone-200'
-                  }`}
-                >
-                  {!isAssigned && <Lock className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />}
-                  {isAssigned && isSelected && (
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
-                  )}
-                  <span>{c.name}</span>
-                  {isTodayMK && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-500 text-white uppercase tracking-tighter shadow-xs">
-                      Hari Ini
-                    </span>
-                  )}
-                  <span className="text-[10px] opacity-75 font-normal">({c.day})</span>
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      setActiveCourseId(c.id);
+                      setActiveSessionId('');
+                    }}
+                    className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all border flex items-center space-x-2 ${
+                      isSelected
+                        ? isAssigned
+                          ? 'bg-[#9d5f2f] text-white border-[#8c4e24] shadow-md shadow-[#9d5f2f]/20 scale-105'
+                          : 'bg-stone-800 text-amber-300 border-stone-900 scale-105'
+                        : isAssigned
+                        ? 'bg-white text-stone-800 border-amber-300 hover:border-[#9d5f2f] hover:bg-amber-50/50'
+                        : 'bg-stone-100 text-stone-400 border-stone-200 hover:bg-stone-200'
+                    }`}
+                  >
+                    {!isAssigned && <Lock className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />}
+                    {isAssigned && isSelected && (
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+                    )}
+                    <span>{c.name}</span>
+                    {isTodayMK && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-500 text-white uppercase tracking-tighter shadow-xs">
+                        Hari Ini
+                      </span>
+                    )}
+                    <span className="text-[10px] opacity-75 font-normal">({c.day})</span>
+                  </button>
+                );
+              })}
           </div>
         </div>
       </div>
 
       {/* ISOLATION WARNING IF NOT AUTHORIZED */}
       {!isUserAssignedToActiveCourse && activeCourse && (
-        <div className="p-6 bg-rose-50 border-2 border-rose-300 rounded-3xl text-rose-900 shadow-sm flex items-start space-x-4">
-          <div className="w-12 h-12 rounded-2xl bg-rose-200 text-rose-800 flex items-center justify-center flex-shrink-0 shadow-inner">
-            <Lock className="w-6 h-6" />
+        <div className="p-6 bg-rose-50 border-2 border-rose-300 rounded-3xl text-rose-900 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start space-x-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-200 text-rose-800 flex items-center justify-center flex-shrink-0 shadow-inner">
+              <Lock className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-rose-950 flex items-center space-x-2">
+                <span>Akses Dibatasi: Anda Bukan PJ Mata Kuliah {activeCourse.name}</span>
+              </h3>
+              <p className="text-xs text-rose-800 leading-relaxed max-w-xl">
+                Sesuai aturan keamanan sistem kelas HK A 2025, setiap Penanggung Jawab hanya diizinkan
+                mengelola mata kuliah yang menjadi tanggung jawabnya.
+              </p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <h3 className="text-base font-bold text-rose-950 flex items-center space-x-2">
-              <span>Akses Dibatasi: Anda Bukan PJ Mata Kuliah {activeCourse.name}</span>
-            </h3>
-            <p className="text-xs text-rose-800 leading-relaxed max-w-2xl">
-              Sesuai aturan keamanan sistem kelas HK A 2025, setiap Penanggung Jawab hanya diizinkan
-              mengelola mata kuliah yang menjadi tanggung jawabnya.
-            </p>
-          </div>
+          {myAssignedCourses.length > 0 ? (
+            <button
+              onClick={() => setActiveCourseId(myAssignedCourses[0].id)}
+              className="px-4 py-2.5 bg-[#9d5f2f] hover:bg-[#864d23] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-2 flex-shrink-0"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>Buka Mata Kuliah Saya ({myAssignedCourses[0].name})</span>
+            </button>
+          ) : (
+            <Link
+              href="/mahasiswa"
+              className="px-4 py-2.5 bg-stone-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-2 flex-shrink-0"
+            >
+              <span>Buka Portal Mahasiswa</span>
+            </Link>
+          )}
         </div>
       )}
 
@@ -719,18 +778,30 @@ export default function PjDashboard() {
                       </p>
                     </div>
 
-                    {isAdmin && (
-                      <div className="pt-3">
+                    {(isAdmin || isUserAssignedToActiveCourse) && (
+                      <div className="pt-3 flex flex-wrap items-center justify-center gap-2">
                         <button
                           onClick={() => {
-                            setAdminSimulateOpen(true);
-                            showToast('Mode Uji Coba Admin diaktifkan!');
+                            setPjManualOverride(true);
+                            showToast('Presensi dibuka untuk sesi kuliah pengganti / tambahan.');
                           }}
-                          className="px-4 py-2 bg-stone-900 hover:bg-black text-amber-300 text-xs font-bold rounded-xl shadow-md transition-all inline-flex items-center space-x-1.5"
+                          className="px-5 py-2.5 bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold rounded-xl shadow-md transition-all inline-flex items-center space-x-2"
                         >
-                          <Unlock className="w-4 h-4 text-amber-400" />
-                          <span>Buka Paksa Presensi untuk Testing (Superadmin)</span>
+                          <Unlock className="w-4 h-4" />
+                          <span>Buka Presensi Hari Ini (Kuliah Pengganti / Tambahan)</span>
                         </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              setAdminSimulateOpen(true);
+                              showToast('Mode Uji Coba Admin diaktifkan!');
+                            }}
+                            className="px-4 py-2.5 bg-stone-900 hover:bg-black text-amber-300 text-xs font-bold rounded-xl shadow-md transition-all inline-flex items-center space-x-1.5"
+                          >
+                            <Unlock className="w-4 h-4 text-amber-400" />
+                            <span>Simulasi Admin</span>
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
