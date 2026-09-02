@@ -314,10 +314,14 @@ class Store {
 
   public setAuth(session: AuthSession | null) {
     if (typeof window === 'undefined') return;
-    if (session) {
-      localStorage.setItem(AUTH_KEY, JSON.stringify(session));
-    } else {
-      localStorage.removeItem(AUTH_KEY);
+    try {
+      if (session) {
+        localStorage.setItem(AUTH_KEY, JSON.stringify(session));
+      } else {
+        localStorage.removeItem(AUTH_KEY);
+      }
+    } catch (e) {
+      console.warn('localStorage setAuth notice (private browsing mode):', e);
     }
     this.notify();
   }
