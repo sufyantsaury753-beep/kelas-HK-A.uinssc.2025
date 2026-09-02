@@ -38,12 +38,7 @@ export default function LoginPage() {
   const [adminPin, setAdminPin] = useState('');
   const [showAdminPin, setShowAdminPin] = useState(false);
 
-  // Quick fill helper for convenience
-  const handleQuickFill = (sampleNim: string, samplePin?: string) => {
-    setNim(sampleNim);
-    if (samplePin) setPin(samplePin);
-    setErrorMsg(null);
-  };
+
 
   const handleStudentLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,36 +273,6 @@ export default function LoginPage() {
                 <span>Masuk ke Portal Presensi</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
-
-              {/* Quick test presets */}
-              <div className="pt-5 border-t border-stone-100 text-center">
-                <p className="text-[11px] text-stone-400 font-semibold uppercase tracking-wider mb-2">
-                  Coba Cepat Akun Demo
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickFill('2530311086', '123456')}
-                    className="px-2.5 py-1 text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-900 font-medium rounded-lg border border-amber-200 transition-colors"
-                  >
-                    Sufyan (PJ Kewarisan)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickFill('2530311065', '')}
-                    className="px-2.5 py-1 text-[11px] bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium rounded-lg transition-colors"
-                  >
-                    Moh. Raihan (Set PIN Baru)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickFill('2530311003', '')}
-                    className="px-2.5 py-1 text-[11px] bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium rounded-lg transition-colors"
-                  >
-                    Wahdan Hamdun
-                  </button>
-                </div>
-              </div>
             </form>
           ) : (
             <form onSubmit={handleAdminLogin} className="space-y-4">
