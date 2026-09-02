@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -96,6 +96,15 @@ export default function AdminDashboard() {
     relevantCourses[0] ||
     courses[0] ||
     null;
+
+  const revCourseStudents = useMemo(() => {
+    if (!activeRevCourse) return students;
+    if (activeRevCourse.enrolledStudentNims && activeRevCourse.enrolledStudentNims.length > 0) {
+      const cleanSet = new Set(activeRevCourse.enrolledStudentNims.map((n) => (n || '').trim()));
+      return students.filter((s) => cleanSet.has((s?.nim || '').trim()));
+    }
+    return students;
+  }, [activeRevCourse, students]);
 
   const activeRevSession =
     dateSessions.find((s) => s.courseId === activeRevCourse?.id) || null;
@@ -737,6 +746,16 @@ export default function AdminDashboard() {
           ? records.filter((r) => r.sessionId === activeRevSession.id)
           : [];
 
+        // Active course enrolled students (KRS filter)
+        const activeCourseStudents = (() => {
+          if (!activeRevCourse) return students;
+          if (activeRevCourse.enrolledStudentNims && activeRevCourse.enrolledStudentNims.length > 0) {
+            const cleanSet = new Set(activeRevCourse.enrolledStudentNims.map((n) => (n || '').trim()));
+            return students.filter((s) => cleanSet.has((s?.nim || '').trim()));
+          }
+          return students;
+        })();
+
         // Counters
         let hadirCount = 0;
         let izinCount = 0;
@@ -744,7 +763,7 @@ export default function AdminDashboard() {
         let dispensasiCount = 0;
         let alpaCount = 0;
 
-        students.forEach((st) => {
+        activeCourseStudents.forEach((st) => {
           const r = activeRevRecords.find((rec) => rec.studentNim.trim() === st.nim.trim());
           const stt = r ? r.status : 'ALPA';
           if (stt === 'HADIR') hadirCount++;
@@ -754,7 +773,7 @@ export default function AdminDashboard() {
           else alpaCount++;
         });
 
-        const totalStudents = students.length;
+        const totalStudents = activeCourseStudents.length;
 
         // Handlers
         const handlePrevMonth = () => {
@@ -788,7 +807,7 @@ export default function AdminDashboard() {
         const handleMarkAllHadir = () => {
           if (!activeRevSession || !activeRevCourse) return;
           appStore.batchMarkAll(activeRevSession.id, activeRevCourse.id, 'HADIR', 'ADMIN (Revisi)');
-          setToastRev(`Semua ${students.length} mahasiswa ditandai HADIR!`);
+          setToastRev(`Semua ${activeCourseStudents.length} mahasiswa ditandai HADIR!`);
           setTimeout(() => setToastRev(null), 3000);
         };
 
@@ -827,7 +846,7 @@ export default function AdminDashboard() {
           }
         };
 
-        const filteredRevStudents = students
+        const filteredRevStudents = activeCourseStudents
           .filter(
             (s) =>
               s.name.toLowerCase().includes(searchRevStudent.toLowerCase()) ||
@@ -1096,7 +1115,7 @@ export default function AdminDashboard() {
                               exportSingleSessionCsv(
                                 activeRevCourse,
                                 activeRevSession,
-                                students,
+                                activeCourseStudents,
                                 activeRevRecords
                               )
                             }
@@ -2412,7 +2431,7 @@ export default function AdminDashboard() {
         <AttendanceSheetPrint
           course={activeRevCourse}
           session={activeRevSession}
-          students={students}
+          students={revCourseStudents}
           records={activeRevRecords}
           onClose={() => setShowRevPrintModal(false)}
         />

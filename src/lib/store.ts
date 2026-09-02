@@ -565,6 +565,17 @@ class Store {
     if (idx >= 0) {
       const cleanNims = studentNims.map((n) => n.trim()).filter(Boolean);
       this.state.courses[idx].enrolledStudentNims = cleanNims;
+
+      // Automatically purge attendance records of students no longer enrolled in this course
+      const cleanSet = new Set(cleanNims);
+      const removedNims = this.state.records
+        .filter((r) => r.courseId === courseId && !cleanSet.has(r.studentNim.trim()))
+        .map((r) => r.studentNim.trim());
+
+      this.state.records = this.state.records.filter(
+        (r) => r.courseId !== courseId || cleanSet.has(r.studentNim.trim())
+      );
+
       this.save();
 
       if (isSupabaseConfigured()) {
@@ -576,6 +587,14 @@ class Store {
           supabase.from('courses').update({
             description: encodedDesc,
           }).eq('id', courseId).then();
+
+          if (removedNims.length > 0) {
+            supabase.from('attendance_records')
+              .delete()
+              .eq('course_id', courseId)
+              .in('student_nim', removedNims)
+              .then();
+          }
         } catch (e) {
           console.warn('Supabase course enrollment sync notice:', e);
         }
