@@ -690,6 +690,42 @@ export default function PjDashboard() {
                           <span className="text-xs text-stone-500 font-mono">
                             {todayFormatted} • {activeCourse.time}
                           </span>
+
+                          {/* Interactive Session Date Picker */}
+                          {currentSession && (
+                            <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-lg bg-stone-100 border border-stone-300 text-stone-700 text-xs font-semibold">
+                              <Calendar className="w-3.5 h-3.5 text-[#9d5f2f]" />
+                              <span className="text-[11px] text-stone-600 font-medium">Tanggal:</span>
+                              <input
+                                type="date"
+                                value={currentSession.date}
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    appStore.updateSession(currentSession.id, { date: e.target.value });
+                                    showToast(`Tanggal sesi diubah menjadi ${e.target.value}`);
+                                  }
+                                }}
+                                className="bg-white border border-stone-300 rounded px-1.5 py-0.5 text-xs font-bold text-stone-900 focus:outline-none focus:border-[#9d5f2f] cursor-pointer"
+                                title="Ubah tanggal sesi pertemuan ini"
+                              />
+                            </div>
+                          )}
+
+                          {/* Quick Adjust Button if Session Date differs from today */}
+                          {currentSession && currentSession.date !== todayDateStr && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                appStore.updateSession(currentSession.id, { date: todayDateStr });
+                                showToast(`Tanggal sesi disesuaikan ke hari ini (${todayDateStr})!`);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-[11px] font-bold transition-all flex items-center space-x-1 shadow-xs"
+                              title="Klik untuk menyesuaikan tanggal sesi ini menjadi hari ini"
+                            >
+                              <Sparkles className="w-3 h-3 text-amber-600" />
+                              <span>Ubah ke Hari Ini ({todayDateStr})</span>
+                            </button>
+                          )}
                         </div>
 
                         <h3 className="text-base sm:text-lg font-black text-stone-900 mt-2">

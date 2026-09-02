@@ -17,7 +17,21 @@ export function exportSingleSessionCsv(
     ['Kode MK / SKS', `${course.code} / ${course.sks} SKS`],
     ['Dosen Pengampu', course.dosen],
     ['Pertemuan Ke', `Pertemuan ke-${session.meetingNumber}`],
-    ['Hari / Tanggal', `${course.day}, ${session.date}`],
+    ['Hari / Tanggal', (() => {
+      try {
+        const parts = session.date.split('-');
+        const d = parts.length === 3
+          ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+          : new Date(session.date);
+        const dayName = course.day || d.toLocaleDateString('id-ID', { weekday: 'long' });
+        const dayNum = String(d.getDate()).padStart(2, '0');
+        const monthName = d.toLocaleDateString('id-ID', { month: 'long' });
+        const yearNum = d.getFullYear();
+        return `${dayName}, ${dayNum} ${monthName} ${yearNum}`;
+      } catch {
+        return `${course.day}, ${session.date}`;
+      }
+    })()],
     ['Waktu Perkuliahan', `${session.startTime} - ${session.endTime} WIB`],
     ['Ruang Perkuliahan', course.room],
     ['Materi / Topik', `"${session.topic.replace(/"/g, '""')}"`],

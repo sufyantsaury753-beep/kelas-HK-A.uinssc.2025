@@ -66,12 +66,11 @@ export default function AttendanceSheetPrint({
           ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
           : new Date(session.date);
       if (isNaN(d.getTime())) return `${course.day}, ${session.date}`;
-      return d.toLocaleDateString('id-ID', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
+      const dayName = course.day || d.toLocaleDateString('id-ID', { weekday: 'long' });
+      const dayNum = String(d.getDate()).padStart(2, '0');
+      const monthName = d.toLocaleDateString('id-ID', { month: 'long' });
+      const yearNum = d.getFullYear();
+      return `${dayName}, ${dayNum} ${monthName} ${yearNum}`;
     } catch {
       return `${course.day}, ${session.date}`;
     }
@@ -84,11 +83,10 @@ export default function AttendanceSheetPrint({
         parts.length === 3
           ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
           : new Date(session.date);
-      return d.toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
+      const dayNum = String(d.getDate()).padStart(2, '0');
+      const monthName = d.toLocaleDateString('id-ID', { month: 'long' });
+      const yearNum = d.getFullYear();
+      return `${dayNum} ${monthName} ${yearNum}`;
     } catch {
       return session.date;
     }
