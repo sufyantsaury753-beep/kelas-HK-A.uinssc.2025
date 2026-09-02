@@ -72,6 +72,9 @@ export default function PjDashboard() {
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [enrollStudentNims, setEnrollStudentNims] = useState<string[]>([]);
+  const [searchEnrollQuery, setSearchEnrollQuery] = useState('');
 
   // Notification feedback
   const [toastNotice, setToastNotice] = useState<string | null>(null);
@@ -171,6 +174,52 @@ export default function PjDashboard() {
   const userNim = auth.nim || '';
   const isAdmin = auth.role === 'ADMIN';
 
+  // Students enrolled in this active course
+  const enrolledCourseStudents = useMemo(() => {
+    if (!activeCourse) return students;
+    if (activeCourse.enrolledStudentNims && activeCourse.enrolledStudentNims.length > 0) {
+      const cleanSet = new Set(activeCourse.enrolledStudentNims.map((n) => n.trim()));
+      return students.filter((s) => cleanSet.has(s.nim.trim()));
+    }
+    return students;
+  }, [activeCourse, students]);
+
+  const handleOpenEnrollModal = () => {
+    if (!activeCourse) return;
+    if (activeCourse.enrolledStudentNims && activeCourse.enrolledStudentNims.length > 0) {
+      setEnrollStudentNims([...activeCourse.enrolledStudentNims]);
+    } else {
+      setEnrollStudentNims(students.map((s) => s.nim));
+    }
+    setSearchEnrollQuery('');
+    setShowEnrollModal(true);
+  };
+
+  const handleToggleEnrollStudent = (nim: string) => {
+    setEnrollStudentNims((prev) =>
+      prev.includes(nim) ? prev.filter((n) => n !== nim) : [...prev, nim]
+    );
+  };
+
+  const handleSelectAllEnrollStudents = () => {
+    setEnrollStudentNims(students.map((s) => s.nim));
+  };
+
+  const handleDeselectAllEnrollStudents = () => {
+    setEnrollStudentNims([]);
+  };
+
+  const handleSaveEnrollment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeCourse) return;
+    appStore.setCourseEnrolledStudents(activeCourse.id, enrollStudentNims);
+    showToast(`Peserta MK "${activeCourse.name}" diperbarui (${enrollStudentNims.length} mhs).`);
+    try {
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+    } catch {}
+    setShowEnrollModal(false);
+  };
+
   // Authorization Check: PJ assigned or Superadmin
   const isUserAssignedToActiveCourse =
     isAdmin ||
@@ -268,7 +317,7 @@ export default function PjDashboard() {
     if (!targetSession) return;
 
     appStore.batchMarkAll(targetSession.id, activeCourse.id, 'HADIR', 'PJ');
-    showToast(`Seluruh ${students.length} Mahasiswa ditandai HADIR!`);
+    showToast(`Seluruh ${enrolledCourseStudents.length} Mahasiswa Peserta ditandai HADIR!`);
     try {
       confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
     } catch {}
@@ -330,7 +379,7 @@ export default function PjDashboard() {
   };
 
   // Filtered students for attendance search (sorted strictly by NIM ascending)
-  const filteredStudents = students
+  const filteredStudents = enrolledCourseStudents
     .filter(
       (s) =>
         s.name.toLowerCase().includes(searchStudent.toLowerCase()) ||
@@ -345,7 +394,7 @@ export default function PjDashboard() {
   let alpaCount = 0;
   let dispensasiCount = 0;
 
-  students.forEach((st) => {
+  enrolledCourseStudents.forEach((st) => {
     const rec = currentRecords.find((r) => r.studentNim.trim() === st.nim.trim());
     const status = rec ? rec.status : 'ALPA';
     if (status === 'HADIR') hadirCount++;
@@ -534,6 +583,14 @@ export default function PjDashboard() {
             {/* Top Toolbar Actions */}
             <div className="flex flex-wrap items-center gap-2">
               <button
+                onClick={handleOpenEnrollModal}
+                className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-[#8c4e24] border border-amber-200/80 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-2xs"
+              >
+                <Users className="w-4 h-4 text-[#9d5f2f]" />
+                <span>Peserta MK ({enrolledCourseStudents.length} Mhs)</span>
+              </button>
+
+              <button
                 onClick={() => setShowAddMaterialModal(true)}
                 className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-semibold transition-colors flex items-center space-x-1.5"
               >
@@ -546,7 +603,7 @@ export default function PjDashboard() {
                   exportMatrixAttendanceCsv(
                     activeCourse,
                     activeCourseSessions,
-                    students,
+                    enrolledCourseStudents,
                     records
                   )
                 }
@@ -1446,6 +1503,153 @@ export default function PjDashboard() {
         </div>
       )}
 
+      {/* Modal: Atur Peserta Mahasiswa MK */}
+      {showEnrollModal && activeCourse && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#9d5f2f] to-[#753e1f] p-5 text-white flex items-start justify-between">
+              <div>
+                <span className="text-xs font-mono bg-white/20 px-2.5 py-0.5 rounded-lg text-amber-200 font-bold">
+                  {activeCourse.code} • {activeCourse.sks} SKS
+                </span>
+                <h3 className="text-base font-bold mt-1.5 leading-snug">
+                  Atur Mahasiswa Peserta: {activeCourse.name}
+                </h3>
+                <p className="text-xs text-amber-100/90 mt-0.5">
+                  Centang mahasiswa yang mengontrak mata kuliah ini. Yang tidak mengambil tidak akan masuk dalam lembar absensi.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowEnrollModal(false)}
+                className="text-white/80 hover:text-white p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content & Student List */}
+            <div className="p-5 overflow-y-auto flex-1 text-xs space-y-4">
+              {/* Stats & Search Toolbar */}
+              <div className="space-y-3 bg-stone-50 p-3.5 rounded-2xl border border-stone-200/80">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-bold text-stone-800 text-xs">Peserta Terpilih:</span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-[#9d5f2f] font-mono font-bold text-xs border border-amber-300/60">
+                      {enrollStudentNims.length} / {students.length} Mahasiswa
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-1.5 self-end sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={handleSelectAllEnrollStudents}
+                      className="px-2.5 py-1 bg-white hover:bg-stone-100 text-stone-700 font-semibold rounded-lg border border-stone-300 text-[11px] transition-colors"
+                    >
+                      Pilih Semua ({students.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeselectAllEnrollStudents}
+                      className="px-2.5 py-1 bg-white hover:bg-stone-100 text-rose-600 font-semibold rounded-lg border border-stone-300 text-[11px] transition-colors"
+                    >
+                      Batalkan Semua
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search Box */}
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari nama atau NIM mahasiswa..."
+                    value={searchEnrollQuery}
+                    onChange={(e) => setSearchEnrollQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-1.5 text-xs bg-white rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#9d5f2f]"
+                  />
+                </div>
+              </div>
+
+              {/* Roster Checkbox List */}
+              <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                {students
+                  .filter((s) =>
+                    s.name.toLowerCase().includes(searchEnrollQuery.toLowerCase()) ||
+                    s.nim.includes(searchEnrollQuery)
+                  )
+                  .map((st) => {
+                    const isSelected = enrollStudentNims.includes(st.nim);
+                    return (
+                      <label
+                        key={st.nim}
+                        onClick={() => handleToggleEnrollStudent(st.nim)}
+                        className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-amber-50/60 border-amber-300 shadow-2xs'
+                            : 'bg-white border-stone-200 hover:bg-stone-50 opacity-70'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}}
+                            className="w-4 h-4 rounded text-[#9d5f2f] focus:ring-[#9d5f2f] cursor-pointer"
+                          />
+                          <div>
+                            <p className="font-bold text-stone-900 text-xs flex items-center space-x-1.5">
+                              <span>{st.name}</span>
+                              <span className="text-[10px] text-stone-400 font-normal">({st.gender})</span>
+                            </p>
+                            <p className="text-[10px] font-mono text-stone-500">{st.nim}</p>
+                          </div>
+                        </div>
+
+                        <div>
+                          {isSelected ? (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                              Mengambil MK
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-stone-100 text-stone-500 font-medium text-[10px]">
+                              Tidak Mengambil
+                            </span>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-stone-50 border-t border-stone-200 flex items-center justify-between">
+              <p className="text-[11px] text-stone-500">
+                Data presensi dan PDF cetak akan langsung terupdate.
+              </p>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEnrollModal(false)}
+                  className="px-4 py-2 border border-stone-300 rounded-xl hover:bg-stone-100 font-semibold text-xs transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEnrollment}
+                  className="px-4 py-2 bg-[#9d5f2f] hover:bg-[#864d23] text-white font-bold rounded-xl text-xs shadow-sm flex items-center space-x-1.5 transition-all active:scale-95"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Simpan Peserta ({enrollStudentNims.length})</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       </div>
 
       {/* Printable Sheet Official View Modal */}
@@ -1453,7 +1657,7 @@ export default function PjDashboard() {
         <AttendanceSheetPrint
           course={activeCourse}
           session={currentSession}
-          students={students}
+          students={enrolledCourseStudents}
           records={currentRecords}
           onClose={() => setShowPrintModal(false)}
         />

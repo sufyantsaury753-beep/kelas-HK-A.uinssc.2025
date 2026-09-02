@@ -25,8 +25,14 @@ export default function AttendanceSheetPrint({
     (r) => !r.sessionId || r.sessionId === session.id
   );
 
+  // Filter only students enrolled in this course (if enrolledStudentNims is defined and has elements)
+  const courseStudents =
+    course.enrolledStudentNims && course.enrolledStudentNims.length > 0
+      ? students.filter((s) => course.enrolledStudentNims!.includes(s.nim.trim()))
+      : students;
+
   // Strictly sort students by NIM ascending (e.g. 03, 04, 05, etc.)
-  const sortedStudents = [...students].sort((a, b) =>
+  const sortedStudents = [...courseStudents].sort((a, b) =>
     a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true })
   );
 
@@ -54,7 +60,7 @@ export default function AttendanceSheetPrint({
   };
 
   const handleCsvDownload = () => {
-    exportSingleSessionCsv(course, session, students, sessionRecords);
+    exportSingleSessionCsv(course, session, sortedStudents, sessionRecords);
   };
 
   const pjStudents = students.filter((s) => course.pjNims.includes(s.nim));
@@ -211,18 +217,14 @@ export default function AttendanceSheetPrint({
                 <th className="border border-stone-600 px-2 py-1 text-center w-28 font-mono">NIM</th>
                 <th className="border border-stone-600 px-2.5 py-1">Nama Mahasiswa</th>
                 <th className="border border-stone-600 px-2 py-1 text-center w-10">L/P</th>
-                <th className="border border-stone-600 px-2 py-1 text-center w-20">Status</th>
-                <th className="border border-stone-600 px-2 py-1 text-center w-16">Waktu</th>
-                <th className="border border-stone-600 px-2.5 py-1 text-left w-28">Keterangan</th>
+                <th className="border border-stone-600 px-2 py-1 text-center w-24">Status</th>
+                <th className="border border-stone-600 px-2.5 py-1 text-left w-36">Keterangan</th>
               </tr>
             </thead>
             <tbody>
               {sortedStudents.map((st, index) => {
                 const rec = sessionRecords.find((r) => r.studentNim.trim() === st.nim.trim());
                 const status = rec ? rec.status : 'ALPA';
-                const time = rec?.timestamp
-                  ? new Date(rec.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                  : '-';
                 const notes = rec?.notes || (status === 'HADIR' ? 'Hadir di kelas' : '-');
 
                 return (
@@ -240,9 +242,6 @@ export default function AttendanceSheetPrint({
                       {status === 'SAKIT' && <span className="text-amber-800">SAKIT</span>}
                       {status === 'DISPENSASI' && <span className="text-purple-800">DISPENSASI</span>}
                       {status === 'ALPA' && <span className="text-red-800">ALPA</span>}
-                    </td>
-                    <td className="border border-stone-400 px-2 py-0.5 text-center text-stone-600 font-mono text-[10px]">
-                      {time}
                     </td>
                     <td className="border border-stone-400 px-2.5 py-0.5 text-stone-700 text-[10px] whitespace-nowrap">
                       {notes}

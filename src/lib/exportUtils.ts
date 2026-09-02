@@ -49,7 +49,12 @@ export function exportSingleSessionCsv(
     (r) => !r.sessionId || r.sessionId === session.id
   );
 
-  const sortedStudents = [...students].sort((a, b) =>
+  const courseStudents =
+    course.enrolledStudentNims && course.enrolledStudentNims.length > 0
+      ? students.filter((s) => course.enrolledStudentNims!.includes(s.nim.trim()))
+      : students;
+
+  const sortedStudents = [...courseStudents].sort((a, b) =>
     a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true })
   );
 
@@ -130,7 +135,12 @@ export function exportMatrixAttendanceCsv(
     '% KEHADIRAN',
   ];
 
-  const sortedStudents = [...students].sort((a, b) =>
+  const courseStudents =
+    course.enrolledStudentNims && course.enrolledStudentNims.length > 0
+      ? students.filter((s) => course.enrolledStudentNims!.includes(s.nim.trim()))
+      : students;
+
+  const sortedStudents = [...courseStudents].sort((a, b) =>
     a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true })
   );
 

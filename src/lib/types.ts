@@ -28,6 +28,7 @@ export interface Course {
   driveLink?: string;
   rpsLink?: string;
   whatsappGroupLink?: string;
+  enrolledStudentNims?: string[]; // List of student NIMs enrolled in this course (KRS)
 }
 
 export type AttendanceStatus = 'HADIR' | 'IZIN' | 'SAKIT' | 'ALPA' | 'DISPENSASI';

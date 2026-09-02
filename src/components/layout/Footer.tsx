@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { GraduationCap, Heart, MapPin, Globe, Shield } from 'lucide-react';
+import { GraduationCap, Heart, MapPin, Globe, Shield, Phone } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -34,6 +34,12 @@ export default function Footer() {
             <div className="flex items-center space-x-2 text-xs text-stone-400">
               <MapPin className="w-4 h-4 text-[#9d5f2f]" />
               <span>Jl. Perjuangan, Sunyaragi, Kec. Kesambi, Kota Cirebon, Jawa Barat 45132</span>
+            </div>
+            <div className="pt-1 flex items-center space-x-2 text-xs">
+              <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-stone-800 text-stone-300 border border-stone-700">
+                <Phone className="w-3.5 h-3.5 text-amber-400" />
+                <span>Helpdesk: <strong className="font-mono text-white select-all">+62 812-1430-5925</strong></span>
+              </div>
             </div>
           </div>
 

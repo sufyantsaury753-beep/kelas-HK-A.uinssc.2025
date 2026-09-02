@@ -179,6 +179,51 @@ export default function AdminDashboard() {
     }, 1000);
   };
 
+  // Course Enrollment Modal State (KRS / Peserta MK)
+  const [enrollCourse, setEnrollCourse] = useState<Course | null>(null);
+  const [selectedStudentNims, setSelectedStudentNims] = useState<string[]>([]);
+  const [searchEnrollQuery, setSearchEnrollQuery] = useState('');
+  const [enrollNotice, setEnrollNotice] = useState<string | null>(null);
+
+  const handleOpenEnrollModal = (crs: Course) => {
+    setEnrollCourse(crs);
+    if (crs.enrolledStudentNims && crs.enrolledStudentNims.length > 0) {
+      setSelectedStudentNims([...crs.enrolledStudentNims]);
+    } else {
+      setSelectedStudentNims(students.map((s) => s.nim));
+    }
+    setSearchEnrollQuery('');
+    setEnrollNotice(null);
+  };
+
+  const handleToggleEnrollStudent = (nim: string) => {
+    setSelectedStudentNims((prev) =>
+      prev.includes(nim) ? prev.filter((n) => n !== nim) : [...prev, nim]
+    );
+  };
+
+  const handleSelectAllEnrollStudents = () => {
+    setSelectedStudentNims(students.map((s) => s.nim));
+  };
+
+  const handleDeselectAllEnrollStudents = () => {
+    setSelectedStudentNims([]);
+  };
+
+  const handleSaveEnrollment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!enrollCourse) return;
+    appStore.setCourseEnrolledStudents(enrollCourse.id, selectedStudentNims);
+    setEnrollNotice(`Peserta mata kuliah "${enrollCourse.name}" berhasil disimpan (${selectedStudentNims.length} mahasiswa).`);
+    try {
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+    } catch {}
+    setTimeout(() => {
+      setEnrollCourse(null);
+      setEnrollNotice(null);
+    }, 1200);
+  };
+
   useEffect(() => {
     const update = () => {
       const currentAuth = appStore.getAuth();
@@ -535,6 +580,16 @@ export default function AdminDashboard() {
                     >
                       <UserPlus className="w-3.5 h-3.5" />
                       <span>Atur & Tambah PJ Mata Kuliah</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleOpenEnrollModal(crs)}
+                      className="w-full py-2 bg-amber-50 hover:bg-amber-100 text-[#8c4e24] text-xs font-bold rounded-xl border border-amber-200/80 transition-all flex items-center justify-center space-x-1.5 shadow-2xs"
+                    >
+                      <Users className="w-3.5 h-3.5 text-[#9d5f2f]" />
+                      <span>
+                        Atur Peserta Mahasiswa ({crs.enrolledStudentNims && crs.enrolledStudentNims.length > 0 ? crs.enrolledStudentNims.length : students.length} Mhs)
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -1906,6 +1961,160 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ATUR MAHASISWA PESERTA MATA KULIAH (KRS / SKS VARIATIF) */}
+      {enrollCourse && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#9d5f2f] to-[#753e1f] p-5 text-white flex items-start justify-between">
+              <div>
+                <span className="text-xs font-mono bg-white/20 px-2.5 py-0.5 rounded-lg text-amber-200 font-bold">
+                  {enrollCourse.code} • {enrollCourse.sks} SKS
+                </span>
+                <h3 className="text-base font-bold mt-1.5 leading-snug">
+                  Atur Mahasiswa Peserta: {enrollCourse.name}
+                </h3>
+                <p className="text-xs text-amber-100/90 mt-0.5">
+                  Tentukan mahasiswa yang mengontrak mata kuliah ini sesuai beban SKS semester masing-masing.
+                </p>
+              </div>
+              <button
+                onClick={() => setEnrollCourse(null)}
+                className="text-white/80 hover:text-white p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content & Student List */}
+            <div className="p-5 overflow-y-auto flex-1 text-xs space-y-4">
+              {enrollNotice && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 flex items-center space-x-2 font-semibold">
+                  <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span>{enrollNotice}</span>
+                </div>
+              )}
+
+              {/* Stats & Search Toolbar */}
+              <div className="space-y-3 bg-stone-50 p-3.5 rounded-2xl border border-stone-200/80">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-bold text-stone-800 text-xs">Peserta Terpilih:</span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-[#9d5f2f] font-mono font-bold text-xs border border-amber-300/60">
+                      {selectedStudentNims.length} / {students.length} Mahasiswa
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-1.5 self-end sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={handleSelectAllEnrollStudents}
+                      className="px-2.5 py-1 bg-white hover:bg-stone-100 text-stone-700 font-semibold rounded-lg border border-stone-300 text-[11px] transition-colors"
+                    >
+                      Pilih Semua ({students.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeselectAllEnrollStudents}
+                      className="px-2.5 py-1 bg-white hover:bg-stone-100 text-rose-600 font-semibold rounded-lg border border-stone-300 text-[11px] transition-colors"
+                    >
+                      Batalkan Semua
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search Box */}
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari nama atau NIM mahasiswa..."
+                    value={searchEnrollQuery}
+                    onChange={(e) => setSearchEnrollQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-1.5 text-xs bg-white rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#9d5f2f]"
+                  />
+                </div>
+              </div>
+
+              {/* Roster Checkbox List */}
+              <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                {students
+                  .filter((s) =>
+                    s.name.toLowerCase().includes(searchEnrollQuery.toLowerCase()) ||
+                    s.nim.includes(searchEnrollQuery)
+                  )
+                  .map((st, idx) => {
+                    const isSelected = selectedStudentNims.includes(st.nim);
+                    return (
+                      <label
+                        key={st.nim}
+                        onClick={() => handleToggleEnrollStudent(st.nim)}
+                        className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-amber-50/60 border-amber-300 shadow-2xs'
+                            : 'bg-white border-stone-200 hover:bg-stone-50 opacity-70'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}} // handled by row click
+                            className="w-4 h-4 rounded text-[#9d5f2f] focus:ring-[#9d5f2f] cursor-pointer"
+                          />
+                          <div>
+                            <p className="font-bold text-stone-900 text-xs flex items-center space-x-1.5">
+                              <span>{st.name}</span>
+                              <span className="text-[10px] text-stone-400 font-normal">({st.gender})</span>
+                            </p>
+                            <p className="text-[10px] font-mono text-stone-500">{st.nim}</p>
+                          </div>
+                        </div>
+
+                        <div>
+                          {isSelected ? (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                              Mengambil MK
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-stone-100 text-stone-500 font-medium text-[10px]">
+                              Tidak Mengambil
+                            </span>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-stone-50 border-t border-stone-200 flex items-center justify-between">
+              <p className="text-[11px] text-stone-500">
+                Pencetakan PDF dan rekap absensi MK ini akan otomatis menyesuaikan mahasiswa terpilih.
+              </p>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setEnrollCourse(null)}
+                  className="px-4 py-2 border border-stone-300 rounded-xl hover:bg-stone-100 font-semibold text-xs transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEnrollment}
+                  className="px-4 py-2 bg-[#9d5f2f] hover:bg-[#864d23] text-white font-bold rounded-xl text-xs shadow-sm flex items-center space-x-1.5 transition-all active:scale-95"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Simpan Peserta ({selectedStudentNims.length})</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

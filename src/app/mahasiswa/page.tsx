@@ -77,14 +77,22 @@ export default function MahasiswaDashboard() {
     );
   }
 
-  // Active sessions open for self checkin
-  const openSessions = sessions.filter((s) => s.isOpenForSelfCheckin);
-
   // Student assigned PJ courses
   const studentNim = auth.nim || '';
   const myPjCourses = courses.filter((c) =>
     c.pjNims.some((pNim) => pNim.trim() === studentNim.trim())
   );
+
+  // Active sessions open for self checkin (only for courses this student takes)
+  const openSessions = sessions.filter((s) => {
+    if (!s.isOpenForSelfCheckin) return false;
+    const crs = courses.find((c) => c.id === s.courseId);
+    if (!crs) return false;
+    if (crs.enrolledStudentNims && crs.enrolledStudentNims.length > 0) {
+      return crs.enrolledStudentNims.some((n) => n.trim() === studentNim.trim());
+    }
+    return true;
+  });
 
   // Calculate student attendance statistics
   const myRecords = records.filter((r) => r.studentNim.trim() === studentNim.trim());
@@ -402,11 +410,18 @@ export default function MahasiswaDashboard() {
             const cDispensasi = courseRecords.filter((r) => r.status === 'DISPENSASI').length;
             const cAlpa = courseRecords.filter((r) => r.status === 'ALPA').length;
 
+            const isEnrolled =
+              !c.enrolledStudentNims ||
+              c.enrolledStudentNims.length === 0 ||
+              c.enrolledStudentNims.some((n) => n.trim() === studentNim.trim());
+
             return (
               <div key={c.id} className="transition-colors">
                 <div
                   onClick={() => setExpandedCourseId(isExpanded ? null : c.id)}
-                  className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-amber-50/30 transition-colors"
+                  className={`p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-amber-50/30 transition-colors ${
+                    !isEnrolled ? 'opacity-65 bg-stone-50/40' : ''
+                  }`}
                 >
                   <div className="flex items-start space-x-3.5">
                     <div className="w-10 h-10 rounded-xl bg-amber-100 text-[#9d5f2f] flex items-center justify-center font-bold font-mono text-xs flex-shrink-0 mt-0.5">
@@ -418,6 +433,11 @@ export default function MahasiswaDashboard() {
                         <span className="text-[11px] font-semibold text-stone-500 font-mono">
                           ({c.sks} SKS)
                         </span>
+                        {!isEnrolled && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-200 text-stone-600">
+                            Tidak Mengontrak MK Ini
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-stone-500">{c.dosen}</p>
                       <p className="text-[11px] text-stone-400 mt-0.5">
@@ -428,15 +448,23 @@ export default function MahasiswaDashboard() {
 
                   <div className="flex items-center space-x-4 self-end sm:self-center">
                     <div className="text-right text-xs">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-emerald-700 font-semibold">{cHadir} Hadir</span>
-                        {cIzin > 0 && <span className="text-blue-700 font-medium">• {cIzin} Izin</span>}
-                        {cSakit > 0 && <span className="text-amber-700 font-medium">• {cSakit} Sakit</span>}
-                        {cAlpa > 0 && <span className="text-rose-700 font-medium">• {cAlpa} Alpa</span>}
-                      </div>
-                      <p className="text-[11px] text-stone-400 mt-0.5">
-                        {courseSessions.length} Pertemuan Dilaksanakan
-                      </p>
+                      {isEnrolled ? (
+                        <>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-emerald-700 font-semibold">{cHadir} Hadir</span>
+                            {cIzin > 0 && <span className="text-blue-700 font-medium">• {cIzin} Izin</span>}
+                            {cSakit > 0 && <span className="text-amber-700 font-medium">• {cSakit} Sakit</span>}
+                            {cAlpa > 0 && <span className="text-rose-700 font-medium">• {cAlpa} Alpa</span>}
+                          </div>
+                          <p className="text-[11px] text-stone-400 mt-0.5">
+                            {courseSessions.length} Pertemuan Dilaksanakan
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-stone-400 text-xs italic">
+                          Beban SKS tidak diambil
+                        </p>
+                      )}
                     </div>
 
                     <div className="p-1.5 rounded-lg bg-stone-100 text-stone-500">

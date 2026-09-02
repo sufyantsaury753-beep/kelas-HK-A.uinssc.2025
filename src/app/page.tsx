@@ -25,6 +25,9 @@ import {
   Download,
   FileCheck,
   Lock,
+  Phone,
+  PhoneCall,
+  MessageCircle,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, Announcement, Student, CourseMaterial, AuthSession } from '@/lib/types';
@@ -111,12 +114,20 @@ export default function HomePage() {
     return () => unsub();
   }, []);
 
+  // Helper to extract start time in minutes (e.g., "09:10 - 10:50 WIB" -> 9*60 + 10 = 550)
+  const parseStartTime = (timeStr: string): number => {
+    if (!timeStr) return 9999;
+    const match = timeStr.match(/(\d{1,2})[:.](\d{2})/);
+    if (!match) return 9999;
+    return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+  };
+
   // Today's day in Indonesian
   const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   const todayName = dayNames[new Date().getDay()];
-  const todayCourses = courses.filter(
-    (c) => c.day.toLowerCase() === todayName.toLowerCase()
-  );
+  const todayCourses = courses
+    .filter((c) => c.day.toLowerCase().trim() === todayName.toLowerCase().trim())
+    .sort((a, b) => parseStartTime(a.time) - parseStartTime(b.time));
 
   const filteredCourses = courses.filter(
     (c) =>
@@ -476,6 +487,45 @@ export default function HomePage() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Pusat Bantuan & Layanan Helpdesk HK A */}
+        <section id="helpdesk" className="scroll-mt-24">
+          <div className="relative overflow-hidden bg-gradient-to-br from-[#8d5225] via-[#6e3913] to-[#452008] text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-amber-400/30">
+            {/* Ambient pattern */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]"></div>
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-start space-x-4">
+                <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-amber-300 flex-shrink-0 shadow-inner">
+                  <PhoneCall className="w-7 h-7" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-300/30 text-amber-200 text-[11px] font-bold uppercase tracking-wider mb-2">
+                    <span>Layanan Helpdesk Kelas</span>
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    Pusat Informasi & Helpdesk HK A
+                  </h3>
+                  <p className="text-xs sm:text-sm text-amber-100/80 mt-1 max-w-xl leading-relaxed">
+                    Untuk bantuan seputar kendala akun, presensi perkuliahan, dan informasi kelas Hukum Keluarga A 2025.
+                  </p>
+                </div>
+              </div>
+
+              {/* Hanya nomor saja, bukan tautan / link */}
+              <div className="bg-black/30 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/15 flex items-center space-x-3">
+                <Phone className="w-5 h-5 text-amber-300 flex-shrink-0" />
+                <div>
+                  <span className="text-[10px] text-amber-200 uppercase tracking-widest font-bold block">
+                    Kontak Helpdesk
+                  </span>
+                  <span className="font-mono font-black text-white text-base sm:text-lg select-all">
+                    +62 812-1430-5925
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </div>

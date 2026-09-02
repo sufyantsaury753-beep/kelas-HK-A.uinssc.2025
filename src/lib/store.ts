@@ -185,6 +185,7 @@ class Store {
           description: c.description || '',
           driveLink: c.drive_link || undefined,
           rpsLink: c.rps_link || undefined,
+          enrolledStudentNims: c.enrolled_student_nims || undefined,
         }));
       }
 
@@ -434,7 +435,7 @@ class Store {
       this.save();
 
       if (isSupabaseConfigured()) {
-        supabase.from('courses').update({
+        const updatePayload: any = {
           name: this.state.courses[idx].name,
           pj_nims: this.state.courses[idx].pjNims,
           dosen: this.state.courses[idx].dosen,
@@ -445,9 +446,42 @@ class Store {
           description: this.state.courses[idx].description,
           drive_link: this.state.courses[idx].driveLink,
           rps_link: this.state.courses[idx].rpsLink,
-        }).eq('id', id).then();
+        };
+        if (this.state.courses[idx].enrolledStudentNims !== undefined) {
+          updatePayload.enrolled_student_nims = this.state.courses[idx].enrolledStudentNims;
+        }
+        supabase.from('courses').update(updatePayload).eq('id', id).then();
       }
     }
+  }
+
+  public setCourseEnrolledStudents(courseId: string, studentNims: string[]) {
+    const idx = this.state.courses.findIndex((c) => c.id === courseId);
+    if (idx >= 0) {
+      this.state.courses[idx].enrolledStudentNims = studentNims;
+      this.save();
+
+      if (isSupabaseConfigured()) {
+        try {
+          supabase.from('courses').update({
+            enrolled_student_nims: studentNims,
+          }).eq('id', courseId).then();
+        } catch (e) {
+          console.warn('Supabase course enrollment sync notice:', e);
+        }
+      }
+      this.notify();
+    }
+  }
+
+  public getCourseEnrolledStudents(courseId: string): Student[] {
+    const course = this.getCourseById(courseId);
+    const allStudents = this.getStudents();
+    if (!course || !course.enrolledStudentNims || course.enrolledStudentNims.length === 0) {
+      return allStudents;
+    }
+    const cleanNims = new Set(course.enrolledStudentNims.map((n) => n.trim()));
+    return allStudents.filter((s) => cleanNims.has(s.nim.trim()));
   }
 
   public assignPj(courseId: string, pjNims: string[]) {
@@ -628,7 +662,7 @@ class Store {
     status: AttendanceStatus,
     verifiedBy: string
   ) {
-    const allStudents = this.getStudents();
+    const targetStudents = this.getCourseEnrolledStudents(courseId);
     const isDispensasi = status === 'DISPENSASI';
     const supabaseStatus = isDispensasi ? 'IZIN' : status;
     const supabaseNotes = isDispensasi ? '[DISPENSASI]' : null;
@@ -636,7 +670,7 @@ class Store {
 
     const upsertPayload: any[] = [];
 
-    allStudents.forEach((student) => {
+    targetStudents.forEach((student) => {
       const existingIdx = this.state.records.findIndex(
         (r) =>
           r.sessionId === sessionId && r.studentNim.trim() === student.nim.trim()
