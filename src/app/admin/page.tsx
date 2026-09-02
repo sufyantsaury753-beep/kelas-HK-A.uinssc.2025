@@ -77,6 +77,33 @@ export default function AdminDashboard() {
   const [toastRev, setToastRev] = useState<string | null>(null);
   const [showRevPrintModal, setShowRevPrintModal] = useState<boolean>(false);
 
+  // Active course and session for revision and print modal
+  const revDateParts = selectedRevDate.split('-').map(Number);
+  const selDateObj =
+    revDateParts.length === 3 ? new Date(revDateParts[0], revDateParts[1] - 1, revDateParts[2]) : new Date();
+  const INDO_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const selDayName = INDO_DAYS[selDateObj.getDay()];
+
+  const dateSessions = sessions.filter((s) => s.date === selectedRevDate);
+  const relevantCourses = courses.filter(
+    (c) =>
+      c.day.toLowerCase().trim() === selDayName.toLowerCase().trim() ||
+      dateSessions.some((s) => s.courseId === c.id)
+  );
+
+  const activeRevCourse =
+    relevantCourses.find((c) => c.id === selectedRevCourseId) ||
+    relevantCourses[0] ||
+    courses[0] ||
+    null;
+
+  const activeRevSession =
+    dateSessions.find((s) => s.courseId === activeRevCourse?.id) || null;
+
+  const activeRevRecords = activeRevSession
+    ? records.filter((r) => r.sessionId === activeRevSession.id)
+    : [];
+
   // Modals & Form States
   const [searchStudent, setSearchStudent] = useState('');
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
@@ -305,7 +332,8 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <>
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 ${showRevPrintModal ? 'print:hidden' : ''}`}>
       {/* Header Admin Banner */}
       <div className="bg-gradient-to-r from-stone-900 via-stone-800 to-stone-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-5 border border-stone-800">
         <div>
@@ -1113,17 +1141,6 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
-
-            {/* Print Official Sheet Modal */}
-            {showRevPrintModal && activeRevCourse && activeRevSession && (
-              <AttendanceSheetPrint
-                course={activeRevCourse}
-                session={activeRevSession}
-                students={students}
-                records={activeRevRecords}
-                onClose={() => setShowRevPrintModal(false)}
-              />
-            )}
           </div>
         );
       })()}
@@ -1887,6 +1904,18 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+
+      {/* Print Official Sheet Modal (Outside dashboard to allow clean paper print without UI) */}
+      {showRevPrintModal && activeRevCourse && activeRevSession && (
+        <AttendanceSheetPrint
+          course={activeRevCourse}
+          session={activeRevSession}
+          students={students}
+          records={activeRevRecords}
+          onClose={() => setShowRevPrintModal(false)}
+        />
+      )}
+    </>
   );
 }
