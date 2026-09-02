@@ -51,7 +51,10 @@ export function exportSingleSessionCsv(
 
   const courseStudents =
     course.enrolledStudentNims && course.enrolledStudentNims.length > 0
-      ? students.filter((s) => course.enrolledStudentNims!.includes(s.nim.trim()))
+      ? students.filter((s) => {
+          const cleanSet = new Set(course.enrolledStudentNims!.map((n) => (n || '').trim()));
+          return cleanSet.has((s?.nim || '').trim());
+        })
       : students;
 
   const sortedStudents = [...courseStudents].sort((a, b) =>
@@ -137,7 +140,10 @@ export function exportMatrixAttendanceCsv(
 
   const courseStudents =
     course.enrolledStudentNims && course.enrolledStudentNims.length > 0
-      ? students.filter((s) => course.enrolledStudentNims!.includes(s.nim.trim()))
+      ? students.filter((s) => {
+          const cleanSet = new Set(course.enrolledStudentNims!.map((n) => (n || '').trim()));
+          return cleanSet.has((s?.nim || '').trim());
+        })
       : students;
 
   const sortedStudents = [...courseStudents].sort((a, b) =>

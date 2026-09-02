@@ -28,7 +28,10 @@ export default function AttendanceSheetPrint({
   // Filter only students enrolled in this course (if enrolledStudentNims is defined and has elements)
   const courseStudents =
     course.enrolledStudentNims && course.enrolledStudentNims.length > 0
-      ? students.filter((s) => course.enrolledStudentNims!.includes(s.nim.trim()))
+      ? students.filter((s) => {
+          const cleanSet = new Set(course.enrolledStudentNims!.map((n) => (n || '').trim()));
+          return cleanSet.has((s?.nim || '').trim());
+        })
       : students;
 
   // Strictly sort students by NIM ascending (e.g. 03, 04, 05, etc.)

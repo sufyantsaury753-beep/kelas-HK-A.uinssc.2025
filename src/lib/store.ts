@@ -41,6 +41,29 @@ export function sortStudentsByNim(studentsList?: Student[] | null): Student[] {
   });
 }
 
+// Helpers to encode/decode enrolled students into course description for cloud persistence
+export function encodeCourseDescription(cleanDesc?: string, enrolledNims?: string[]): string {
+  const base = (cleanDesc || '').replace(/<!--ENROLLED:[\s\S]*?-->/g, '').trim();
+  if (Array.isArray(enrolledNims) && enrolledNims.length > 0) {
+    return `${base}\n<!--ENROLLED:${enrolledNims.map((n) => n.trim()).join(',')}-->`;
+  }
+  return base;
+}
+
+export function decodeCourseDescription(rawDesc?: string): { cleanDescription: string; enrolledStudentNims?: string[] } {
+  if (!rawDesc) return { cleanDescription: '', enrolledStudentNims: undefined };
+  const match = rawDesc.match(/<!--ENROLLED:(.*?)-->/);
+  const cleanDescription = rawDesc.replace(/<!--ENROLLED:[\s\S]*?-->/g, '').trim();
+  if (match && match[1]) {
+    const nims = match[1].split(',').map((n) => n.trim()).filter(Boolean);
+    if (nims.length > 0) {
+      return { cleanDescription, enrolledStudentNims: nims };
+    }
+  }
+  return { cleanDescription, enrolledStudentNims: undefined };
+}
+
+
 function getInitialState(): AppState {
   return {
     students: sortStudentsByNim(INITIAL_STUDENTS),
@@ -184,22 +207,35 @@ class Store {
       // 2. Fetch Courses
       const { data: remoteCourses } = await supabase.from('courses').select('*');
       if (remoteCourses && remoteCourses.length > 0) {
-        this.state.courses = remoteCourses.map((c: any) => ({
-          id: c.id,
-          code: c.code,
-          name: c.name,
-          dosen: c.dosen,
-          sks: c.sks,
-          semester: c.semester || 3,
-          day: c.day,
-          time: c.time,
-          room: c.room,
-          pjNims: c.pj_nims || [],
-          description: c.description || '',
-          driveLink: c.drive_link || undefined,
-          rpsLink: c.rps_link || undefined,
-          enrolledStudentNims: c.enrolled_student_nims || undefined,
-        }));
+        this.state.courses = remoteCourses.map((c: any) => {
+          const { cleanDescription, enrolledStudentNims: decodedEnrolled } = decodeCourseDescription(c.description);
+          let enrolled = Array.isArray(c.enrolled_student_nims) && c.enrolled_student_nims.length > 0
+            ? c.enrolled_student_nims
+            : decodedEnrolled;
+
+          // Preserve from existing local state if remote does not specify
+          const existing = this.state.courses.find((x) => x.id === c.id);
+          if (!enrolled && existing?.enrolledStudentNims && existing.enrolledStudentNims.length > 0) {
+            enrolled = existing.enrolledStudentNims;
+          }
+
+          return {
+            id: c.id,
+            code: c.code,
+            name: c.name,
+            dosen: c.dosen,
+            sks: c.sks !== undefined && c.sks !== null ? Number(c.sks) : 2,
+            semester: c.semester || 3,
+            day: c.day,
+            time: c.time,
+            room: c.room,
+            pjNims: c.pj_nims || [],
+            description: cleanDescription,
+            driveLink: c.drive_link || undefined,
+            rpsLink: c.rps_link || undefined,
+            enrolledStudentNims: enrolled,
+          };
+        });
       }
 
       // 3. Fetch Sessions
@@ -466,13 +502,10 @@ class Store {
         time: course.time,
         room: course.room,
         pj_nims: course.pjNims || [],
-        description: course.description || '',
+        description: encodeCourseDescription(course.description, course.enrolledStudentNims),
         drive_link: course.driveLink || '',
         rps_link: course.rpsLink || null,
       };
-      if (course.enrolledStudentNims) {
-        payload.enrolled_student_nims = course.enrolledStudentNims;
-      }
       supabase.from('courses').insert(payload).then();
     }
     this.notify();
@@ -506,23 +539,22 @@ class Store {
       this.save();
 
       if (isSupabaseConfigured()) {
+        const c = this.state.courses[idx];
+        const encodedDesc = encodeCourseDescription(c.description, c.enrolledStudentNims);
         const updatePayload: any = {
-          code: this.state.courses[idx].code,
-          name: this.state.courses[idx].name,
-          pj_nims: this.state.courses[idx].pjNims,
-          dosen: this.state.courses[idx].dosen,
-          room: this.state.courses[idx].room,
-          day: this.state.courses[idx].day,
-          time: this.state.courses[idx].time,
-          sks: this.state.courses[idx].sks,
-          semester: this.state.courses[idx].semester,
-          description: this.state.courses[idx].description,
-          drive_link: this.state.courses[idx].driveLink,
-          rps_link: this.state.courses[idx].rpsLink,
+          code: c.code,
+          name: c.name,
+          pj_nims: c.pjNims,
+          dosen: c.dosen,
+          room: c.room,
+          day: c.day,
+          time: c.time,
+          sks: c.sks,
+          semester: c.semester,
+          description: encodedDesc,
+          drive_link: c.driveLink,
+          rps_link: c.rpsLink,
         };
-        if (this.state.courses[idx].enrolledStudentNims !== undefined) {
-          updatePayload.enrolled_student_nims = this.state.courses[idx].enrolledStudentNims;
-        }
         supabase.from('courses').update(updatePayload).eq('id', id).then();
       }
     }
@@ -531,13 +563,18 @@ class Store {
   public setCourseEnrolledStudents(courseId: string, studentNims: string[]) {
     const idx = this.state.courses.findIndex((c) => c.id === courseId);
     if (idx >= 0) {
-      this.state.courses[idx].enrolledStudentNims = studentNims;
+      const cleanNims = studentNims.map((n) => n.trim()).filter(Boolean);
+      this.state.courses[idx].enrolledStudentNims = cleanNims;
       this.save();
 
       if (isSupabaseConfigured()) {
         try {
+          const encodedDesc = encodeCourseDescription(
+            this.state.courses[idx].description,
+            cleanNims
+          );
           supabase.from('courses').update({
-            enrolled_student_nims: studentNims,
+            description: encodedDesc,
           }).eq('id', courseId).then();
         } catch (e) {
           console.warn('Supabase course enrollment sync notice:', e);
