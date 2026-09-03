@@ -697,25 +697,29 @@ export default function HomePage() {
                 <tbody className="divide-y divide-stone-100">
                   {[...students]
                     .sort((a, b) => a.nim.trim().localeCompare(b.nim.trim(), undefined, { numeric: true }))
-                    .map((st, idx) => (
-                    <tr key={st.nim} className="hover:bg-amber-50/50">
-                      <td className="py-2 px-3 text-center text-stone-400">{idx + 1}</td>
-                      <td className="py-2 px-3 font-mono font-semibold text-[#9d5f2f]">{st.nim}</td>
-                      <td className="py-2 px-3 font-medium text-stone-800">{st.name}</td>
-                      <td className="py-2 px-3 text-center text-stone-500">{st.gender}</td>
-                      <td className="py-2 px-3 text-center">
-                        {st.isPinSet ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            Aktif
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-500">
-                            Belum Set PIN
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                    .map((st, idx) => {
+                      const cleanNim = (st.nim || '').trim();
+                      const maskedNim = cleanNim.length > 4 ? cleanNim.slice(0, -4) + 'xxxx' : 'xxxx';
+                      return (
+                        <tr key={st.nim} className="hover:bg-amber-50/50">
+                          <td className="py-2 px-3 text-center text-stone-400">{idx + 1}</td>
+                          <td className="py-2 px-3 font-mono font-semibold text-[#9d5f2f]">{maskedNim}</td>
+                          <td className="py-2 px-3 font-medium text-stone-800">{st.name}</td>
+                          <td className="py-2 px-3 text-center text-stone-500">{st.gender}</td>
+                          <td className="py-2 px-3 text-center">
+                            {st.isPinSet ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                Aktif
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-500">
+                                Belum Set PIN
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
@@ -723,7 +727,7 @@ export default function HomePage() {
             {/* Footer */}
             <div className="p-4 bg-stone-50 border-t border-stone-200 flex items-center justify-between">
               <p className="text-[11px] text-stone-500">
-                Hanya mahasiswa pada daftar ini yang dapat login ke sistem.
+                Demi privasi identitas, 4 digit terakhir NIM disensor. Hanya mahasiswa pada daftar ini yang dapat login.
               </p>
               <button
                 onClick={() => setShowRosterModal(false)}
