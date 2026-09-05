@@ -80,7 +80,25 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200/80 shadow-sm no-print">
+    <header className="sticky top-0 z-40 no-print">
+      {/* Official University Portal Top Bar */}
+      <div className="bg-[#78350f] text-white text-[11px] py-1 px-4 border-b border-[#632a0c]">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="font-semibold text-amber-200">Fakultas Syariah</span>
+            <span className="text-amber-300/40">•</span>
+            <span className="hidden sm:inline text-stone-200">UIN Siber Syekh Nurjati Cirebon</span>
+            <span className="hidden md:inline text-amber-300/40">•</span>
+            <span className="hidden md:inline text-amber-100/80">Cyber Islamic University</span>
+          </div>
+          <div className="flex items-center space-x-3 text-[10px] font-medium text-amber-100">
+            <span>Semester Ganjil 2026/2027</span>
+            <span className="hidden sm:inline bg-amber-900/60 px-2 py-0.5 rounded border border-amber-500/30 text-amber-200">Kelas A</span>
+          </div>
+        </div>
+      </div>
+
+      <nav className="bg-white/95 backdrop-blur-md border-b border-stone-200/80 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18 py-3">
           {/* Brand Logo & Name */}
@@ -482,6 +500,7 @@ export default function Navbar() {
           </div>,
           document.body
         )}
-    </nav>
+      </nav>
+    </header>
   );
 }

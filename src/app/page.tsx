@@ -142,51 +142,54 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#7e451b] via-[#653210] to-[#452008] text-white py-16 sm:py-24 px-4 sm:px-6 lg:px-8 shadow-inner">
-        {/* Background decorative circles & pattern */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px]"></div>
-        <div className="absolute -top-28 -right-28 w-96 h-96 rounded-full bg-amber-400/20 blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-28 -left-28 w-96 h-96 rounded-full bg-amber-600/30 blur-3xl pointer-events-none"></div>
+      {/* Hero Section - Clean Modern Academic (White & Deep Brown Identity) */}
+      <section className="relative overflow-hidden bg-white border-b border-stone-200/80 py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
+        {/* Subtle Watermark & Background Accents */}
+        <div className="absolute inset-0 opacity-[0.35] pointer-events-none bg-[radial-gradient(#d6d3d1_1px,transparent_1px)] [background-size:20px_20px]"></div>
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-b from-[#9d5f2f]/10 to-transparent blur-3xl pointer-events-none rounded-full"></div>
 
-        <div className="max-w-6xl mx-auto relative z-10 text-center">
-          {/* Modern 3D Emblem Logo */}
-          <div className="flex justify-center mb-6">
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-amber-600 rounded-full blur-md opacity-40 group-hover:opacity-75 transition duration-500"></div>
-              <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-stone-950/90 p-1 ring-4 ring-amber-400/40 ring-offset-4 ring-offset-[#452008] shadow-2xl flex items-center justify-center transition-transform hover:scale-105">
-                <img
-                  src="/logo.png"
-                  alt="Logo Resmi Hukum Keluarga A 2025"
-                  className="w-full h-full object-contain rounded-full"
-                />
-              </div>
+        <div className="max-w-5xl mx-auto relative z-10 text-center">
+          {/* Logo with gentle entrance */}
+          <div className="flex justify-center mb-6 animate-fade-up">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white p-1 ring-4 ring-[#9d5f2f]/20 shadow-md flex items-center justify-center transition-transform hover:scale-105">
+              <img
+                src="/logo.png"
+                alt="Logo Resmi Hukum Keluarga A 2025"
+                className="w-full h-full object-contain rounded-full"
+              />
             </div>
           </div>
 
-          {/* Badge Pill */}
-          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-amber-200 text-xs font-bold uppercase tracking-wider mb-5 shadow-inner">
-            <GraduationCap className="w-4 h-4 text-amber-300" />
-            <span>Portal Akademik Resmi • Angkatan 2025</span>
+          {/* Badge Pill with Entrance Animation */}
+          <div className="animate-fade-up delay-100 mb-5">
+            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-amber-50/90 border border-amber-200/70 text-[#753e1f] text-xs font-bold uppercase tracking-wider shadow-2xs">
+              <GraduationCap className="w-3.5 h-3.5 text-[#9d5f2f]" />
+              <span>Portal Akademik Resmi • Angkatan 2025</span>
+            </div>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white mb-3 drop-shadow-sm">
-            Hukum Keluarga A 2025
+          {/* Animated Heading */}
+          <h1 className="animate-fade-up delay-200 text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-stone-900 mb-3">
+            Hukum Keluarga A <span className="text-[#8c4e24]">2025</span>
           </h1>
-          <p className="text-xs sm:text-sm font-bold tracking-widest text-amber-300/90 uppercase mb-3">
+
+          {/* Animated Faculty Subtitle */}
+          <p className="animate-fade-up delay-300 text-xs sm:text-sm font-bold tracking-widest text-[#8c4e24] uppercase mb-4">
             Fakultas Syariah — UIN Siber Syekh Nurjati Cirebon
           </p>
-          <p className="text-sm sm:text-base text-amber-100/90 font-medium max-w-2xl mx-auto mb-8 leading-relaxed">
-            Sistem Informasi Akademik, Presensi Perkuliahan Digital Mahasiswa & Repositori Perkuliahan.
+
+          {/* Animated System Description */}
+          <p className="animate-fade-up delay-400 text-sm sm:text-base text-stone-600 font-normal max-w-2xl mx-auto mb-8 leading-relaxed">
+            Sistem Informasi Akademik, Presensi Perkuliahan Digital Mahasiswa & Repositori Perkuliahan Terpadu.
           </p>
 
-          {/* Action CTAs */}
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          {/* Action CTAs with Entrance Animation */}
+          <div className="animate-fade-up delay-500 flex flex-wrap items-center justify-center gap-3">
             {auth ? (
               auth.role === 'ADMIN' ? (
                 <Link
                   href="/admin"
-                  className="px-6 py-3.5 rounded-2xl bg-stone-900 hover:bg-black text-amber-300 font-extrabold text-sm shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 border border-amber-400/40"
+                  className="px-6 py-3.5 rounded-xl bg-stone-900 hover:bg-black text-amber-300 font-bold text-sm shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all flex items-center space-x-2 border border-amber-400/30"
                 >
                   <ShieldCheck className="w-4 h-4 text-amber-400" />
                   <span>Buka Dashboard Admin</span>
@@ -195,16 +198,16 @@ export default function HomePage() {
                 <>
                   <Link
                     href="/mahasiswa"
-                    className="px-6 py-3.5 rounded-2xl bg-white hover:bg-amber-50 text-[#8c4e24] font-black text-sm shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2"
+                    className="px-6 py-3.5 rounded-xl bg-[#8c4e24] hover:bg-[#753e1f] text-white font-bold text-sm shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all flex items-center space-x-2"
                   >
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-300" />
                     <span>Presensi & Nilai Saya ({(auth.name || 'Mahasiswa').split(' ')[0]})</span>
                   </Link>
                   <Link
                     href="/pj"
-                    className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-black text-sm shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2"
+                    className="px-6 py-3.5 rounded-xl bg-white hover:bg-stone-50 text-stone-800 font-bold text-sm shadow-xs border border-stone-300 hover:border-stone-400 active:scale-95 transition-all flex items-center space-x-2"
                   >
-                    <Sparkles className="w-4 h-4" />
+                    <Sparkles className="w-4 h-4 text-[#8c4e24]" />
                     <span>Portal PJ Matakuliah</span>
                   </Link>
                 </>
@@ -213,45 +216,45 @@ export default function HomePage() {
               <>
                 <Link
                   href="/login"
-                  className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-black text-sm sm:text-base shadow-xl shadow-stone-950/40 hover:scale-105 active:scale-95 transition-all flex items-center space-x-2.5"
+                  className="px-7 py-3.5 rounded-xl bg-[#8c4e24] hover:bg-[#753e1f] text-white font-bold text-sm sm:text-base shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all flex items-center space-x-2.5"
                 >
-                  <LogIn className="w-5 h-5 text-stone-950" />
+                  <LogIn className="w-5 h-5 text-amber-200" />
                   <span>Masuk Portal Presensi HK A</span>
                 </Link>
                 <button
                   onClick={() => setShowRosterModal(true)}
-                  className="px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm sm:text-base backdrop-blur-xl border border-white/20 hover:border-white/40 active:scale-95 transition-all flex items-center space-x-2"
+                  className="px-6 py-3.5 rounded-xl bg-white hover:bg-stone-50 text-stone-800 font-semibold text-sm sm:text-base border border-stone-300 hover:border-stone-400 active:scale-95 transition-all flex items-center space-x-2 shadow-2xs"
                 >
-                  <Users className="w-5 h-5 text-amber-200" />
+                  <Users className="w-5 h-5 text-stone-500" />
                   <span>Daftar {students.length} Mahasiswa</span>
                 </button>
               </>
             )}
           </div>
 
-          {/* Modern Quick Stat Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 max-w-4xl mx-auto mt-12 pt-8 border-t border-white/15 text-left">
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/15 hover:border-amber-400/40 shadow-sm transition-all">
-              <p className="text-[11px] text-amber-200 uppercase font-bold tracking-wider">Total Mahasiswa</p>
-              <p className="text-2xl sm:text-3xl font-black text-white mt-1 tracking-tight">{students.length}</p>
-              <p className="text-[10px] text-amber-100/70 font-medium mt-0.5">Terdaftar di Whitelist</p>
+          {/* Clean Modern Quick Stat Cards */}
+          <div className="animate-fade-up delay-600 grid grid-cols-2 sm:grid-cols-4 gap-3.5 max-w-4xl mx-auto mt-12 pt-8 border-t border-stone-200/80 text-left">
+            <div className="bg-stone-50/70 hover:bg-white rounded-2xl p-4 border border-stone-200/90 hover:border-[#8c4e24]/40 shadow-2xs hover:shadow-xs transition-all">
+              <p className="text-[11px] text-stone-500 uppercase font-bold tracking-wider">Total Mahasiswa</p>
+              <p className="text-2xl sm:text-3xl font-black text-stone-900 mt-1 tracking-tight">{students.length}</p>
+              <p className="text-[10px] text-stone-500 font-medium mt-0.5">Terdaftar di Whitelist</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/15 hover:border-amber-400/40 shadow-sm transition-all">
-              <p className="text-[11px] text-amber-200 uppercase font-bold tracking-wider">Mata Kuliah</p>
-              <p className="text-2xl sm:text-3xl font-black text-white mt-1 tracking-tight">{courses.length}</p>
-              <p className="text-[10px] text-amber-100/70 font-medium mt-0.5">Semester Ganjil 2026/2027</p>
+            <div className="bg-stone-50/70 hover:bg-white rounded-2xl p-4 border border-stone-200/90 hover:border-[#8c4e24]/40 shadow-2xs hover:shadow-xs transition-all">
+              <p className="text-[11px] text-stone-500 uppercase font-bold tracking-wider">Mata Kuliah</p>
+              <p className="text-2xl sm:text-3xl font-black text-[#8c4e24] mt-1 tracking-tight">{courses.length}</p>
+              <p className="text-[10px] text-stone-500 font-medium mt-0.5">Semester Ganjil 2026/2027</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/15 hover:border-amber-400/40 shadow-sm transition-all">
-              <p className="text-[11px] text-amber-200 uppercase font-bold tracking-wider">Hari Ini ({todayName})</p>
-              <p className="text-2xl sm:text-3xl font-black text-white mt-1 tracking-tight">
+            <div className="bg-stone-50/70 hover:bg-white rounded-2xl p-4 border border-stone-200/90 hover:border-[#8c4e24]/40 shadow-2xs hover:shadow-xs transition-all">
+              <p className="text-[11px] text-stone-500 uppercase font-bold tracking-wider">Hari Ini ({todayName})</p>
+              <p className="text-2xl sm:text-3xl font-black text-stone-900 mt-1 tracking-tight">
                 {todayCourses.length > 0 ? `${todayCourses.length} Kuliah` : 'Libur'}
               </p>
-              <p className="text-[10px] text-amber-100/70 font-medium mt-0.5">Jadwal Aktif</p>
+              <p className="text-[10px] text-stone-500 font-medium mt-0.5">Jadwal Perkuliahan</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/15 hover:border-amber-400/40 shadow-sm transition-all">
-              <p className="text-[11px] text-amber-200 uppercase font-bold tracking-wider">Keamanan Presensi</p>
-              <p className="text-2xl sm:text-3xl font-black text-emerald-300 mt-1 tracking-tight">PIN & PJ</p>
-              <p className="text-[10px] text-amber-100/70 font-medium mt-0.5">Terisolasi Aman</p>
+            <div className="bg-stone-50/70 hover:bg-white rounded-2xl p-4 border border-stone-200/90 hover:border-[#8c4e24]/40 shadow-2xs hover:shadow-xs transition-all">
+              <p className="text-[11px] text-stone-500 uppercase font-bold tracking-wider">Keamanan Presensi</p>
+              <p className="text-2xl sm:text-3xl font-black text-emerald-600 mt-1 tracking-tight">PIN & PJ</p>
+              <p className="text-[10px] text-stone-500 font-medium mt-0.5">Terisolasi Aman</p>
             </div>
           </div>
         </div>
@@ -295,46 +298,46 @@ export default function HomePage() {
               {todayCourses.map((c) => (
                 <div
                   key={c.id}
-                  className="bg-gradient-to-br from-[#8d5225] via-[#784019] to-[#5d2f0f] text-white rounded-3xl p-6 border border-amber-500/40 shadow-xl shadow-[#8d5225]/20 hover:scale-[1.01] hover:shadow-2xl transition-all flex flex-col justify-between"
+                  className="bg-white text-stone-900 rounded-3xl p-6 border border-stone-200/90 shadow-xs hover:shadow-md hover:border-[#8c4e24]/50 transition-all flex flex-col justify-between group"
                 >
                   <div>
                     <div className="flex items-center justify-between text-xs mb-3">
-                      <span className="font-mono font-bold text-amber-200 bg-black/35 px-3 py-1 rounded-xl border border-amber-300/30">
+                      <span className="font-mono font-bold text-[#8c4e24] bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/60">
                         {c.code}
                       </span>
-                      <span className="font-bold text-amber-100/90 bg-white/15 px-3 py-1 rounded-xl">
+                      <span className="font-bold text-stone-600 bg-stone-100 px-2.5 py-1 rounded-lg text-[11px]">
                         {c.sks} SKS
                       </span>
                     </div>
-                    <h3 className="font-black text-lg sm:text-xl text-white mb-1.5 leading-snug tracking-tight">
+                    <h3 className="font-black text-lg sm:text-xl text-stone-900 group-hover:text-[#8c4e24] transition-colors mb-1.5 leading-snug tracking-tight">
                       {c.name}
                     </h3>
-                    <p className="text-xs text-amber-100/90 mb-4 font-medium">
+                    <p className="text-xs text-stone-600 mb-4 font-medium">
                       {c.dosen}
                     </p>
 
-                    <div className="space-y-2 pt-3 border-t border-white/20 text-xs">
+                    <div className="space-y-2 pt-3 border-t border-stone-100 text-xs">
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-black/20 rounded-xl p-2.5 flex items-center space-x-2 border border-white/10">
-                          <Clock className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
-                          <span className="text-white font-medium truncate">{c.time}</span>
+                        <div className="bg-stone-50 rounded-xl p-2.5 flex items-center space-x-2 border border-stone-100">
+                          <Clock className="w-3.5 h-3.5 text-[#8c4e24] flex-shrink-0" />
+                          <span className="text-stone-700 font-medium truncate">{c.time}</span>
                         </div>
-                        <div className="bg-black/20 rounded-xl p-2.5 flex items-center space-x-2 border border-white/10">
-                          <GraduationCap className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
-                          <span className="text-white font-medium truncate">{c.room}</span>
+                        <div className="bg-stone-50 rounded-xl p-2.5 flex items-center space-x-2 border border-stone-100">
+                          <GraduationCap className="w-3.5 h-3.5 text-[#8c4e24] flex-shrink-0" />
+                          <span className="text-stone-700 font-medium truncate">{c.room}</span>
                         </div>
                       </div>
-                      <div className="bg-black/20 rounded-xl p-2.5 flex items-center space-x-2 border border-white/10">
-                        <Users className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
-                        <span className="line-clamp-1 text-amber-100 font-medium">PJ: {getPjNames(c.pjNims)}</span>
+                      <div className="bg-stone-50 rounded-xl p-2.5 flex items-center space-x-2 border border-stone-100">
+                        <Users className="w-3.5 h-3.5 text-[#8c4e24] flex-shrink-0" />
+                        <span className="line-clamp-1 text-stone-700 font-medium">PJ: {getPjNames(c.pjNims)}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-white/20">
+                  <div className="mt-5 pt-3 border-t border-stone-100">
                     <button
                       onClick={() => setSelectedCourse(c)}
-                      className="w-full py-2.5 px-4 rounded-xl bg-white/15 hover:bg-white/25 active:scale-98 text-amber-200 hover:text-white font-bold text-xs flex items-center justify-center space-x-2 transition-all border border-white/20 shadow-xs"
+                      className="w-full py-2.5 px-4 rounded-xl bg-stone-900 hover:bg-[#8c4e24] text-white font-bold text-xs flex items-center justify-center space-x-2 transition-all shadow-xs"
                     >
                       <span>Lihat Repositori & Materi</span>
                       <ArrowRight className="w-3.5 h-3.5" />

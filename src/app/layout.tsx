@@ -34,7 +34,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className={`w-full ${jakarta.variable}`}>
-      <body className={`${jakarta.className} min-h-screen w-full overflow-x-hidden flex flex-col bg-[#fcfaf7] text-stone-800 antialiased selection:bg-amber-200 selection:text-amber-900 font-sans`}>
+      <body className={`${jakarta.className} min-h-screen w-full overflow-x-hidden flex flex-col bg-white text-stone-900 antialiased selection:bg-[#9d5f2f]/20 selection:text-[#753e1f] font-sans`}>
         <Navbar />
         <main className="flex-1 w-full flex flex-col">{children}</main>
         <Footer />
