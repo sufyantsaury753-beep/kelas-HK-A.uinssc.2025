@@ -154,10 +154,23 @@ export default function HomePage() {
         />
         <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px]"></div>
 
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="max-w-3xl">
-            {/* Breadcrumb Navigation (Exact UIN SGD style) */}
-            <div className="animate-fade-up flex items-center space-x-2 text-xs font-semibold text-amber-300 tracking-wide uppercase mb-3.5">
+        <div className="max-w-7xl mx-auto relative z-10 text-center">
+          <div className="max-w-3xl mx-auto flex flex-col items-center">
+            {/* Logo Kelas Resmi di Tengah */}
+            <div className="flex justify-center mb-5 animate-fade-up">
+              <div className="relative group">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/10 p-1 ring-4 ring-amber-400/30 shadow-2xl flex items-center justify-center backdrop-blur-sm transition-transform hover:scale-105">
+                  <img
+                    src="/logo.png"
+                    alt="Logo Resmi Hukum Keluarga A 2025"
+                    className="w-full h-full object-contain rounded-full"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Breadcrumb Navigation (Centered) */}
+            <div className="animate-fade-up flex items-center justify-center space-x-2 text-xs font-semibold text-amber-300 tracking-wide uppercase mb-3.5">
               <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
               <span className="text-amber-400/50">&gt;</span>
               <span>Informasi Akademik</span>
@@ -182,13 +195,13 @@ export default function HomePage() {
               serta administrasi perkuliahan terpadu.
             </p>
 
-            {/* Action Buttons */}
-            <div className="animate-fade-up delay-400 flex flex-wrap items-center gap-3">
+            {/* Action Buttons - Rapi di Tengah untuk HP & Desktop */}
+            <div className="animate-fade-up delay-400 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
               {auth ? (
                 auth.role === 'ADMIN' ? (
                   <Link
                     href="/admin"
-                    className="px-6 py-3 rounded-xl bg-white hover:bg-stone-100 text-[#241206] font-bold text-sm shadow-md transition-all flex items-center space-x-2"
+                    className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-white hover:bg-stone-100 text-[#241206] font-bold text-sm shadow-md transition-all flex items-center justify-center space-x-2"
                   >
                     <ShieldCheck className="w-4 h-4 text-[#9d5f2f]" />
                     <span>Buka Dashboard Admin</span>
@@ -197,14 +210,14 @@ export default function HomePage() {
                   <>
                     <Link
                       href="/mahasiswa"
-                      className="px-6 py-3 rounded-xl bg-[#9d5f2f] hover:bg-[#864d23] text-white font-bold text-sm shadow-md transition-all flex items-center space-x-2"
+                      className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#9d5f2f] hover:bg-[#864d23] text-white font-bold text-sm shadow-md transition-all flex items-center justify-center space-x-2"
                     >
                       <CheckCircle2 className="w-4 h-4 text-amber-200" />
                       <span>Presensi Saya ({(auth.name || 'Mahasiswa').split(' ')[0]})</span>
                     </Link>
                     <Link
                       href="/pj"
-                      className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/20 transition-all flex items-center space-x-2"
+                      className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/20 transition-all flex items-center justify-center space-x-2"
                     >
                       <Sparkles className="w-4 h-4 text-amber-300" />
                       <span>Portal PJ Mata Kuliah</span>
@@ -215,21 +228,21 @@ export default function HomePage() {
                 <>
                   <Link
                     href="/login"
-                    className="px-6 py-3 rounded-xl bg-[#9d5f2f] hover:bg-[#864d23] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center space-x-2"
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#9d5f2f] hover:bg-[#864d23] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2"
                   >
                     <LogIn className="w-4 h-4" />
                     <span>Masuk Portal Presensi</span>
                   </Link>
                   <button
                     onClick={() => setShowRosterModal(true)}
-                    className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/25 transition-all flex items-center space-x-2"
+                    className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/25 transition-all flex items-center justify-center space-x-2"
                   >
                     <Users className="w-4 h-4 text-amber-200" />
                     <span>Daftar {students.length} Mahasiswa</span>
                   </button>
                   <a
                     href="#jadwal"
-                    className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/25 transition-all flex items-center space-x-2"
+                    className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/25 transition-all flex items-center justify-center space-x-2"
                   >
                     <CalendarDays className="w-4 h-4 text-amber-200" />
                     <span>Jadwal Kuliah</span>
@@ -352,19 +365,19 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
-            <span className="text-xs font-bold px-3.5 py-1.5 bg-amber-100 text-amber-900 rounded-full w-fit border border-amber-200/60 shadow-xs">
-              Semester Ganjil 2026/2027
+            <span className="text-xs font-bold px-3.5 py-1.5 bg-[#8c4e24] text-white rounded-full w-fit shadow-xs">
+              Jadwal Hari Ini ({todayName})
             </span>
           </div>
 
           {todayCourses.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 border border-stone-200 text-center shadow-xs">
-              <div className="w-12 h-12 rounded-xl bg-stone-100 text-stone-400 mx-auto flex items-center justify-center mb-3">
+            <div className="bg-amber-50/60 rounded-2xl p-8 border border-amber-200/80 text-center shadow-xs">
+              <div className="w-12 h-12 rounded-xl bg-amber-100 text-[#8c4e24] mx-auto flex items-center justify-center mb-3">
                 <Calendar className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-stone-800">Tidak Ada Jadwal Kuliah Hari Ini</h3>
-              <p className="text-xs text-stone-500 mt-1 max-w-md mx-auto">
-                Hari ini ({todayName}) tidak ada perkuliahan terjadwal. Manfaatkan waktu untuk belajar mandiri atau mengerjakan tugas kelompok.
+              <h3 className="text-base font-bold text-[#783e18]">Tidak Ada Jadwal Kuliah Hari Ini</h3>
+              <p className="text-xs text-stone-600 mt-1 max-w-md mx-auto">
+                Hari ini ({todayName}) tidak ada perkuliahan aktif. Anda dapat mengakses seluruh materi 11 mata kuliah pada repositori di bawah.
               </p>
             </div>
           ) : (
@@ -372,40 +385,40 @@ export default function HomePage() {
               {todayCourses.map((c) => (
                 <div
                   key={c.id}
-                  className="bg-white rounded-2xl p-6 border border-stone-200 shadow-xs hover:shadow-md hover:border-[#9d5f2f]/50 transition-all flex flex-col justify-between"
+                  className="bg-gradient-to-br from-[#8c4e24] via-[#783e18] to-[#5a2a0c] text-white rounded-2xl p-6 border border-amber-500/30 shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all flex flex-col justify-between group"
                 >
                   <div>
                     <div className="flex items-center justify-between text-xs mb-3">
-                      <span className="font-mono font-bold text-[#9d5f2f] bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/60">
+                      <span className="font-mono font-bold text-amber-200 bg-black/30 px-2.5 py-1 rounded-lg border border-amber-300/30">
                         {c.code}
                       </span>
-                      <span className="font-semibold text-stone-600 bg-stone-100 px-2.5 py-1 rounded-lg text-[11px]">
+                      <span className="font-bold text-amber-100 bg-white/15 px-2.5 py-1 rounded-lg text-[11px]">
                         {c.sks} SKS
                       </span>
                     </div>
-                    <h3 className="font-bold text-lg text-stone-900 mb-1 leading-snug">
+                    <h3 className="font-bold text-lg sm:text-xl text-white mb-1.5 leading-snug group-hover:text-amber-200 transition-colors">
                       {c.name}
                     </h3>
-                    <p className="text-xs text-stone-600 mb-4">
+                    <p className="text-xs text-amber-100/90 mb-4 font-medium">
                       {c.dosen}
                     </p>
 
-                    <div className="pt-3 border-t border-stone-100 text-xs text-stone-500 space-y-1.5">
+                    <div className="pt-3 border-t border-white/20 text-xs text-amber-100/90 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-stone-400">Waktu & Ruang:</span>
-                        <span className="font-semibold text-stone-800">{c.time} • Ruang {c.room}</span>
+                        <span className="text-amber-200/80">Waktu & Ruang:</span>
+                        <span className="font-semibold text-white">{c.time} • Ruang {c.room}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-stone-400">PJ Kelas:</span>
-                        <span className="font-semibold text-[#8c4e24] truncate max-w-[170px]">{getPjNames(c.pjNims)}</span>
+                        <span className="text-amber-200/80">PJ Kelas:</span>
+                        <span className="font-semibold text-amber-200 truncate max-w-[170px]">{getPjNames(c.pjNims)}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-stone-100">
+                  <div className="mt-5 pt-3 border-t border-white/20">
                     <button
                       onClick={() => setSelectedCourse(c)}
-                      className="w-full py-2.5 px-4 rounded-xl bg-[#9d5f2f] hover:bg-[#864d23] text-white font-semibold text-xs flex items-center justify-center space-x-2 transition-all shadow-xs"
+                      className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-amber-50 text-[#783e18] font-bold text-xs flex items-center justify-center space-x-2 transition-all shadow-sm active:scale-98"
                     >
                       <span>Lihat Repositori & Materi</span>
                       <ArrowRight className="w-3.5 h-3.5" />
