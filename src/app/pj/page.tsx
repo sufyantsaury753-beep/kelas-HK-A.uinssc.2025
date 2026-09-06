@@ -473,147 +473,157 @@ export default function PjDashboard() {
         </div>
       )}
 
-      {/* Top Banner PJ */}
-      <div className="bg-gradient-to-r from-[#9d5f2f] via-[#8c4e24] to-[#753e1f] rounded-3xl p-5 sm:p-7 text-white shadow-xl shadow-[#9d5f2f]/15 flex flex-col md:flex-row md:items-center justify-between gap-5">
+      {/* Top Banner PJ - Kalem, Elegan & Hemat Ruang */}
+      <div className="bg-[#241206] text-white rounded-3xl p-4 sm:p-6 border border-[#3b1d0a] shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-400 text-stone-950 flex items-center space-x-1.5 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Portal Penanggung Jawab (PJ) Mata Kuliah</span>
-            </span>
+          <div className="flex items-center space-x-2 text-xs font-medium text-amber-200/90 mb-1">
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>Portal PJ • {todayFormatted}</span>
             {isAdmin && (
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-stone-900 text-amber-300 border border-amber-400/40">
-                Mode Superadmin (Akses Semua MK)
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-stone-950">
+                Admin
               </span>
             )}
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-black/25 text-amber-100 backdrop-blur-sm">
-              Hari Ini: {todayFormatted}
-            </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black mt-2 tracking-tight">
-            Kelola Presensi & Berkas Perkuliahan HK A 2025
+          <h1 className="text-base sm:text-xl font-bold text-white tracking-tight">
+            {auth.name} {auth.nim ? `(${auth.nim})` : ''}
           </h1>
-          <p className="text-xs sm:text-sm text-amber-100/90 mt-0.5">
-            PJ: <span className="font-semibold text-white">{auth.name}</span>{' '}
-            {auth.nim ? `(NIM: ${auth.nim})` : ''} • Fakultas Syariah, UIN Siber Syekh Nurjati Cirebon
+          <p className="text-xs text-stone-300 mt-0.5">
+            Penanggung Jawab Presensi Kelas HK A 2025
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <Link
             href="/mahasiswa"
-            className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold backdrop-blur-sm border border-white/20 transition-all flex items-center space-x-1.5"
+            className="px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition-all flex items-center space-x-1.5 active:scale-95"
           >
-            <span>Beralih ke Dashboard Pribadi</span>
+            <span>Dashboard Pribadi</span>
           </Link>
           {isAdmin && (
             <Link
               href="/admin"
-              className="px-4 py-2.5 rounded-xl bg-stone-900 hover:bg-black text-amber-300 text-xs font-bold shadow-md transition-all"
+              className="px-4 py-2 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold transition-all active:scale-95"
             >
-              Kembali ke Admin
+              Admin
             </Link>
           )}
         </div>
       </div>
 
-      {/* Course Selector Tabs (11 Mata Kuliah) */}
-      <div className="space-y-2.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+      {/* Course Selector Grid (11 Mata Kuliah) - Bulat Grid 3 */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
           <h2 className="text-xs sm:text-sm font-bold text-stone-900 uppercase tracking-wider flex items-center space-x-2">
-            <BookOpen className="w-4 h-4 text-[#9d5f2f]" />
+            <BookOpen className="w-4 h-4 text-[#8c4e24]" />
             <span>Pilih Mata Kuliah ({courses.length})</span>
           </h2>
-          <span className="text-[11px] text-stone-500 italic">
-            *PJ hanya dapat mengelola mata kuliah yang ditugaskan kepadanya.
+          <span className="text-[11px] text-stone-500">
+            {myAssignedCourses.length} Ditugaskan ke Anda
           </span>
         </div>
 
-        {/* Scrollable Course Pill Row */}
-        <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-          <div className="flex gap-2 min-w-max">
-            {[...courses]
-              .sort((a, b) => {
-                const aAssigned = isAdmin || (Array.isArray(a?.pjNims) && a.pjNims.some((p) => (p || '').trim() === userNim));
-                const bAssigned = isAdmin || (Array.isArray(b?.pjNims) && b.pjNims.some((p) => (p || '').trim() === userNim));
-                if (aAssigned && !bAssigned) return -1;
-                if (!aAssigned && bAssigned) return 1;
-                return 0;
-              })
-              .map((c) => {
-                const isAssigned =
-                  isAdmin ||
-                  (Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === userNim));
-                const isSelected = c.id === activeCourseId;
-                const isTodayMK = (c?.day || '').toLowerCase().trim().includes(todayDayName.toLowerCase().trim());
+        {/* 3-Column Circular / Bubble Grid (Mobile: 3 Bulat per baris, Tablet: 4, Desktop: 6) */}
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200/80 shadow-xs">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-y-5 gap-x-2 sm:gap-4 py-1">
+            {courses.map((c) => {
+              const isAssigned =
+                isAdmin ||
+                (Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === userNim));
+              const isTodayMK = (c?.day || '').toLowerCase().trim().includes(todayDayName.toLowerCase().trim());
+              const isSelected = c.id === activeCourseId;
+              // PJ pada hari ini: assigned to this course AND today is the scheduled day
+              const isPjToday = isAssigned && isTodayMK;
 
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => {
-                      setActiveCourseId(c.id);
-                      setActiveSessionId('');
-                    }}
-                    className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all border flex items-center space-x-2 ${
-                      isSelected
-                        ? isAssigned
-                          ? 'bg-[#9d5f2f] text-white border-[#8c4e24] shadow-md shadow-[#9d5f2f]/20 scale-105'
-                          : 'bg-stone-800 text-amber-300 border-stone-900 scale-105'
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveCourseId(c.id);
+                    setActiveSessionId('');
+                  }}
+                  className={`group flex flex-col items-center text-center focus:outline-none transition-all hover:-translate-y-1 active:scale-95 ${
+                    isSelected ? 'opacity-100' : 'opacity-85 hover:opacity-100'
+                  }`}
+                >
+                  {/* Circular Icon Bubble */}
+                  <div
+                    className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-1 transition-all flex flex-col items-center justify-center border-2 ${
+                      isPjToday
+                        ? isSelected
+                          ? 'bg-gradient-to-br from-[#8c4e24] via-[#753e1f] to-[#5a2a0c] text-white border-amber-400 ring-4 ring-amber-400/40 shadow-lg shadow-[#8c4e24]/30'
+                          : 'bg-gradient-to-br from-[#8c4e24] via-[#753e1f] to-[#5a2a0c] text-white border-amber-300 shadow-md shadow-[#8c4e24]/20'
                         : isAssigned
-                        ? 'bg-white text-stone-800 border-amber-300 hover:border-[#9d5f2f] hover:bg-amber-50/50'
-                        : 'bg-stone-100 text-stone-400 border-stone-200 hover:bg-stone-200'
+                        ? isSelected
+                          ? 'bg-amber-50 text-[#8c4e24] border-[#8c4e24] ring-4 ring-amber-400/30 shadow-md'
+                          : 'bg-amber-50/70 text-[#8c4e24] border-amber-200 hover:border-amber-300'
+                        : isSelected
+                        ? 'bg-stone-100 text-stone-500 border-stone-400 ring-4 ring-stone-300'
+                        : 'bg-stone-100/80 text-stone-400 border-stone-200 hover:bg-stone-200/60'
                     }`}
                   >
-                    {!isAssigned && <Lock className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />}
-                    {isAssigned && isSelected && (
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+                    {isPjToday ? (
+                      <>
+                        <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-amber-200 group-hover:scale-110 transition-transform mb-0.5" />
+                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-emerald-300">
+                          Buka
+                        </span>
+                        {/* Pulse dot for today's active class */}
+                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-xs animate-pulse" />
+                      </>
+                    ) : (
+                      <>
+                        {/* GAMBAR GEMBOK jika bukan PJ di hari itu */}
+                        <Lock className={`w-5 h-5 sm:w-6 sm:h-6 mb-0.5 ${isAssigned ? 'text-amber-700/80' : 'text-stone-400'}`} />
+                        <span className={`text-[8px] sm:text-[9px] font-bold ${isAssigned ? 'text-amber-800' : 'text-stone-400'}`}>
+                          {isAssigned ? c.day : 'Kunci'}
+                        </span>
+                      </>
                     )}
-                    <span>{c.name}</span>
-                    {isTodayMK && (
-                      <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-500 text-white uppercase tracking-tighter shadow-xs">
-                        Hari Ini
-                      </span>
-                    )}
-                    <span className="text-[10px] opacity-75 font-normal">({c.day})</span>
-                  </button>
-                );
-              })}
+                  </div>
+
+                  {/* Course Name centered underneath */}
+                  <h3 className={`mt-1.5 font-bold text-[10px] sm:text-xs line-clamp-2 leading-tight px-1 max-w-[95px] sm:max-w-[115px] ${
+                    isSelected ? 'text-[#8c4e24] font-extrabold' : 'text-stone-800 group-hover:text-[#8c4e24]'
+                  }`}>
+                    {c.name}
+                  </h3>
+                  <span className="text-[9px] text-stone-400 font-medium line-clamp-1">
+                    {c.day ? `${c.day}` : c.code}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* ISOLATION WARNING IF NOT AUTHORIZED */}
+      {/* ISOLATION NOTICE IF NOT ASSIGNED */}
       {!isUserAssignedToActiveCourse && activeCourse && (
-        <div className="p-6 bg-rose-50 border-2 border-rose-300 rounded-3xl text-rose-900 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 rounded-2xl bg-rose-200 text-rose-800 flex items-center justify-center flex-shrink-0 shadow-inner">
-              <Lock className="w-6 h-6" />
+        <div className="p-4 sm:p-5 bg-stone-100 border border-stone-200 rounded-3xl text-stone-700 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-2xl bg-stone-200 text-stone-600 flex items-center justify-center flex-shrink-0">
+              <Lock className="w-5 h-5" />
             </div>
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-rose-950 flex items-center space-x-2">
-                <span>Akses Dibatasi: Anda Bukan PJ Mata Kuliah {activeCourse.name}</span>
+            <div>
+              <h3 className="text-xs sm:text-sm font-bold text-stone-900">
+                Akses Terkunci: Anda bukan PJ untuk {activeCourse.name}
               </h3>
-              <p className="text-xs text-rose-800 leading-relaxed max-w-xl">
-                Sesuai aturan keamanan sistem kelas HK A 2025, setiap Penanggung Jawab hanya diizinkan
-                mengelola mata kuliah yang menjadi tanggung jawabnya.
+              <p className="text-[11px] text-stone-500">
+                Silakan pilih mata kuliah yang ditugaskan kepada Anda pada daftar di atas.
               </p>
             </div>
           </div>
-          {myAssignedCourses.length > 0 ? (
+          {myAssignedCourses.length > 0 && (
             <button
+              type="button"
               onClick={() => setActiveCourseId(myAssignedCourses[0].id)}
-              className="px-4 py-2.5 bg-[#9d5f2f] hover:bg-[#864d23] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-2 flex-shrink-0"
+              className="px-4 py-2 bg-[#8c4e24] hover:bg-[#723f1c] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center space-x-1.5 flex-shrink-0 active:scale-95"
             >
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Buka Mata Kuliah Saya ({myAssignedCourses[0].name})</span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Buka MK Saya ({myAssignedCourses[0].name.split(' ')[0]})</span>
             </button>
-          ) : (
-            <Link
-              href="/mahasiswa"
-              className="px-4 py-2.5 bg-stone-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-2 flex-shrink-0"
-            >
-              <span>Buka Portal Mahasiswa</span>
-            </Link>
           )}
         </div>
       )}
@@ -770,56 +780,44 @@ export default function PjDashboard() {
             <div className="space-y-6">
               {/* CASE 1: ATTENDANCE LOCKED (NOT THE COURSE DAY) */}
               {!isAttendanceUnlocked ? (
-                <div className="bg-white rounded-3xl p-8 sm:p-12 border-2 border-stone-200/90 text-center shadow-sm space-y-4">
-                  <div className="w-16 h-16 rounded-3xl bg-amber-50 text-amber-800 mx-auto flex items-center justify-center border border-amber-200 shadow-inner">
-                    <Lock className="w-8 h-8 text-amber-700" />
+                <div className="bg-white rounded-3xl p-6 sm:p-10 border border-stone-200/90 text-center shadow-xs space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-800 mx-auto flex items-center justify-center border border-amber-200 shadow-inner">
+                    <Lock className="w-7 h-7 text-amber-700" />
                   </div>
-                  <div className="max-w-xl mx-auto space-y-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                      🔒 Presensi Belum Dibuka
+                  <div className="max-w-md mx-auto space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                      Presensi Terkunci
                     </span>
-                    <h3 className="text-lg sm:text-xl font-black text-stone-900 pt-1">
-                      Hanya Terbuka Pada Hari {activeCourse.day}
+                    <h3 className="text-base sm:text-lg font-bold text-stone-900 pt-1">
+                      Dibuka Hari {activeCourse.day} ({activeCourse.time})
                     </h3>
-                    <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-                      Mata kuliah <strong>{activeCourse.name}</strong> memiliki jadwal perkuliahan resmi
-                      setiap hari <strong>{activeCourse.day}</strong> ({activeCourse.time}, {activeCourse.room}).
+                    <p className="text-xs text-stone-500 leading-relaxed">
+                      Jadwal perkuliahan di Ruang {activeCourse.room}. Hari ini adalah hari {todayDayName}.
                     </p>
-                    <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200 text-xs text-stone-600 space-y-1 text-left max-w-md mx-auto mt-3">
-                      <div className="flex justify-between">
-                        <span className="text-stone-500">Hari ini:</span>
-                        <strong className="text-stone-800">{todayDayName}, {todayFormatted}</strong>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-stone-500">Jadwal Matkul:</span>
-                        <strong className="text-[#9d5f2f]">Hari {activeCourse.day}</strong>
-                      </div>
-                      <p className="text-[11px] text-stone-500 pt-1 italic border-t border-stone-200 mt-1">
-                        Sistem mengunci absensi secara otomatis agar tidak dapat diisi mendahului jadwal ataupun dimajukan untuk minggu depan.
-                      </p>
-                    </div>
 
                     {(isAdmin || isUserAssignedToActiveCourse) && (
                       <div className="pt-3 flex flex-wrap items-center justify-center gap-2">
                         <button
+                          type="button"
                           onClick={() => {
                             setPjManualOverride(true);
                             showToast('Presensi dibuka untuk sesi kuliah pengganti / tambahan.');
                           }}
-                          className="px-5 py-2.5 bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold rounded-xl shadow-md transition-all inline-flex items-center space-x-2"
+                          className="px-4 py-2 bg-[#8c4e24] hover:bg-[#723f1c] text-white text-xs font-bold rounded-xl shadow-xs transition-all inline-flex items-center space-x-1.5 active:scale-95"
                         >
-                          <Unlock className="w-4 h-4" />
-                          <span>Buka Presensi Hari Ini (Kuliah Pengganti / Tambahan)</span>
+                          <Unlock className="w-3.5 h-3.5" />
+                          <span>Buka Presensi (Kuliah Pengganti)</span>
                         </button>
                         {isAdmin && (
                           <button
+                            type="button"
                             onClick={() => {
                               setAdminSimulateOpen(true);
                               showToast('Mode Uji Coba Admin diaktifkan!');
                             }}
-                            className="px-4 py-2.5 bg-stone-900 hover:bg-black text-amber-300 text-xs font-bold rounded-xl shadow-md transition-all inline-flex items-center space-x-1.5"
+                            className="px-4 py-2 bg-stone-900 hover:bg-black text-amber-300 text-xs font-bold rounded-xl shadow-xs transition-all inline-flex items-center space-x-1.5 active:scale-95"
                           >
-                            <Unlock className="w-4 h-4 text-amber-400" />
+                            <Unlock className="w-3.5 h-3.5 text-amber-400" />
                             <span>Simulasi Admin</span>
                           </button>
                         )}
