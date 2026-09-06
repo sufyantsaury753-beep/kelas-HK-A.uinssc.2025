@@ -29,6 +29,7 @@ interface AppState {
   materials: CourseMaterial[];
   announcements: Announcement[];
   adminPin: string;
+  activeSemester?: number;
 }
 
 // Helper to sort students ascending by NIM (e.g. 03, 04, 05, etc.)
@@ -73,6 +74,7 @@ function getInitialState(): AppState {
     materials: INITIAL_MATERIALS,
     announcements: INITIAL_ANNOUNCEMENTS,
     adminPin: 'adminhk2025',
+    activeSemester: 3,
   };
 }
 
@@ -300,18 +302,25 @@ class Store {
         this.state.records = mergedRecords;
       }
 
-      // 5. Fetch Announcements
+      // 5. Fetch Announcements & System Metadata
       const { data: remoteAnn } = await supabase.from('announcements').select('*');
       if (remoteAnn && remoteAnn.length > 0) {
-        this.state.announcements = remoteAnn.map((a: any) => ({
-          id: a.id,
-          title: a.title,
-          content: a.content,
-          category: a.category,
-          author: a.author,
-          date: a.date,
-          pinned: Boolean(a.pinned),
-        }));
+        const semMeta = remoteAnn.find((a: any) => a.id === 'SYS_ACTIVE_SEMESTER' || a.category === 'SISTEM_SEMESTER');
+        if (semMeta) {
+          this.state.activeSemester = Number(semMeta.content) || 3;
+        }
+
+        this.state.announcements = remoteAnn
+          .filter((a: any) => a.id !== 'SYS_ACTIVE_SEMESTER' && a.category !== 'SISTEM_SEMESTER')
+          .map((a: any) => ({
+            id: a.id,
+            title: a.title,
+            content: a.content,
+            category: a.category,
+            author: a.author,
+            date: a.date,
+            pinned: Boolean(a.pinned),
+          }));
       }
 
       // 6. Fetch Materials
@@ -360,6 +369,32 @@ class Store {
       console.warn('localStorage setAuth notice (private browsing mode):', e);
     }
     this.notify();
+  }
+
+  // --- Active Semester Settings ---
+  public getActiveSemester(): number {
+    return this.state.activeSemester || 3;
+  }
+
+  public async setActiveSemester(sem: number): Promise<void> {
+    this.state.activeSemester = Number(sem) || 3;
+    this.save();
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('announcements').upsert({
+          id: 'SYS_ACTIVE_SEMESTER',
+          title: 'Sistem Semester Aktif',
+          content: String(this.state.activeSemester),
+          category: 'SISTEM_SEMESTER',
+          author: 'Sistem',
+          date: new Date().toISOString().split('T')[0],
+          pinned: false,
+        });
+      } catch (e) {
+        console.error('Error syncing active semester to Supabase:', e);
+      }
+    }
   }
 
   // --- Students Whitelist ---

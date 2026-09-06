@@ -29,6 +29,7 @@ export default function Navbar() {
   const [auth, setAuth] = useState<AuthSession | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [activeSemester, setActiveSemester] = useState<number>(3);
   const [showWeeklyScheduleModal, setShowWeeklyScheduleModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasPjRole, setHasPjRole] = useState(false);
@@ -46,6 +47,7 @@ export default function Navbar() {
       const allCourses = appStore.getCourses();
       setCourses(allCourses);
       setStudents(appStore.getStudents());
+      setActiveSemester(appStore.getActiveSemester());
 
       if (currentAuth?.nim) {
         const cleanUserNim = (currentAuth.nim || '').trim();
@@ -92,7 +94,7 @@ export default function Navbar() {
             <span className="hidden md:inline text-amber-100/80">Cyber Islamic University</span>
           </div>
           <div className="flex items-center space-x-3 text-[10px] font-medium text-amber-100">
-            <span>Semester Ganjil 2026/2027</span>
+            <span>Semester {activeSemester} ({activeSemester % 2 === 1 ? 'Ganjil' : 'Genap'})</span>
             <span className="hidden sm:inline bg-amber-900/60 px-2 py-0.5 rounded border border-amber-500/30 text-amber-200">Kelas A</span>
           </div>
         </div>

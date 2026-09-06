@@ -60,6 +60,8 @@ export default function AdminDashboard() {
   const [adminPin, setAdminPin] = useState<string>('');
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [activeSemester, setActiveSemester] = useState<number>(appStore.getActiveSemester());
+  const [semesterNotice, setSemesterNotice] = useState<string | null>(null);
 
   // Helper local date string YYYY-MM-DD
   const getLocalDateString = (d: Date = new Date()): string => {
@@ -322,6 +324,7 @@ export default function AdminDashboard() {
       setAdminPin(appStore.getAdminPin());
       setSessions(appStore.getSessions());
       setRecords(appStore.getRecords());
+      setActiveSemester(appStore.getActiveSemester());
     };
 
     update();
@@ -1506,6 +1509,55 @@ export default function AdminDashboard() {
       {/* TAB 4: PENGATURAN & BACKUP */}
       {activeTab === 'SETTINGS' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Semester Setting */}
+          <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-stone-900">Pengaturan Semester Akademik</h3>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Semester aktif saat ini:{' '}
+                <span className="font-bold text-[#8c4e24] bg-[#8c4e24]/10 px-2 py-0.5 rounded-full">
+                  Semester {activeSemester}
+                </span>
+              </p>
+            </div>
+
+            {semesterNotice && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800">
+                {semesterNotice}
+              </div>
+            )}
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">Pilih Semester Berjalan</label>
+                <select
+                  value={activeSemester}
+                  onChange={(e) => setActiveSemester(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#8c4e24] text-stone-800 font-medium"
+                >
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                    <option key={sem} value={sem}>
+                      Semester {sem} {sem === 3 ? '(Semester Sekarang)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-stone-400 mt-1">
+                  Mengubah semester di sini akan otomatis memperbarui statistik beranda dan header website untuk semester depan.
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  await appStore.setActiveSemester(activeSemester);
+                  setSemesterNotice(`Semester berhasil diubah menjadi Semester ${activeSemester}!`);
+                  setTimeout(() => setSemesterNotice(null), 3500);
+                }}
+                className="px-4 py-2 bg-[#8c4e24] hover:bg-[#723f1c] text-white font-bold rounded-xl transition-colors shadow-sm"
+              >
+                Simpan Semester Aktif
+              </button>
+            </div>
+          </div>
+
           {/* Change Admin PIN */}
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
             <div>
