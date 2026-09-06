@@ -27,6 +27,15 @@ import {
   FileCheck,
   Lock,
   User,
+  ScrollText,
+  Scale,
+  Briefcase,
+  PieChart,
+  Globe,
+  HeartHandshake,
+  Gavel,
+  MapPin,
+  BookMarked,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, Announcement, Student, CourseMaterial, AuthSession } from '@/lib/types';
@@ -77,6 +86,23 @@ function AnimatedCounter({
       {suffix}
     </span>
   );
+}
+
+// Helper to get distinct, meaningful academic icons for each course
+function getCourseIcon(courseId: string, courseName: string) {
+  const lower = (courseId + ' ' + courseName).toLowerCase();
+  if (lower.includes('tafsir')) return BookOpen;
+  if (lower.includes('tarikh') || lower.includes('tasyri')) return ScrollText;
+  if (lower.includes('qowaid') || lower.includes('fiqhiyah')) return Scale;
+  if (lower.includes('bisnis')) return Briefcase;
+  if (lower.includes('kewarisan') || lower.includes('waris')) return PieChart;
+  if (lower.includes('internasional')) return Globe;
+  if (lower.includes('perkawinan')) return HeartHandshake;
+  if (lower.includes('ibadah')) return Sparkles;
+  if (lower.includes('perdata islam')) return Gavel;
+  if (lower.includes('agraria')) return MapPin;
+  if (lower.includes('hadits')) return BookMarked;
+  return BookOpen;
 }
 
 export default function HomePage() {
@@ -526,6 +552,7 @@ export default function HomePage() {
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-y-7 gap-x-2 sm:gap-6 py-2">
                 {filteredCourses.map((c) => {
                   const courseMats = materials.filter((m) => m.courseId === c.id);
+                  const CourseIcon = getCourseIcon(c.id, c.name);
 
                   return (
                     <button
@@ -534,26 +561,30 @@ export default function HomePage() {
                       onClick={() => setSelectedCourse(c)}
                       className="group flex flex-col items-center text-center focus:outline-none transition-all hover:-translate-y-1 active:scale-95"
                     >
-                      {/* Circular Bubble matching user's sketch */}
-                      <div className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-br from-[#8c4e24] via-[#753e1f] to-[#5a2a0c] text-white p-1 shadow-md shadow-[#8c4e24]/20 group-hover:shadow-lg group-hover:shadow-[#8c4e24]/35 transition-all flex flex-col items-center justify-center border-2 border-amber-400/50 group-hover:border-amber-300">
-                        <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-amber-200 group-hover:scale-110 transition-transform mb-0.5" />
-                        <span className="text-[9px] sm:text-[10px] font-mono font-bold text-amber-100/90 tracking-tighter">
+                      {/* Circular Bubble with luxury espresso gradient & golden ring */}
+                      <div className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-b from-[#2a1306] via-[#1c0c04] to-[#100602] text-white p-1 shadow-md shadow-amber-950/40 group-hover:shadow-xl group-hover:shadow-[#8c4e24]/30 transition-all duration-300 flex flex-col items-center justify-center border-2 border-amber-500/40 group-hover:border-amber-300 group-hover:scale-105">
+                        {/* Soft radial glow */}
+                        <div className="absolute inset-1 rounded-full bg-radial from-amber-500/10 to-transparent pointer-events-none" />
+
+                        <CourseIcon className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300 drop-shadow-[0_2px_6px_rgba(245,158,11,0.3)] group-hover:scale-110 transition-transform mb-1 relative z-10" />
+
+                        <span className="relative z-10 text-[9px] sm:text-[10px] font-mono font-extrabold text-amber-200/95 tracking-tight px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/25">
                           {c.sks} SKS
                         </span>
 
-                        {/* Notification badge if files exist */}
+                        {/* File badge if any */}
                         {courseMats.length > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-amber-400 text-[#241206] font-extrabold text-[9px] sm:text-[10px] w-5 h-5 rounded-full flex items-center justify-center shadow-xs border border-white">
+                          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-amber-400 text-stone-950 font-black text-[10px] flex items-center justify-center ring-2 ring-white shadow-xs z-20">
                             {courseMats.length}
                           </span>
                         )}
                       </div>
 
                       {/* Course Name centered underneath */}
-                      <h3 className="mt-2 font-bold text-[11px] sm:text-xs text-stone-800 group-hover:text-[#8c4e24] transition-colors line-clamp-2 leading-tight px-1 max-w-[105px] sm:max-w-[125px]">
+                      <h3 className="mt-2.5 font-bold text-[11px] sm:text-xs text-stone-800 group-hover:text-[#8c4e24] transition-colors line-clamp-2 leading-tight px-1 max-w-[105px] sm:max-w-[125px]">
                         {c.name}
                       </h3>
-                      <span className="text-[10px] text-stone-400 mt-0.5 font-medium line-clamp-1 max-w-[95px]">
+                      <span className="text-[10px] text-stone-500 bg-stone-100 group-hover:bg-amber-50 group-hover:text-[#8c4e24] mt-1 font-semibold px-2 py-0.5 rounded-md border border-stone-200/60 transition-colors line-clamp-1 max-w-[95px]">
                         {c.day ? `${c.day}` : c.code}
                       </span>
                     </button>

@@ -22,6 +22,9 @@ import {
   X,
   GraduationCap,
   Sparkles,
+  Home,
+  Bell,
+  ChevronRight,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -252,36 +255,70 @@ export default function Navbar() {
 
       {/* Mobile Drawer Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-stone-200 px-4 pt-3 pb-5 space-y-3 animate-in slide-in-from-top-4 duration-150">
+        <div className="md:hidden bg-white/98 backdrop-blur-xl border-b border-stone-200/90 shadow-2xl rounded-b-3xl px-4 pt-3 pb-6 space-y-4 animate-in slide-in-from-top-4 duration-200">
+          {/* Navigation Links with Icons */}
           <div className="flex flex-col space-y-1">
             <Link
               href="/"
               replace
               onClick={() => setIsMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-[#9d5f2f] text-sm font-medium"
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-semibold transition-all ${
+                pathname === '/'
+                  ? 'bg-amber-50 text-[#8c4e24]'
+                  : 'text-stone-700 hover:bg-stone-50 hover:text-stone-900'
+              }`}
             >
-              Beranda
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                  pathname === '/' ? 'bg-[#8c4e24] text-white shadow-2xs' : 'bg-stone-100 text-stone-600'
+                }`}>
+                  <Home className="w-4 h-4" />
+                </div>
+                <span>Beranda</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-stone-400" />
             </Link>
+
             <Link
               href="/#jadwal"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-[#9d5f2f] text-sm font-medium"
+              className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-stone-700 hover:bg-stone-50 text-sm font-semibold transition-all"
             >
-              Jadwal Kuliah
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-xl bg-amber-100/70 text-[#8c4e24] flex items-center justify-center">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <span>Jadwal Kuliah Hari Ini</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-stone-400" />
             </Link>
+
             <Link
               href="/#matakuliah"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-[#9d5f2f] text-sm font-medium"
+              className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-stone-700 hover:bg-stone-50 text-sm font-semibold transition-all"
             >
-              Mata Kuliah & Repositori
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-xl bg-amber-100/70 text-[#8c4e24] flex items-center justify-center">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <span>Mata Kuliah & Repositori</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-stone-400" />
             </Link>
+
             <Link
               href="/#pengumuman"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-[#9d5f2f] text-sm font-medium"
+              className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-stone-700 hover:bg-stone-50 text-sm font-semibold transition-all"
             >
-              Pengumuman Kelas
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-xl bg-stone-100 text-stone-600 flex items-center justify-center">
+                  <Bell className="w-4 h-4" />
+                </div>
+                <span>Pengumuman Kelas</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-stone-400" />
             </Link>
 
             {/* Tombol Pop-up Jadwal Seminggu */}
@@ -291,82 +328,103 @@ export default function Navbar() {
                 setShowWeeklyScheduleModal(true);
                 setIsMobileMenuOpen(false);
               }}
-              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-50 text-[#753e1f] font-bold text-sm border border-amber-300/80 shadow-xs hover:bg-amber-100/60 transition-all text-left mt-1"
+              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-50/40 text-stone-800 font-bold text-sm border border-amber-200/80 shadow-2xs hover:bg-amber-100/50 transition-all text-left mt-1.5"
             >
-              <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#9d5f2f] text-white flex items-center justify-center shadow-xs flex-shrink-0">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-xl bg-[#8c4e24] text-white flex items-center justify-center shadow-2xs flex-shrink-0">
                   <CalendarDays className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="leading-tight text-stone-900 font-bold">Jadwal Kuliah Seminggu</p>
-                  <p className="text-[10px] text-stone-500 font-normal mt-0.5">Senin s.d. Sabtu • {courses.length} Mata Kuliah</p>
+                  <p className="leading-tight text-stone-900 font-bold text-xs">Jadwal Kuliah Seminggu</p>
+                  <p className="text-[10px] text-stone-500 font-normal">Senin s.d. Sabtu • {courses.length} Mata Kuliah</p>
                 </div>
               </div>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 border border-amber-300">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-[#753e1f] border border-amber-300">
                 Pop-up
               </span>
             </button>
           </div>
 
-          <div className="pt-3 border-t border-stone-100 flex flex-col space-y-2">
+          {/* User Session Profile & Actions */}
+          <div className="pt-3 border-t border-stone-200/80">
             {auth ? (
-              <>
-                <div className="px-3 py-2 bg-stone-50 rounded-lg">
-                  <p className="text-xs font-semibold text-stone-900">{auth.name}</p>
-                  <p className="text-[11px] text-stone-500 font-mono">
-                    {auth.nim ? `NIM: ${auth.nim}` : 'Administrator'}
-                  </p>
+              <div className="space-y-3">
+                {/* User Card */}
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-stone-50 border border-stone-200/70 shadow-2xs">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-full bg-[#8c4e24] text-white font-bold text-xs flex items-center justify-center ring-2 ring-amber-400/50 shadow-xs flex-shrink-0">
+                      {auth.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-stone-900 leading-tight line-clamp-1">{auth.name}</p>
+                      <p className="text-[10px] text-stone-500 font-mono mt-0.5">
+                        {auth.nim ? `NIM: ${auth.nim}` : 'Administrator'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-[#8c4e24] border border-amber-200 flex-shrink-0">
+                    {auth.role === 'ADMIN' ? 'Admin' : (hasPjRole ? 'PJ Kelas' : 'Mahasiswa')}
+                  </span>
                 </div>
+
+                {/* Action Buttons */}
                 {auth.role === 'ADMIN' ? (
                   <Link
                     href="/admin"
+                    replace
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center justify-center space-x-2 py-2.5 bg-stone-800 text-white rounded-xl text-sm font-semibold"
+                    className="flex items-center justify-center space-x-2 w-full py-2.5 bg-stone-900 text-white rounded-2xl text-xs font-bold shadow-xs hover:bg-black transition-all"
                   >
                     <ShieldCheck className="w-4 h-4 text-amber-400" />
                     <span>Portal Administrator</span>
                   </Link>
                 ) : (
-                  <>
+                  <div className={`grid ${hasPjRole ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
                     <Link
                       href="/mahasiswa"
+                      replace
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center justify-center space-x-2 py-2.5 bg-stone-100 text-stone-800 rounded-xl text-sm font-semibold"
+                      className="flex items-center justify-center space-x-1.5 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-2xl text-xs font-bold transition-all text-center"
                     >
-                      <UserCheck className="w-4 h-4 text-[#9d5f2f]" />
-                      <span>Dashboard Mahasiswa</span>
+                      <UserCheck className="w-3.5 h-3.5 text-[#8c4e24]" />
+                      <span>Presensi Mahasiswa</span>
                     </Link>
                     {hasPjRole && (
                       <Link
                         href="/pj"
+                        replace
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center justify-center space-x-2 py-2.5 bg-gradient-to-r from-[#9d5f2f] to-[#753e1f] text-white rounded-xl text-sm font-semibold"
+                        className="flex items-center justify-center space-x-1.5 py-2.5 bg-[#8c4e24] hover:bg-[#753e1f] text-white rounded-2xl text-xs font-bold transition-all text-center shadow-xs"
                       >
-                        <Sparkles className="w-4 h-4 text-amber-300" />
-                        <span>Kelola Presensi PJ Matakuliah</span>
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Portal PJ</span>
                       </Link>
                     )}
-                  </>
+                  </div>
                 )}
+
+                {/* Logout Button */}
                 <button
+                  type="button"
                   onClick={() => {
                     handleLogout();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="flex items-center justify-center space-x-2 py-2 text-red-600 bg-red-50 rounded-xl text-sm font-semibold"
+                  className="w-full flex items-center justify-center space-x-1.5 py-2 text-rose-600 hover:bg-rose-50 rounded-xl text-xs font-semibold transition-colors"
                 >
-                  <LogOut className="w-4 h-4" />
-                  <span>Keluar Akun</span>
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Keluar dari Akun</span>
                 </button>
-              </>
+              </div>
             ) : (
               <Link
                 href="/login"
+                replace
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center justify-center space-x-2 py-2.5 bg-[#9d5f2f] text-white rounded-xl text-sm font-semibold shadow-sm"
+                className="flex items-center justify-center space-x-2 w-full py-2.5 bg-[#8c4e24] hover:bg-[#753e1f] text-white rounded-2xl text-xs font-bold shadow-sm transition-all"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Masuk Portal HK A</span>
+                <span>Masuk Akun Mahasiswa / Admin</span>
               </Link>
             )}
           </div>
