@@ -78,7 +78,7 @@ export default function Navbar() {
   const handleLogout = () => {
     appStore.setAuth(null);
     setAuth(null);
-    router.push('/');
+    router.replace('/');
   };
 
   return (
@@ -104,7 +104,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18 py-3">
           {/* Brand Logo & Name */}
-          <Link href="/" className="flex items-center space-x-3 group">
+          <Link href="/" replace className="flex items-center space-x-3 group">
             <div className="w-11 h-11 rounded-full bg-stone-950/90 border border-amber-500/50 p-0.5 shadow-md shadow-[#9d5f2f]/20 group-hover:scale-105 transition-transform flex-shrink-0 flex items-center justify-center">
               <img
                 src="/logo.png"
@@ -131,6 +131,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-1">
             <Link
               href="/"
+              replace
               className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
                 pathname === '/'
                   ? 'text-[#9d5f2f] bg-amber-50/80 font-semibold'
@@ -255,6 +256,7 @@ export default function Navbar() {
           <div className="flex flex-col space-y-1">
             <Link
               href="/"
+              replace
               onClick={() => setIsMobileMenuOpen(false)}
               className="px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-[#9d5f2f] text-sm font-medium"
             >

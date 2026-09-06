@@ -95,6 +95,63 @@ export default function HomePage() {
   // Direct File Upload State
   const [isUploading, setIsUploading] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [showExitToast, setShowExitToast] = useState(false);
+
+  // References for open modals to close them on back button press
+  const selectedCourseRef = React.useRef(selectedCourse);
+  const selectedAnnouncementRef = React.useRef(selectedAnnouncement);
+  const showRosterModalRef = React.useRef(showRosterModal);
+
+  useEffect(() => {
+    selectedCourseRef.current = selectedCourse;
+  }, [selectedCourse]);
+
+  useEffect(() => {
+    selectedAnnouncementRef.current = selectedAnnouncement;
+  }, [selectedAnnouncement]);
+
+  useEffect(() => {
+    showRosterModalRef.current = showRosterModal;
+  }, [showRosterModal]);
+
+  // Mobile Back Button Guard: Close open modal first, or Double-Back to Exit Web App
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let lastBackPressTime = 0;
+
+    // Push initial root guard state on mount
+    window.history.pushState({ isHomeRoot: true }, '', window.location.pathname);
+
+    const handlePopState = () => {
+      // 1. If any modal is open, pressing back closes the modal smoothly
+      if (selectedCourseRef.current || selectedAnnouncementRef.current || showRosterModalRef.current) {
+        setSelectedCourse(null);
+        setSelectedAnnouncement(null);
+        setShowRosterModal(false);
+        window.history.pushState({ isHomeRoot: true }, '', window.location.pathname);
+        return;
+      }
+
+      // 2. If no modal is open: Double-Back to Exit
+      const now = Date.now();
+      if (now - lastBackPressTime < 2000) {
+        window.history.go(-1);
+      } else {
+        lastBackPressTime = now;
+        window.history.pushState({ isHomeRoot: true }, '', window.location.pathname);
+        setShowExitToast(true);
+        setTimeout(() => {
+          setShowExitToast(false);
+        }, 2000);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -884,6 +941,14 @@ export default function HomePage() {
         <div className="fixed bottom-6 right-6 z-50 bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-amber-500/40 flex items-center space-x-2 text-xs font-semibold animate-in fade-in slide-in-from-bottom-5">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMsg}</span>
+        </div>
+      )}
+
+      {/* Mobile Double-Back to Exit Toast */}
+      {showExitToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-stone-900/95 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-2xl border border-white/15 flex items-center space-x-2 text-xs font-semibold animate-in fade-in slide-in-from-bottom-4 pointer-events-none">
+          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          <span>Tekan sekali lagi untuk keluar</span>
         </div>
       )}
     </div>

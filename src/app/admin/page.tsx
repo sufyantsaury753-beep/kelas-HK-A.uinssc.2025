@@ -32,6 +32,7 @@ import {
   MapPin,
   Save,
   Check,
+  ArrowLeft,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import {
@@ -488,17 +489,20 @@ export default function AdminDashboard() {
 
         <div className="flex items-center space-x-3">
           <Link
+            href="/"
+            replace
+            className="hidden md:inline-flex px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-semibold border border-stone-700 transition-all items-center space-x-1.5"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Kembali ke Beranda</span>
+          </Link>
+          <Link
             href="/pj"
+            replace
             className="px-4 py-2.5 rounded-xl bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold shadow-md transition-all flex items-center space-x-1.5"
           >
             <Sparkles className="w-4 h-4 text-amber-300" />
             <span>Mode PJ Presensi</span>
-          </Link>
-          <Link
-            href="/"
-            className="px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-semibold border border-stone-700 transition-all"
-          >
-            Lihat Beranda Publik
           </Link>
         </div>
       </div>

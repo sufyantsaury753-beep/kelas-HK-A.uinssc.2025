@@ -29,6 +29,7 @@ import {
   AlertTriangle,
   Unlock,
   Info,
+  ArrowLeft,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import {
@@ -495,7 +496,16 @@ export default function PjDashboard() {
 
         <div className="flex items-center gap-2">
           <Link
+            href="/"
+            replace
+            className="hidden md:inline-flex px-3.5 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition-all items-center space-x-1.5 active:scale-95"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Kembali ke Beranda</span>
+          </Link>
+          <Link
             href="/mahasiswa"
+            replace
             className="px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition-all flex items-center space-x-1.5 active:scale-95"
           >
             <span>Dashboard Pribadi</span>
@@ -503,6 +513,7 @@ export default function PjDashboard() {
           {isAdmin && (
             <Link
               href="/admin"
+              replace
               className="px-4 py-2 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold transition-all active:scale-95"
             >
               Admin
