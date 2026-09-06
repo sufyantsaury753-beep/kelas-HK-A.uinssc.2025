@@ -26,6 +26,7 @@ import {
   Download,
   FileCheck,
   Lock,
+  User,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, Announcement, Student, CourseMaterial, AuthSession } from '@/lib/types';
@@ -123,7 +124,7 @@ export default function HomePage() {
         title: cleanFileName,
         type: 'TUGAS',
         url: result,
-        uploadedBy: auth?.name || 'Mahasiswa',
+        uploadedBy: auth?.role === 'ADMIN' ? 'Admin' : (auth?.name || 'Mahasiswa'),
         fileSize: fileSizeStr,
       });
       setIsUploading(false);
@@ -682,19 +683,24 @@ export default function HomePage() {
                               <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 bg-amber-100 text-[#8c4e24]">
                                 <FileText className="w-4 h-4" />
                               </div>
-                              <div>
+                              <div className="min-w-0 flex-1">
                                 <p className="font-bold text-stone-900 text-xs sm:text-sm">
                                   {mat.title}
                                 </p>
-                                <p className="text-[10px] text-stone-400 mt-1 flex flex-wrap items-center gap-1.5">
-                                  <span>Diunggah pada {mat.uploadedAt}</span>
+                                <div className="text-[11px] text-stone-500 mt-1 flex flex-wrap items-center gap-1.5">
+                                  <span className="inline-flex items-center gap-1 font-semibold text-stone-700 bg-stone-100 border border-stone-200/80 px-2 py-0.5 rounded-md">
+                                    <User className="w-3 h-3 text-[#8c4e24]" />
+                                    <span>Oleh: {mat.uploadedBy || 'Mahasiswa'}</span>
+                                  </span>
+                                  <span>•</span>
+                                  <span className="text-stone-400">{mat.uploadedAt}</span>
                                   {mat.fileSize && (
                                     <>
                                       <span>•</span>
-                                      <span className="font-mono text-stone-600 font-semibold">{mat.fileSize}</span>
+                                      <span className="font-mono text-stone-600 font-semibold text-[10px] bg-stone-50 px-1.5 py-0.5 rounded border border-stone-200/60">{mat.fileSize}</span>
                                     </>
                                   )}
-                                </p>
+                                </div>
                               </div>
                             </div>
 
