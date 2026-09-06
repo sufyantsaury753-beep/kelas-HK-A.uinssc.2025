@@ -608,7 +608,9 @@ export default function HomePage() {
                       Berkas Materi & Tugas Kuliah
                     </h4>
                     <p className="text-[11px] text-stone-500">
-                      Klik tombol untuk langsung memilih dan mengunggah berkas. Semua berkas bisa diunduh.
+                      {auth
+                        ? 'Pilih berkas untuk diunggah atau klik tombol untuk mengunduh materi.'
+                        : 'Berkas materi dan tugas hanya dapat diunggah dan diunduh oleh mahasiswa yang telah login.'}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -634,12 +636,12 @@ export default function HomePage() {
                         href="/login"
                         className="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-[#8c4e24] font-bold text-xs flex items-center space-x-1.5 transition-all border border-amber-200/80 shadow-xs"
                       >
-                        <Lock className="w-3.5 h-3.5 text-[#9d5f2f]" />
+                        <Lock className="w-3.5 h-3.5 text-[#8c4e24]" />
                         <span>Login untuk Upload</span>
                       </Link>
                     )}
 
-                    {selectedCourse.driveLink && (
+                    {selectedCourse.driveLink && auth && (
                       <a
                         href={selectedCourse.driveLink}
                         target="_blank"
@@ -661,7 +663,9 @@ export default function HomePage() {
                       Belum ada berkas atau tugas yang diunggah untuk mata kuliah ini.
                     </p>
                     <p className="text-[11px] text-stone-400">
-                      Klik tombol <strong>&quot;Upload File / Tugas&quot;</strong> di atas untuk langsung memilih dan mengunggah berkas!
+                      {auth
+                        ? 'Klik tombol "Upload File / Tugas" di atas untuk langsung memilih dan mengunggah berkas!'
+                        : 'Silakan login terlebih dahulu untuk mengunggah materi perkuliahan.'}
                     </p>
                   </div>
                 ) : (
@@ -675,7 +679,7 @@ export default function HomePage() {
                             className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl border border-stone-200 hover:border-amber-300 hover:bg-amber-50/20 transition-all bg-white gap-3 shadow-xs"
                           >
                             <div className="flex items-start space-x-3">
-                              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 bg-amber-100 text-[#9d5f2f]">
+                              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 bg-amber-100 text-[#8c4e24]">
                                 <FileText className="w-4 h-4" />
                               </div>
                               <div>
@@ -694,18 +698,28 @@ export default function HomePage() {
                               </div>
                             </div>
 
-                            {/* Actions: Unduh & Hapus (Admin) */}
+                            {/* Actions: Unduh & Hapus (Protected for Auth/Class only) */}
                             <div className="flex items-center space-x-2 self-end sm:self-center flex-shrink-0">
-                              <a
-                                href={mat.url}
-                                download={mat.title}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="px-3.5 py-1.5 rounded-xl bg-stone-100 hover:bg-[#9d5f2f] hover:text-white font-bold text-stone-800 transition-all flex items-center space-x-1.5 text-xs shadow-xs"
-                              >
-                                <Download className="w-3.5 h-3.5 text-[#9d5f2f] group-hover:text-white" />
-                                <span>Unduh / Buka</span>
-                              </a>
+                              {auth ? (
+                                <a
+                                  href={mat.url}
+                                  download={mat.title}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-3.5 py-1.5 rounded-xl bg-stone-100 hover:bg-[#8c4e24] hover:text-white font-bold text-stone-800 transition-all flex items-center space-x-1.5 text-xs shadow-xs"
+                                >
+                                  <Download className="w-3.5 h-3.5 text-[#8c4e24] group-hover:text-white" />
+                                  <span>Unduh / Buka</span>
+                                </a>
+                              ) : (
+                                <Link
+                                  href="/login"
+                                  className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-[#8c4e24] border border-amber-200/80 font-bold text-xs transition-all flex items-center space-x-1.5 shadow-2xs"
+                                >
+                                  <Lock className="w-3.5 h-3.5 text-[#8c4e24]" />
+                                  <span>Login untuk Unduh</span>
+                                </Link>
+                              )}
 
                               {/* Tombol Hapus Berkas: Khusus yang sudah Login */}
                               {auth && (
