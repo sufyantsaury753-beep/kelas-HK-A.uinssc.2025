@@ -86,11 +86,8 @@ export default function LoginPage() {
       isLoggedIn: true,
     });
 
-    if (assignedCourses.length > 0) {
-      router.push('/pj');
-    } else {
-      router.push('/mahasiswa');
-    }
+    // Arahkan ke Beranda utama terlebih dahulu
+    router.replace('/');
   };
 
   const handlePinCreated = (newPin: string) => {
@@ -113,11 +110,8 @@ export default function LoginPage() {
     });
 
     setPendingStudent(null);
-    if (assignedCourses.length > 0) {
-      router.push('/pj');
-    } else {
-      router.push('/mahasiswa');
-    }
+    // Arahkan ke Beranda utama terlebih dahulu
+    router.replace('/');
   };
 
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -133,7 +127,8 @@ export default function LoginPage() {
         name: 'Administrator Kelas HK A',
         isLoggedIn: true,
       });
-      router.push('/admin');
+      // Arahkan ke Beranda utama terlebih dahulu
+      router.replace('/');
     } else {
       setErrorMsg('Username atau Password Admin salah. (Default: admin / adminhk2025)');
     }
