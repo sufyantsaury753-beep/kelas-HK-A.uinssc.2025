@@ -411,8 +411,21 @@ function GoogleMeetRoomContent() {
           adaptiveStream: true,
           dynacast: true,
           videoCaptureDefaults: {
-            resolution: VideoPresets.h720.resolution,
+            resolution: VideoPresets.h540.resolution,
             facingMode,
+          },
+          audioCaptureDefaults: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          publishDefaults: {
+            simulcast: true,
+            videoSimulcastLayers: [VideoPresets.h180, VideoPresets.h360],
+            videoCodec: 'vp8',
+            dtx: true,
+            red: true,
+            audioPreset: { maxBitrate: 32000 },
           },
         });
         roomRef.current = room;
@@ -474,9 +487,16 @@ function GoogleMeetRoomContent() {
           return;
         }
 
-        // Enable Camera & Mic based on state
-        await room.localParticipant.setCameraEnabled(isCamOn);
-        await room.localParticipant.setMicrophoneEnabled(isMicOn);
+        // Enable Camera & Mic based on state with 540p & speech audio
+        await room.localParticipant.setCameraEnabled(isCamOn, {
+          resolution: VideoPresets.h540.resolution,
+          facingMode,
+        });
+        await room.localParticipant.setMicrophoneEnabled(isMicOn, {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        });
 
         // Attach local camera to localVideoRef
         const camTrack = room.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
@@ -567,7 +587,10 @@ function GoogleMeetRoomContent() {
     const nextState = !isCamOn;
     setIsCamOn(nextState);
     if (roomRef.current) {
-      await roomRef.current.localParticipant.setCameraEnabled(nextState);
+      await roomRef.current.localParticipant.setCameraEnabled(nextState, {
+        resolution: VideoPresets.h540.resolution,
+        facingMode,
+      });
       if (nextState) {
         const camTrack = roomRef.current.localParticipant.getTrackPublication(
           Track.Source.Camera
@@ -584,7 +607,11 @@ function GoogleMeetRoomContent() {
     const nextState = !isMicOn;
     setIsMicOn(nextState);
     if (roomRef.current) {
-      await roomRef.current.localParticipant.setMicrophoneEnabled(nextState);
+      await roomRef.current.localParticipant.setMicrophoneEnabled(nextState, {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      });
     }
   };
 
@@ -596,6 +623,7 @@ function GoogleMeetRoomContent() {
       try {
         await roomRef.current.localParticipant.setCameraEnabled(false);
         await roomRef.current.localParticipant.setCameraEnabled(true, {
+          resolution: VideoPresets.h540.resolution,
           facingMode: nextFacing,
         });
         const camTrack = roomRef.current.localParticipant.getTrackPublication(
