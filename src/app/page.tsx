@@ -36,6 +36,7 @@ import {
   Gavel,
   MapPin,
   BookMarked,
+  Video,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, Announcement, Student, CourseMaterial, AuthSession } from '@/lib/types';
@@ -350,6 +351,13 @@ export default function HomePage() {
                         <span>Portal PJ Mata Kuliah</span>
                       </Link>
                     )}
+                    <Link
+                      href="/kuliah-online"
+                      className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center space-x-2 active:scale-98"
+                    >
+                      <Video className="w-4 h-4 text-stone-950" />
+                      <span>Kuliah Online (Meet)</span>
+                    </Link>
                   </>
                 )
               ) : (
@@ -360,6 +368,13 @@ export default function HomePage() {
                   >
                     <LogIn className="w-4 h-4 text-amber-200" />
                     <span>Masuk Portal Presensi</span>
+                  </Link>
+                  <Link
+                    href="/kuliah-online"
+                    className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center space-x-2 active:scale-98"
+                  >
+                    <Video className="w-4 h-4 text-stone-950" />
+                    <span>Kuliah Online (Meet)</span>
                   </Link>
                   <button
                     type="button"
@@ -496,15 +511,22 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-white/20">
+                  <div className="mt-4 pt-3 border-t border-white/20 grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setSelectedCourse(c)}
-                      className="w-full py-2 px-4 rounded-xl bg-white hover:bg-amber-50 text-[#783e18] font-bold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-sm active:scale-98"
+                      className="py-2 px-2 rounded-xl bg-white hover:bg-amber-50 text-[#783e18] font-bold text-xs flex items-center justify-center space-x-1 transition-all shadow-sm active:scale-98"
                     >
-                      <span>Lihat Repositori & Tugas</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span>Materi / Tugas</span>
                     </button>
+                    <Link
+                      href={`/kuliah-online/${c.id}`}
+                      className="py-2 px-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-extrabold text-xs flex items-center justify-center space-x-1 transition-all shadow-sm active:scale-98 text-center"
+                    >
+                      <Video className="w-3.5 h-3.5 text-stone-900" />
+                      <span>Kuliah Meet</span>
+                    </Link>
                   </div>
                 </div>
               ))}
@@ -688,6 +710,37 @@ export default function HomePage() {
                 <p className="text-stone-600 leading-relaxed bg-stone-50 p-3 rounded-xl border border-stone-200">
                   {selectedCourse.description}
                 </p>
+              </div>
+
+              {/* Ruang Tatap Muka Virtual (Kuliah Online) */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-50 to-orange-50/40 border border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#8c4e24] text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                    <Video className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h4 className="font-bold text-stone-900 text-xs sm:text-sm">
+                        Kuliah Online (Tatap Muka Virtual)
+                      </h4>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        Bebas Waktu
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-600 mt-0.5 leading-relaxed">
+                      Ruang tatap muka virtual tanpa batas waktu 60 menit. Dosen dapat langsung masuk via tautan khusus tanpa harus login.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2 self-end sm:self-center flex-shrink-0">
+                  <Link
+                    href={`/kuliah-online/${selectedCourse.id}`}
+                    className="px-4 py-2 rounded-xl bg-[#8c4e24] hover:bg-[#723f1c] text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-[#8c4e24]/20 transition-all active:scale-95"
+                  >
+                    <Video className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Masuk Ruang Kuliah</span>
+                  </Link>
+                </div>
               </div>
 
               <div>

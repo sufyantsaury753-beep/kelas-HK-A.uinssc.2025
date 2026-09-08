@@ -25,6 +25,7 @@ import {
   Home,
   Bell,
   ChevronRight,
+  Video,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -163,6 +164,17 @@ export default function Navbar() {
               <CalendarDays className="w-4 h-4 text-[#9d5f2f]" />
               <span>Jadwal Seminggu</span>
             </button>
+            <Link
+              href="/kuliah-online"
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
+                pathname.startsWith('/kuliah-online')
+                  ? 'text-[#9d5f2f] bg-amber-50/80 font-bold'
+                  : 'text-stone-600 hover:text-[#9d5f2f] hover:bg-stone-50'
+              }`}
+            >
+              <Video className="w-4 h-4 text-[#9d5f2f]" />
+              <span>Kuliah Online</span>
+            </Link>
             <Link
               href="/#pengumuman"
               className="px-3.5 py-2 rounded-lg text-sm font-medium text-stone-600 hover:text-[#9d5f2f] hover:bg-stone-50 transition-colors"
@@ -305,6 +317,28 @@ export default function Navbar() {
                 <span>Mata Kuliah & Repositori</span>
               </div>
               <ChevronRight className="w-4 h-4 text-stone-400" />
+            </Link>
+
+            <Link
+              href="/kuliah-online"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-semibold transition-all ${
+                pathname.startsWith('/kuliah-online')
+                  ? 'bg-amber-50 text-[#8c4e24]'
+                  : 'text-stone-700 hover:bg-stone-50 hover:text-stone-900'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                  pathname.startsWith('/kuliah-online') ? 'bg-[#8c4e24] text-white shadow-2xs' : 'bg-amber-100/80 text-[#8c4e24]'
+                }`}>
+                  <Video className="w-4 h-4" />
+                </div>
+                <span>Kuliah Online (Meet)</span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                Bebas Waktu
+              </span>
             </Link>
 
             <Link

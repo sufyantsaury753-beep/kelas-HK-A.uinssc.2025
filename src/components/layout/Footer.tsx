@@ -89,6 +89,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/kuliah-online" className="hover:text-white transition-colors flex items-center group">
+                  <span className="group-hover:translate-x-0.5 transition-transform text-amber-300">Kuliah Online (Meet Virtual)</span>
+                </Link>
+              </li>
+              <li>
                 <Link href="/#pengumuman" className="hover:text-white transition-colors flex items-center group">
                   <span className="group-hover:translate-x-0.5 transition-transform">Informasi Kelas</span>
                 </Link>

@@ -30,6 +30,8 @@ import {
   Unlock,
   Info,
   ArrowLeft,
+  Video,
+  Share2,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import {
@@ -44,6 +46,7 @@ import {
 import { AttendanceBadge } from '@/components/common/Badge';
 import AttendanceSheetPrint from '@/components/attendance/AttendanceSheetPrint';
 import { exportSingleSessionCsv, exportMatrixAttendanceCsv } from '@/lib/exportUtils';
+import { getLecturerInviteMessage } from '@/lib/meetUtils';
 import confetti from 'canvas-confetti';
 
 const INDONESIAN_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -687,6 +690,29 @@ export default function PjDashboard() {
 
             {/* Top Toolbar Actions */}
             <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={`/kuliah-online/${activeCourse.id}`}
+                className="px-3.5 py-2 bg-gradient-to-r from-[#8c4e24] to-[#723f1c] hover:brightness-110 text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-sm active:scale-95"
+              >
+                <Video className="w-4 h-4 text-amber-300" />
+                <span>Kuliah Online (Meet)</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    const msg = getLecturerInviteMessage(activeCourse, window.location.origin);
+                    navigator.clipboard.writeText(msg);
+                    showToast('Tautan undangan Dosen Pengampu berhasil disalin untuk WhatsApp!');
+                  }
+                }}
+                className="px-3.5 py-2 bg-amber-100 hover:bg-amber-200 text-[#8c4e24] border border-amber-300 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-2xs active:scale-95"
+              >
+                <Share2 className="w-4 h-4 text-[#8c4e24]" />
+                <span>Salin Tautan Dosen (WA)</span>
+              </button>
+
               <button
                 onClick={handleOpenEnrollModal}
                 className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-[#8c4e24] border border-amber-200/80 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-2xs"
