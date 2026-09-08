@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense, useId } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -16,34 +16,30 @@ import {
   Users as UsersIcon,
   MessageSquare,
   Info,
-  MoreVertical,
   Share2,
   Copy,
   Check,
   RotateCcw,
-  Volume2,
-  VolumeX,
-  Maximize,
-  Minimize,
   ArrowLeft,
   ShieldCheck,
   GraduationCap,
   Sparkles,
   Send,
   X,
-  Radio,
   Lock,
   MessageCircle,
+  User,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
-import { Course, AuthSession, Student } from '@/lib/types';
+import { Course, AuthSession } from '@/lib/types';
 import {
   verifyLecturerToken,
   getLecturerInviteMessage,
   getStudentInviteMessage,
 } from '@/lib/meetUtils';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
-// Avatar background colors inspired by Google Meet
+// Google Meet Avatar Background Colors
 const AVATAR_COLORS = [
   'bg-emerald-600',
   'bg-blue-600',
@@ -64,14 +60,23 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[index];
 }
 
-interface PeerParticipant {
-  id: string;
+const ICE_SERVERS: RTCConfiguration = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+  ],
+};
+
+interface RemotePeer {
+  peerId: string;
   name: string;
-  role: 'DOSEN' | 'MAHASISWA';
-  isMuted: boolean;
+  role: string;
   isCamOn: boolean;
+  isMicOn: boolean;
   isHandRaised?: boolean;
-  activeReaction?: string | null;
 }
 
 interface ChatMessage {
@@ -81,6 +86,84 @@ interface ChatMessage {
   text: string;
   isMe: boolean;
   isDosen?: boolean;
+}
+
+// Remote Video Tile Component with proper autoPlay & stream attachment
+function RemoteVideoTile({
+  peer,
+  stream,
+}: {
+  peer: RemotePeer;
+  stream?: MediaStream;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [stream]);
+
+  const initials = (peer.name.replace(/[^a-zA-Z]/g, '')[0] || 'M').toUpperCase();
+  const avatarColor = getAvatarColor(peer.name);
+
+  return (
+    <div
+      className={`relative bg-[#3c4043] rounded-2xl sm:rounded-3xl overflow-hidden border border-stone-700/80 transition-all flex items-center justify-center shadow-md min-h-[160px] sm:min-h-[220px] ${
+        peer.isHandRaised ? 'ring-2 ring-amber-400' : ''
+      }`}
+    >
+      {/* Remote Video Stream if Cam is ON */}
+      {peer.isCamOn && stream ? (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        /* OFF CAM: Google Meet Style Circle Avatar */
+        <div className="flex flex-col items-center justify-center p-4">
+          <div
+            className={`w-20 h-20 sm:w-28 sm:h-28 rounded-full ${avatarColor} text-white flex items-center justify-center font-bold text-3xl sm:text-4xl shadow-xl ring-4 ring-white/10`}
+          >
+            {initials}
+          </div>
+        </div>
+      )}
+
+      {/* Name Badge */}
+      <div className="absolute bottom-2.5 left-2.5 max-w-[85%] bg-stone-900/80 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium text-white flex items-center space-x-1.5 shadow-md">
+        <span className="truncate">{peer.name}</span>
+        {peer.role === 'DOSEN' && (
+          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">
+            DOSEN
+          </span>
+        )}
+      </div>
+
+      {/* Mic Status Icon */}
+      <div className="absolute top-2.5 right-2.5">
+        {!peer.isMicOn ? (
+          <div className="w-7 h-7 rounded-full bg-rose-600/90 text-white flex items-center justify-center shadow-md">
+            <MicOff className="w-3.5 h-3.5" />
+          </div>
+        ) : (
+          <div className="w-7 h-7 rounded-full bg-stone-900/70 text-emerald-400 flex items-center justify-center shadow-md">
+            <Mic className="w-3.5 h-3.5" />
+          </div>
+        )}
+      </div>
+
+      {/* Hand Raised Badge */}
+      {peer.isHandRaised && (
+        <div className="absolute top-2.5 left-2.5 w-8 h-8 rounded-full bg-amber-400 text-stone-950 flex items-center justify-center shadow-lg animate-bounce">
+          <Hand className="w-4 h-4" />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function GoogleMeetRoomContent() {
@@ -94,9 +177,11 @@ function GoogleMeetRoomContent() {
 
   const [course, setCourse] = useState<Course | null>(null);
   const [auth, setAuth] = useState<AuthSession | null>(null);
-  const [students, setStudents] = useState<Student[]>([]);
   const [isLecturer, setIsLecturer] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+
+  // Generate a reliable unique peer ID for this session
+  const [myPeerId, setMyPeerId] = useState<string>('');
 
   // Local media controls
   const [isMicOn, setIsMicOn] = useState(true);
@@ -105,7 +190,6 @@ function GoogleMeetRoomContent() {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [activeReaction, setActiveReaction] = useState<string | null>(null);
 
   // Layout & Drawers
   const [activeSideDrawer, setActiveSideDrawer] = useState<'PEOPLE' | 'CHAT' | 'INFO' | null>(null);
@@ -114,29 +198,26 @@ function GoogleMeetRoomContent() {
   const [baseUrl, setBaseUrl] = useState('');
   const [currentTime, setCurrentTime] = useState('');
 
+  // Realtime multi-user state (ONLY REAL PARTICIPANTS, NO MOCK DATA)
+  const [remotePeers, setRemotePeers] = useState<RemotePeer[]>([]);
+  const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
+
   // Video Stream References
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const screenVideoRef = useRef<HTMLVideoElement | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
 
+  // WebRTC PeerConnections Map
+  const peerConnectionsRef = useRef<Record<string, RTCPeerConnection>>({});
+  const channelRef = useRef<any>(null);
+
   // Class chat messages
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome-1',
-      sender: 'Sistem Kelas HK A',
-      time: '07:30',
-      text: 'Selamat datang di ruang tatap muka virtual kelas Hukum Keluarga A 2025.',
-      isMe: false,
-    },
-  ]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputChat, setInputChat] = useState('');
 
   // Floating reactions pool
   const [floatingReactions, setFloatingReactions] = useState<{ id: number; emoji: string }[]>([]);
-
-  // Participants list in room
-  const [participants, setParticipants] = useState<PeerParticipant[]>([]);
 
   // Initialize clock and base url
   useEffect(() => {
@@ -157,8 +238,6 @@ function GoogleMeetRoomContent() {
     const allCourses = appStore.getCourses();
     const target = allCourses.find((c) => c.id === courseId) || null;
     setCourse(target);
-    const allStudents = appStore.getStudents();
-    setStudents(allStudents);
 
     const currentAuth = appStore.getAuth();
     setAuth(currentAuth);
@@ -174,6 +253,8 @@ function GoogleMeetRoomContent() {
       if (isValid) {
         setIsLecturer(true);
         setIsAuthorized(true);
+        const randId = Math.random().toString(36).substring(2, 6);
+        setMyPeerId(`dosen-${target.id}-${randId}`);
         return;
       }
     }
@@ -182,51 +263,23 @@ function GoogleMeetRoomContent() {
     if (currentAuth) {
       setIsLecturer(false);
       setIsAuthorized(true);
+      const userNim = currentAuth.nim ? currentAuth.nim.trim() : 'admin';
+      const randId = Math.random().toString(36).substring(2, 6);
+      setMyPeerId(`${userNim}-${randId}`);
     } else {
       setIsLecturer(false);
       setIsAuthorized(false);
     }
   }, [courseId, roleParam, tokenParam]);
 
-  // Setup Class Peers in the room
-  useEffect(() => {
-    if (!course || !isAuthorized) return;
+  // Display name of local user
+  const myDisplayName = isLecturer
+    ? `${course?.dosen || 'Dosen'} (Dosen Pengampu)`
+    : `${auth?.name || 'Mahasiswa'} (Anda)`;
 
-    const peers: PeerParticipant[] = [];
-
-    // If current user is student, lecturer is an active peer in the room
-    if (!isLecturer) {
-      peers.push({
-        id: 'lecturer-main',
-        name: `${course.dosen} (Dosen Pengampu)`,
-        role: 'DOSEN',
-        isMuted: false,
-        isCamOn: true,
-      });
-    }
-
-    // Sample peer classmates for authentic Google Meet grid
-    const peerNames = [
-      'Sekar Ayu Lestari',
-      'Sulistyono',
-      'Novita Anggraeni',
-      'M. Rizky Ramadhan',
-      'Fathurrahman',
-      'Dewi Sartika',
-    ];
-
-    peerNames.slice(0, 5).forEach((pName, idx) => {
-      peers.push({
-        id: `peer-${idx}`,
-        name: pName,
-        role: 'MAHASISWA',
-        isMuted: idx % 2 === 0,
-        isCamOn: idx === 0, // One classmate has camera on
-      });
-    });
-
-    setParticipants(peers);
-  }, [course, isAuthorized, isLecturer]);
+  const myInitials = isLecturer
+    ? (course?.dosen.replace(/^(Dr\.|Prof\.|H\.|Drs\.|M\.)\s+/g, '')[0] || 'D').toUpperCase()
+    : (auth?.name || 'M')[0].toUpperCase();
 
   // Start Camera & Microphone directly via native WebRTC
   useEffect(() => {
@@ -236,7 +289,6 @@ function GoogleMeetRoomContent() {
 
     async function startMedia() {
       try {
-        // Stop existing tracks if switching camera
         if (localStreamRef.current) {
           localStreamRef.current.getTracks().forEach((track) => track.stop());
         }
@@ -262,12 +314,29 @@ function GoogleMeetRoomContent() {
           localVideoRef.current.play().catch(() => {});
         }
 
-        // Apply initial mute/camera states
         stream.getVideoTracks().forEach((t) => (t.enabled = isCamOn));
         stream.getAudioTracks().forEach((t) => (t.enabled = isMicOn));
+
+        // If peer connections already exist, replace video tracks
+        Object.values(peerConnectionsRef.current).forEach((pc) => {
+          const videoSender = pc.getSenders().find((s) => s.track?.kind === 'video');
+          const videoTrack = stream.getVideoTracks()[0];
+          if (videoSender && videoTrack) {
+            videoSender.replaceTrack(videoTrack);
+          } else if (videoTrack) {
+            pc.addTrack(videoTrack, stream);
+          }
+
+          const audioSender = pc.getSenders().find((s) => s.track?.kind === 'audio');
+          const audioTrack = stream.getAudioTracks()[0];
+          if (audioSender && audioTrack) {
+            audioSender.replaceTrack(audioTrack);
+          } else if (audioTrack) {
+            pc.addTrack(audioTrack, stream);
+          }
+        });
       } catch (err) {
         console.warn('Gagal mengakses kamera/mikrofon langsung:', err);
-        // Fallback: If camera permission denied, turn off camera state
         setIsCamOn(false);
       }
     }
@@ -276,11 +345,247 @@ function GoogleMeetRoomContent() {
 
     return () => {
       active = false;
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((t) => t.stop());
-      }
     };
   }, [isAuthorized, facingMode]);
+
+  // Connect WebRTC signaling and Realtime Presence via Supabase
+  useEffect(() => {
+    if (!isAuthorized || !courseId || !myPeerId || !isSupabaseConfigured()) return;
+
+    const channelName = `meet-room-${courseId}`;
+    const channel = supabase.channel(channelName, {
+      config: {
+        presence: { key: myPeerId },
+        broadcast: { self: false },
+      },
+    });
+
+    channelRef.current = channel;
+
+    // Helper: Create RTCPeerConnection for a remote peer
+    const createPeerConnection = (targetPeerId: string, shouldInitiateOffer: boolean) => {
+      if (peerConnectionsRef.current[targetPeerId]) {
+        return peerConnectionsRef.current[targetPeerId];
+      }
+
+      const pc = new RTCPeerConnection(ICE_SERVERS);
+      peerConnectionsRef.current[targetPeerId] = pc;
+
+      // Add local stream tracks if available
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((track) => {
+          pc.addTrack(track, localStreamRef.current!);
+        });
+      }
+
+      // Handle receiving remote stream
+      pc.ontrack = (event) => {
+        const stream = event.streams[0];
+        if (stream) {
+          setRemoteStreams((prev) => ({
+            ...prev,
+            [targetPeerId]: stream,
+          }));
+        }
+      };
+
+      // Handle ICE Candidates
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          channel.send({
+            type: 'broadcast',
+            event: 'webrtc-signal',
+            payload: {
+              to: targetPeerId,
+              from: myPeerId,
+              candidate: event.candidate,
+            },
+          });
+        }
+      };
+
+      // Initiate offer if designated caller (tie-breaker: myPeerId > targetPeerId)
+      if (shouldInitiateOffer) {
+        pc.createOffer()
+          .then((offer) => pc.setLocalDescription(offer))
+          .then(() => {
+            channel.send({
+              type: 'broadcast',
+              event: 'webrtc-signal',
+              payload: {
+                to: targetPeerId,
+                from: myPeerId,
+                sdp: pc.localDescription,
+              },
+            });
+          })
+          .catch((err) => console.warn('Error creating WebRTC offer:', err));
+      }
+
+      return pc;
+    };
+
+    // 1. Presence Sync: Synchronize who is actually in this room
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const presenceState = channel.presenceState();
+        const activeRemotePeers: RemotePeer[] = [];
+
+        for (const key in presenceState) {
+          if (key === myPeerId) continue;
+          const userList = presenceState[key] as any[];
+          if (userList && userList.length > 0) {
+            const p = userList[0];
+            activeRemotePeers.push({
+              peerId: p.peerId,
+              name: p.name,
+              role: p.role,
+              isCamOn: p.isCamOn,
+              isMicOn: p.isMicOn,
+              isHandRaised: p.isHandRaised,
+            });
+
+            // If connection not established yet, establish it
+            if (!peerConnectionsRef.current[p.peerId]) {
+              // Tie-breaker: peer with lexicographically greater peerId creates the offer
+              const shouldInitiate = myPeerId > p.peerId;
+              createPeerConnection(p.peerId, shouldInitiate);
+            }
+          }
+        }
+
+        // Clean up connections for peers that left
+        Object.keys(peerConnectionsRef.current).forEach((peerId) => {
+          if (!activeRemotePeers.some((p) => p.peerId === peerId)) {
+            try {
+              peerConnectionsRef.current[peerId].close();
+            } catch {}
+            delete peerConnectionsRef.current[peerId];
+            setRemoteStreams((prev) => {
+              const copy = { ...prev };
+              delete copy[peerId];
+              return copy;
+            });
+          }
+        });
+
+        setRemotePeers(activeRemotePeers);
+      })
+      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+        if (Array.isArray(leftPresences)) {
+          leftPresences.forEach((lp: any) => {
+            if (lp?.peerId && peerConnectionsRef.current[lp.peerId]) {
+              try {
+                peerConnectionsRef.current[lp.peerId].close();
+              } catch {}
+              delete peerConnectionsRef.current[lp.peerId];
+              setRemoteStreams((prev) => {
+                const copy = { ...prev };
+                delete copy[lp.peerId];
+                return copy;
+              });
+            }
+          });
+        }
+      });
+
+    // 2. WebRTC Signaling (SDP Offer / Answer & ICE Candidates)
+    channel.on('broadcast', { event: 'webrtc-signal' }, async ({ payload }) => {
+      if (!payload || payload.to !== myPeerId) return;
+
+      const { from, sdp, candidate } = payload;
+      let pc = peerConnectionsRef.current[from];
+
+      if (!pc) {
+        pc = createPeerConnection(from, false);
+      }
+
+      if (sdp) {
+        if (sdp.type === 'offer') {
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            channel.send({
+              type: 'broadcast',
+              event: 'webrtc-signal',
+              payload: {
+                to: from,
+                from: myPeerId,
+                sdp: answer,
+              },
+            });
+          } catch (err) {
+            console.warn('Error handling WebRTC offer:', err);
+          }
+        } else if (sdp.type === 'answer') {
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+          } catch (err) {
+            console.warn('Error handling WebRTC answer:', err);
+          }
+        }
+      }
+
+      if (candidate) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.warn('Error adding ICE candidate:', err);
+        }
+      }
+    });
+
+    // 3. Peer State Updates (Cam / Mic / Raise Hand toggles)
+    channel.on('broadcast', { event: 'peer-state-update' }, ({ payload }) => {
+      if (!payload || !payload.peerId) return;
+      setRemotePeers((prev) =>
+        prev.map((p) => (p.peerId === payload.peerId ? { ...p, ...payload } : p))
+      );
+    });
+
+    // 4. In-Meeting Chat Broadcast
+    channel.on('broadcast', { event: 'chat-message' }, ({ payload }) => {
+      if (!payload) return;
+      setChatMessages((prev) => [...prev, { ...payload, isMe: false }]);
+    });
+
+    // 5. Floating Emoji Reaction Broadcast
+    channel.on('broadcast', { event: 'emoji-reaction' }, ({ payload }) => {
+      if (!payload?.emoji) return;
+      const newReaction = { id: Date.now(), emoji: payload.emoji };
+      setFloatingReactions((prev) => [...prev, newReaction]);
+      setTimeout(() => {
+        setFloatingReactions((prev) => prev.filter((r) => r.id !== newReaction.id));
+      }, 2800);
+    });
+
+    // Subscribe to channel & track initial presence
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await channel.track({
+          peerId: myPeerId,
+          name: isLecturer
+            ? `${course?.dosen || 'Dosen'} (Dosen Pengampu)`
+            : `${auth?.name || 'Mahasiswa'}`,
+          role: isLecturer ? 'DOSEN' : auth?.role === 'ADMIN' ? 'ADMIN' : 'MAHASISWA',
+          isCamOn: isCamOn,
+          isMicOn: isMicOn,
+          isHandRaised: isHandRaised,
+        });
+      }
+    });
+
+    return () => {
+      channel.unsubscribe();
+      Object.values(peerConnectionsRef.current).forEach((pc) => {
+        try {
+          pc.close();
+        } catch {}
+      });
+      peerConnectionsRef.current = {};
+    };
+  }, [isAuthorized, courseId, myPeerId, isLecturer, auth, course]);
 
   // Handle Toggle Camera
   const handleToggleCam = () => {
@@ -289,6 +594,22 @@ function GoogleMeetRoomContent() {
     if (localStreamRef.current) {
       localStreamRef.current.getVideoTracks().forEach((track) => {
         track.enabled = nextState;
+      });
+    }
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'peer-state-update',
+        payload: { peerId: myPeerId, isCamOn: nextState },
+      });
+      channelRef.current.track({
+        peerId: myPeerId,
+        name: isLecturer ? `${course?.dosen} (Dosen Pengampu)` : `${auth?.name}`,
+        role: isLecturer ? 'DOSEN' : 'MAHASISWA',
+        isCamOn: nextState,
+        isMicOn: isMicOn,
+        isHandRaised: isHandRaised,
       });
     }
   };
@@ -300,6 +621,22 @@ function GoogleMeetRoomContent() {
     if (localStreamRef.current) {
       localStreamRef.current.getAudioTracks().forEach((track) => {
         track.enabled = nextState;
+      });
+    }
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'peer-state-update',
+        payload: { peerId: myPeerId, isMicOn: nextState },
+      });
+      channelRef.current.track({
+        peerId: myPeerId,
+        name: isLecturer ? `${course?.dosen} (Dosen Pengampu)` : `${auth?.name}`,
+        role: isLecturer ? 'DOSEN' : 'MAHASISWA',
+        isCamOn: isCamOn,
+        isMicOn: nextState,
+        isHandRaised: isHandRaised,
       });
     }
   };
@@ -317,6 +654,14 @@ function GoogleMeetRoomContent() {
         screenStreamRef.current = null;
       }
       setIsScreenSharing(false);
+      // Revert peer tracks to camera
+      if (localStreamRef.current) {
+        const videoTrack = localStreamRef.current.getVideoTracks()[0];
+        Object.values(peerConnectionsRef.current).forEach((pc) => {
+          const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
+          if (sender && videoTrack) sender.replaceTrack(videoTrack);
+        });
+      }
       return;
     }
 
@@ -339,9 +684,22 @@ function GoogleMeetRoomContent() {
         screenVideoRef.current.play().catch(() => {});
       }
 
-      screenStream.getVideoTracks()[0].onended = () => {
+      const screenTrack = screenStream.getVideoTracks()[0];
+      Object.values(peerConnectionsRef.current).forEach((pc) => {
+        const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
+        if (sender && screenTrack) sender.replaceTrack(screenTrack);
+      });
+
+      screenTrack.onended = () => {
         setIsScreenSharing(false);
         screenStreamRef.current = null;
+        if (localStreamRef.current) {
+          const vTrack = localStreamRef.current.getVideoTracks()[0];
+          Object.values(peerConnectionsRef.current).forEach((pc) => {
+            const s = pc.getSenders().find((send) => send.track?.kind === 'video');
+            if (s && vTrack) s.replaceTrack(vTrack);
+          });
+        }
       };
     } catch (err) {
       console.warn('Batal membagikan layar:', err);
@@ -351,25 +709,46 @@ function GoogleMeetRoomContent() {
 
   // Handle Raise Hand
   const handleToggleHand = () => {
-    setIsHandRaised((prev) => !prev);
-    if (!isHandRaised) {
+    const nextState = !isHandRaised;
+    setIsHandRaised(nextState);
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'peer-state-update',
+        payload: { peerId: myPeerId, isHandRaised: nextState },
+      });
+      channelRef.current.track({
+        peerId: myPeerId,
+        name: isLecturer ? `${course?.dosen} (Dosen Pengampu)` : `${auth?.name}`,
+        role: isLecturer ? 'DOSEN' : 'MAHASISWA',
+        isCamOn: isCamOn,
+        isMicOn: isMicOn,
+        isHandRaised: nextState,
+      });
+    }
+
+    if (nextState) {
       triggerReaction('✋');
     }
   };
 
   // Handle Reaction
   const triggerReaction = (emoji: string) => {
-    setActiveReaction(emoji);
     const newReaction = { id: Date.now(), emoji };
     setFloatingReactions((prev) => [...prev, newReaction]);
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'emoji-reaction',
+        payload: { emoji, from: myPeerId },
+      });
+    }
 
     setTimeout(() => {
       setFloatingReactions((prev) => prev.filter((r) => r.id !== newReaction.id));
     }, 2800);
-
-    setTimeout(() => {
-      setActiveReaction(null);
-    }, 3500);
 
     setShowEmojiPicker(false);
   };
@@ -393,6 +772,15 @@ function GoogleMeetRoomContent() {
     };
 
     setChatMessages((prev) => [...prev, newMsg]);
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'chat-message',
+        payload: newMsg,
+      });
+    }
+
     setInputChat('');
   };
 
@@ -420,6 +808,9 @@ function GoogleMeetRoomContent() {
     }
     if (screenStreamRef.current) {
       screenStreamRef.current.getTracks().forEach((t) => t.stop());
+    }
+    if (channelRef.current) {
+      channelRef.current.unsubscribe();
     }
     router.replace('/kuliah-online');
   };
@@ -484,17 +875,11 @@ function GoogleMeetRoomContent() {
     );
   }
 
-  const myDisplayName = isLecturer
-    ? `${course.dosen} (Dosen Pengampu)`
-    : `${auth?.name || 'Mahasiswa'} (Anda)`;
-
-  const myInitials = isLecturer
-    ? (course.dosen.replace(/^(Dr\.|Prof\.|H\.|Drs\.|M\.)\s+/g, '')[0] || 'D').toUpperCase()
-    : (auth?.name || 'M')[0].toUpperCase();
+  const totalPeopleCount = 1 + remotePeers.length;
 
   return (
     <div className="fixed inset-0 z-50 bg-[#202124] text-white flex flex-col select-none overflow-hidden font-sans">
-      {/* 1. TOP BAR (Clean Google Meet Style - Minimal on Mobile, Sleek on Desktop) */}
+      {/* 1. TOP BAR (Google Meet Style) */}
       <header className="h-14 sm:h-16 px-4 sm:px-6 flex items-center justify-between border-b border-stone-800/80 bg-[#202124]/95 flex-shrink-0 z-30">
         {/* Left: Meeting Title & Code */}
         <div className="flex items-center space-x-3">
@@ -522,7 +907,7 @@ function GoogleMeetRoomContent() {
           </div>
         </div>
 
-        {/* Center: Live Recording / Meeting Pulse Indicator */}
+        {/* Center: Live indicator */}
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-stone-800 border border-stone-700 text-xs text-stone-300">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -530,7 +915,7 @@ function GoogleMeetRoomContent() {
           </div>
         </div>
 
-        {/* Right: Mobile quick flip camera & Desktop share/drawer toggles */}
+        {/* Right: Mobile quick flip camera & Share */}
         <div className="flex items-center space-x-1.5">
           {/* Mobile Flip Camera button */}
           <button
@@ -570,12 +955,12 @@ function GoogleMeetRoomContent() {
 
       {/* 2. MAIN VIEWPORT (Google Meet Grid & Presentation Canvas) */}
       <div className="flex-1 relative flex overflow-hidden p-2 sm:p-4 gap-3 bg-[#202124]">
-        {/* Floating Emojis Animation Layer */}
+        {/* Floating Emojis Layer */}
         <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
           {floatingReactions.map((reaction) => (
             <div
               key={reaction.id}
-              className="absolute bottom-20 left-1/2 -translate-x-1/2 text-4xl sm:text-5xl animate-bounce duration-1000"
+              className="absolute bottom-20 left-1/2 -translate-x-1/2 text-4xl sm:text-5xl"
               style={{
                 animation: 'floatUp 2.5s ease-out forwards',
               }}
@@ -587,7 +972,7 @@ function GoogleMeetRoomContent() {
 
         {/* Video Canvas Container */}
         <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-          {/* A. If Screen Sharing is Active (Google Meet Presentation Mode - Image 4) */}
+          {/* A. If Screen Sharing is Active */}
           {isScreenSharing && (
             <div className="w-full flex-1 max-h-[50vh] sm:max-h-[60vh] mb-2 relative bg-black rounded-2xl sm:rounded-3xl overflow-hidden border border-stone-700/80 shadow-2xl flex items-center justify-center">
               <video
@@ -596,7 +981,6 @@ function GoogleMeetRoomContent() {
                 playsInline
                 className="w-full h-full object-contain"
               />
-              {/* Presenter tag */}
               <div className="absolute top-3 left-3 bg-stone-900/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-stone-700 text-xs font-semibold text-white flex items-center space-x-2 shadow-md">
                 <ScreenShare className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
                 <span>Anda sedang mempresentasikan layar</span>
@@ -604,25 +988,27 @@ function GoogleMeetRoomContent() {
             </div>
           )}
 
-          {/* B. VIDEO TILES GRID (Mobile 2x2 or Auto Responsive Grid - Image 3 & 4) */}
+          {/* B. VIDEO TILES GRID (Zero Dummy / Only Real Users Currently Present) */}
           <div
             className={`flex-1 grid gap-2 sm:gap-3.5 min-h-0 ${
               isScreenSharing
                 ? 'grid-cols-2 sm:grid-cols-4 max-h-[140px] sm:max-h-[180px]'
-                : participants.length <= 1
+                : totalPeopleCount === 1
                 ? 'grid-cols-1 max-w-4xl mx-auto w-full'
-                : participants.length <= 3
-                ? 'grid-cols-1 sm:grid-cols-2'
+                : totalPeopleCount === 2
+                ? 'grid-cols-1 sm:grid-cols-2 max-w-5xl mx-auto w-full'
+                : totalPeopleCount <= 4
+                ? 'grid-cols-2'
                 : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-3'
             }`}
           >
             {/* 1. MY LOCAL TILE (User's Camera / Avatar) */}
             <div
-              className={`relative bg-[#3c4043] rounded-2xl sm:rounded-3xl overflow-hidden border transition-all flex items-center justify-center group shadow-md ${
+              className={`relative bg-[#3c4043] rounded-2xl sm:rounded-3xl overflow-hidden border transition-all flex items-center justify-center group shadow-md min-h-[160px] sm:min-h-[220px] ${
                 !isMicOn ? 'border-stone-700/80' : 'border-stone-600/80'
               } ${isHandRaised ? 'ring-2 ring-amber-400' : ''}`}
             >
-              {/* Camera Video Stream (Direct WebRTC, No Iframe!) */}
+              {/* Camera Video Stream (Direct Native WebRTC) */}
               <video
                 ref={localVideoRef}
                 autoPlay
@@ -675,68 +1061,23 @@ function GoogleMeetRoomContent() {
               )}
             </div>
 
-            {/* 2. PEER PARTICIPANTS TILES (Classmates & Lecturer) */}
-            {participants.map((peer) => {
-              const peerInitial = peer.name.replace(/[^a-zA-Z]/g, '')[0] || 'M';
-              const peerColor = getAvatarColor(peer.name);
-
-              return (
-                <div
-                  key={peer.id}
-                  className={`relative bg-[#3c4043] rounded-2xl sm:rounded-3xl overflow-hidden border border-stone-700/80 transition-all flex items-center justify-center shadow-md ${
-                    peer.role === 'DOSEN' ? 'ring-1 ring-amber-400/40' : ''
-                  }`}
-                >
-                  {/* If peer has mock camera on (e.g. Lecturer simulation) */}
-                  {peer.isCamOn && peer.role === 'DOSEN' ? (
-                    <div className="w-full h-full relative flex items-center justify-center bg-stone-900">
-                      {/* Realistic simulated lecturer view placeholder */}
-                      <div className="w-full h-full bg-gradient-to-b from-stone-800 to-stone-950 flex flex-col items-center justify-center">
-                        <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-gradient-to-tr from-amber-600 to-amber-700 text-white flex items-center justify-center text-3xl font-bold ring-4 ring-amber-400/30 mb-2">
-                          <GraduationCap className="w-10 h-10 text-amber-200" />
-                        </div>
-                        <span className="text-[11px] text-amber-200 font-semibold px-2 py-0.5 rounded-full bg-amber-900/40 border border-amber-500/30">
-                          Kamera Dosen Aktif
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    /* OFF CAM: Google Meet Style Circle Avatar */
-                    <div className="flex flex-col items-center justify-center p-4">
-                      <div
-                        className={`w-20 h-20 sm:w-28 sm:h-28 rounded-full ${peerColor} text-white flex items-center justify-center font-bold text-3xl sm:text-4xl shadow-xl ring-4 ring-white/10`}
-                      >
-                        {peerInitial.toUpperCase()}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Name Badge */}
-                  <div className="absolute bottom-2.5 left-2.5 max-w-[85%] bg-stone-900/80 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium text-white flex items-center space-x-1.5 shadow-md">
-                    <span className="truncate">{peer.name}</span>
-                    {peer.role === 'DOSEN' && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">
-                        DOSEN
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Mic Status */}
-                  <div className="absolute top-2.5 right-2.5">
-                    {peer.isMuted ? (
-                      <div className="w-7 h-7 rounded-full bg-rose-600/90 text-white flex items-center justify-center shadow-md">
-                        <MicOff className="w-3.5 h-3.5" />
-                      </div>
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-stone-900/70 text-emerald-400 flex items-center justify-center shadow-md">
-                        <Mic className="w-3.5 h-3.5" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {/* 2. REAL REMOTE PEERS (NO DUMMY PARTICIPANTS) */}
+            {remotePeers.map((peer) => (
+              <RemoteVideoTile
+                key={peer.peerId}
+                peer={peer}
+                stream={remoteStreams[peer.peerId]}
+              />
+            ))}
           </div>
+
+          {/* Empty room notification if alone */}
+          {remotePeers.length === 0 && (
+            <div className="mt-2 py-2 px-4 bg-stone-800/60 rounded-2xl text-center text-xs text-stone-400 max-w-md mx-auto flex items-center justify-center space-x-2">
+              <User className="w-3.5 h-3.5 text-stone-400" />
+              <span>Anda sendirian di ruang kuliah ini. Bagikan tautan untuk mengundang mahasiswa atau dosen.</span>
+            </div>
+          )}
         </div>
 
         {/* C. SIDE DRAWERS (Chat / Participants / Info) */}
@@ -749,7 +1090,7 @@ function GoogleMeetRoomContent() {
                   <>
                     <UsersIcon className="w-4 h-4 text-blue-400" />
                     <h3 className="font-bold text-sm text-white">
-                      Peserta ({participants.length + 1})
+                      Peserta ({totalPeopleCount})
                     </h3>
                   </>
                 )}
@@ -775,7 +1116,7 @@ function GoogleMeetRoomContent() {
               </button>
             </div>
 
-            {/* Drawer Content: Participants List */}
+            {/* Drawer Content: Real Participants List */}
             {activeSideDrawer === 'PEOPLE' && (
               <div className="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
                 {/* Me */}
@@ -790,7 +1131,7 @@ function GoogleMeetRoomContent() {
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-white truncate">{myDisplayName}</p>
-                      <p className="text-[10px] text-stone-400">Penyelenggara</p>
+                      <p className="text-[10px] text-stone-400">Anda</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-1.5 text-stone-400">
@@ -802,10 +1143,10 @@ function GoogleMeetRoomContent() {
                   </div>
                 </div>
 
-                {/* Peers */}
-                {participants.map((p) => (
+                {/* Real Remote Peers */}
+                {remotePeers.map((p) => (
                   <div
-                    key={p.id}
+                    key={p.peerId}
                     className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-stone-800/50 transition-colors"
                   >
                     <div className="flex items-center space-x-2.5 min-w-0">
@@ -814,17 +1155,21 @@ function GoogleMeetRoomContent() {
                           p.name
                         )} text-white font-bold flex items-center justify-center flex-shrink-0 text-xs`}
                       >
-                        {p.name[0]}
+                        {(p.name.replace(/[^a-zA-Z]/g, '')[0] || 'M').toUpperCase()}
                       </div>
                       <div className="min-w-0">
                         <p className="font-semibold text-stone-200 truncate">{p.name}</p>
                         <p className="text-[10px] text-stone-400 font-mono">
-                          {p.role === 'DOSEN' ? 'Dosen Pengampu' : 'Mahasiswa HK A'}
+                          {p.role === 'DOSEN'
+                            ? 'Dosen Pengampu'
+                            : p.role === 'ADMIN'
+                            ? 'Administrator'
+                            : 'Mahasiswa HK A'}
                         </p>
                       </div>
                     </div>
                     <div>
-                      {p.isMuted ? (
+                      {!p.isMicOn ? (
                         <MicOff className="w-3.5 h-3.5 text-rose-400" />
                       ) : (
                         <Mic className="w-3.5 h-3.5 text-emerald-400" />
@@ -835,31 +1180,37 @@ function GoogleMeetRoomContent() {
               </div>
             )}
 
-            {/* Drawer Content: In-Meeting Chat */}
+            {/* Drawer Content: In-Meeting Realtime Chat */}
             {activeSideDrawer === 'CHAT' && (
               <div className="flex-1 flex flex-col min-h-0">
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 text-xs">
-                  {chatMessages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}
-                    >
-                      <div className="flex items-center space-x-1.5 text-[10px] text-stone-400 mb-0.5">
-                        <span className="font-semibold">{msg.sender}</span>
-                        <span>•</span>
-                        <span>{msg.time}</span>
-                      </div>
-                      <div
-                        className={`p-3 rounded-2xl max-w-[85%] leading-relaxed ${
-                          msg.isMe
-                            ? 'bg-blue-600 text-white rounded-tr-xs'
-                            : 'bg-stone-800 text-stone-200 rounded-tl-xs border border-stone-700'
-                        }`}
-                      >
-                        {msg.text}
-                      </div>
+                  {chatMessages.length === 0 ? (
+                    <div className="text-center text-stone-400 py-10">
+                      Belum ada pesan dalam panggilan. Kirim pesan di bawah!
                     </div>
-                  ))}
+                  ) : (
+                    chatMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}
+                      >
+                        <div className="flex items-center space-x-1.5 text-[10px] text-stone-400 mb-0.5">
+                          <span className="font-semibold">{msg.sender}</span>
+                          <span>•</span>
+                          <span>{msg.time}</span>
+                        </div>
+                        <div
+                          className={`p-3 rounded-2xl max-w-[85%] leading-relaxed ${
+                            msg.isMe
+                              ? 'bg-blue-600 text-white rounded-tr-xs'
+                              : 'bg-stone-800 text-stone-200 rounded-tl-xs border border-stone-700'
+                          }`}
+                        >
+                          {msg.text}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 {/* Input Chat Box */}
@@ -949,18 +1300,18 @@ function GoogleMeetRoomContent() {
         )}
       </div>
 
-      {/* 3. GOOGLE MEET BOTTOM CONTROLS BAR (Identical to Image 3 & Image 4) */}
+      {/* 3. GOOGLE MEET BOTTOM CONTROLS BAR */}
       <footer className="h-20 px-4 sm:px-6 flex items-center justify-between bg-[#202124] border-t border-stone-800/80 flex-shrink-0 z-30">
-        {/* Left Side: Meeting details & clock (Desktop only) */}
+        {/* Left Side: Meeting details (Desktop only) */}
         <div className="hidden lg:flex items-center space-x-2 text-xs font-mono text-stone-300">
           <span className="font-bold text-white tracking-wide">{currentTime}</span>
           <span className="text-stone-500">|</span>
           <span className="truncate max-w-[200px] text-stone-400">{course.code}</span>
         </div>
 
-        {/* Center: Main Circular Control Buttons (Exact Match to Image 3 & Image 4) */}
+        {/* Center: Main Circular Control Buttons */}
         <div className="flex items-center justify-center space-x-2.5 sm:space-x-4 w-full lg:w-auto">
-          {/* 1. Microphone Toggle Button */}
+          {/* 1. Microphone Toggle */}
           <button
             type="button"
             onClick={handleToggleMic}
@@ -971,14 +1322,10 @@ function GoogleMeetRoomContent() {
                 : 'bg-[#ea4335] hover:bg-[#d93025] text-white'
             }`}
           >
-            {isMicOn ? (
-              <Mic className="w-5 h-5" />
-            ) : (
-              <MicOff className="w-5 h-5" />
-            )}
+            {isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
           </button>
 
-          {/* 2. Camera Toggle Button */}
+          {/* 2. Camera Toggle */}
           <button
             type="button"
             onClick={handleToggleCam}
@@ -989,14 +1336,10 @@ function GoogleMeetRoomContent() {
                 : 'bg-[#ea4335] hover:bg-[#d93025] text-white'
             }`}
           >
-            {isCamOn ? (
-              <VideoIcon className="w-5 h-5" />
-            ) : (
-              <VideoOff className="w-5 h-5" />
-            )}
+            {isCamOn ? <VideoIcon className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
           </button>
 
-          {/* 3. Screen Sharing Button (Desktop/Supported Browsers) */}
+          {/* 3. Screen Sharing */}
           <button
             type="button"
             onClick={handleToggleScreenShare}
@@ -1010,7 +1353,7 @@ function GoogleMeetRoomContent() {
             <ScreenShare className="w-5 h-5" />
           </button>
 
-          {/* 4. Raise Hand Button */}
+          {/* 4. Raise Hand */}
           <button
             type="button"
             onClick={handleToggleHand}
@@ -1024,7 +1367,7 @@ function GoogleMeetRoomContent() {
             <Hand className="w-5 h-5" />
           </button>
 
-          {/* 5. Emoji Reactions Picker Button */}
+          {/* 5. Emoji Reactions Picker */}
           <div className="relative">
             <button
               type="button"
@@ -1035,7 +1378,6 @@ function GoogleMeetRoomContent() {
               <Smile className="w-5 h-5" />
             </button>
 
-            {/* Reactions Popover */}
             {showEmojiPicker && (
               <div className="absolute bottom-14 left-1/2 -translate-x-1/2 bg-[#2d2f34] border border-stone-700 rounded-full p-1.5 shadow-2xl flex items-center space-x-1 animate-in zoom-in-95 z-50">
                 {['💖', '👍', '🎉', '👏', '😂', '😮', '😢', '👎'].map((emoji) => (
@@ -1052,7 +1394,7 @@ function GoogleMeetRoomContent() {
             )}
           </div>
 
-          {/* 6. RED END CALL BUTTON (Tinggalkan Pertemuan) */}
+          {/* 6. RED END CALL BUTTON */}
           <button
             type="button"
             onClick={handleLeaveMeeting}
@@ -1063,7 +1405,7 @@ function GoogleMeetRoomContent() {
           </button>
         </div>
 
-        {/* Right Side: Participant Count & Chat Drawers (Desktop & Tablet) */}
+        {/* Right Side: Participant Count & Chat Drawers */}
         <div className="hidden sm:flex items-center space-x-2">
           {/* People Button */}
           <button
@@ -1077,7 +1419,7 @@ function GoogleMeetRoomContent() {
             title="Daftar Peserta"
           >
             <UsersIcon className="w-5 h-5" />
-            <span>{participants.length + 1}</span>
+            <span>{totalPeopleCount}</span>
           </button>
 
           {/* Chat Button */}
