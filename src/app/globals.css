@@ -170,3 +170,19 @@ h1, h2, h3, h4, h5, h6 {
     margin: 1cm 1.2cm 1cm 1.2cm;
   }
 }
+
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -100px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -200px) scale(1.4);
+  }
+}
+
