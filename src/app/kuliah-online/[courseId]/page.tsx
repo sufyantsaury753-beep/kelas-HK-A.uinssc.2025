@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, Suspense, useId } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -12,7 +12,6 @@ import {
   Hand,
   Smile,
   ScreenShare,
-  ScreenShareOff,
   Users as UsersIcon,
   MessageSquare,
   Info,
@@ -23,7 +22,6 @@ import {
   ArrowLeft,
   ShieldCheck,
   GraduationCap,
-  Sparkles,
   Send,
   X,
   Lock,
@@ -60,6 +58,7 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[index];
 }
 
+// Production-ready ICE Servers with Google STUN + OpenRelay TURN for 4G cellular NAT traversal
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -67,7 +66,23 @@ const ICE_SERVERS: RTCConfiguration = {
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
   ],
+  iceCandidatePoolSize: 10,
 };
 
 interface RemotePeer {
@@ -88,7 +103,7 @@ interface ChatMessage {
   isDosen?: boolean;
 }
 
-// Remote Video Tile Component with proper autoPlay & stream attachment
+// Remote Video Tile Component (Unmuted so voice can be heard, persistent element to prevent stream drop)
 function RemoteVideoTile({
   peer,
   stream,
@@ -99,9 +114,12 @@ function RemoteVideoTile({
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.play().catch(() => {});
+    const videoElem = videoRef.current;
+    if (videoElem && stream) {
+      videoElem.srcObject = stream;
+      videoElem
+        .play()
+        .catch((err) => console.warn('Autoplay notice on remote video:', err));
     }
   }, [stream]);
 
@@ -110,20 +128,20 @@ function RemoteVideoTile({
 
   return (
     <div
-      className={`relative bg-[#3c4043] rounded-2xl sm:rounded-3xl overflow-hidden border border-stone-700/80 transition-all flex items-center justify-center shadow-md min-h-[160px] sm:min-h-[220px] ${
+      className={`relative bg-[#3c4043] rounded-2xl sm:rounded-3xl overflow-hidden border border-stone-700/80 transition-all flex items-center justify-center shadow-md w-full h-full min-h-0 flex-1 ${
         peer.isHandRaised ? 'ring-2 ring-amber-400' : ''
       }`}
     >
-      {/* Remote Video Stream if Cam is ON */}
-      {peer.isCamOn && stream ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="w-full h-full object-cover"
-        />
-      ) : (
-        /* OFF CAM: Google Meet Style Circle Avatar */
+      {/* Remote Video (Never muted, user must hear peer audio!) */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        className={`w-full h-full object-cover ${peer.isCamOn ? 'block' : 'hidden'}`}
+      />
+
+      {/* When Remote Cam is OFF, show Google Meet Avatar */}
+      {!peer.isCamOn && (
         <div className="flex flex-col items-center justify-center p-4">
           <div
             className={`w-20 h-20 sm:w-28 sm:h-28 rounded-full ${avatarColor} text-white flex items-center justify-center font-bold text-3xl sm:text-4xl shadow-xl ring-4 ring-white/10`}
@@ -180,7 +198,7 @@ function GoogleMeetRoomContent() {
   const [isLecturer, setIsLecturer] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
-  // Generate a reliable unique peer ID for this session
+  // Reliable unique peer ID for this session
   const [myPeerId, setMyPeerId] = useState<string>('');
 
   // Local media controls
@@ -190,6 +208,7 @@ function GoogleMeetRoomContent() {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isLocalMediaReady, setIsLocalMediaReady] = useState(false);
 
   // Layout & Drawers
   const [activeSideDrawer, setActiveSideDrawer] = useState<'PEOPLE' | 'CHAT' | 'INFO' | null>(null);
@@ -198,7 +217,7 @@ function GoogleMeetRoomContent() {
   const [baseUrl, setBaseUrl] = useState('');
   const [currentTime, setCurrentTime] = useState('');
 
-  // Realtime multi-user state (ONLY REAL PARTICIPANTS, NO MOCK DATA)
+  // Realtime multi-user state (ONLY REAL PARTICIPANTS)
   const [remotePeers, setRemotePeers] = useState<RemotePeer[]>([]);
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
 
@@ -253,7 +272,7 @@ function GoogleMeetRoomContent() {
       if (isValid) {
         setIsLecturer(true);
         setIsAuthorized(true);
-        const randId = Math.random().toString(36).substring(2, 6);
+        const randId = Math.random().toString(36).substring(2, 7);
         setMyPeerId(`dosen-${target.id}-${randId}`);
         return;
       }
@@ -264,7 +283,7 @@ function GoogleMeetRoomContent() {
       setIsLecturer(false);
       setIsAuthorized(true);
       const userNim = currentAuth.nim ? currentAuth.nim.trim() : 'admin';
-      const randId = Math.random().toString(36).substring(2, 6);
+      const randId = Math.random().toString(36).substring(2, 7);
       setMyPeerId(`${userNim}-${randId}`);
     } else {
       setIsLecturer(false);
@@ -281,7 +300,7 @@ function GoogleMeetRoomContent() {
     ? (course?.dosen.replace(/^(Dr\.|Prof\.|H\.|Drs\.|M\.)\s+/g, '')[0] || 'D').toUpperCase()
     : (auth?.name || 'M')[0].toUpperCase();
 
-  // Start Camera & Microphone directly via native WebRTC
+  // 1. Start Camera & Microphone directly via native WebRTC FIRST
   useEffect(() => {
     if (!isAuthorized) return;
 
@@ -317,27 +336,23 @@ function GoogleMeetRoomContent() {
         stream.getVideoTracks().forEach((t) => (t.enabled = isCamOn));
         stream.getAudioTracks().forEach((t) => (t.enabled = isMicOn));
 
-        // If peer connections already exist, replace video tracks
-        Object.values(peerConnectionsRef.current).forEach((pc) => {
-          const videoSender = pc.getSenders().find((s) => s.track?.kind === 'video');
-          const videoTrack = stream.getVideoTracks()[0];
-          if (videoSender && videoTrack) {
-            videoSender.replaceTrack(videoTrack);
-          } else if (videoTrack) {
-            pc.addTrack(videoTrack, stream);
-          }
+        setIsLocalMediaReady(true);
 
-          const audioSender = pc.getSenders().find((s) => s.track?.kind === 'audio');
-          const audioTrack = stream.getAudioTracks()[0];
-          if (audioSender && audioTrack) {
-            audioSender.replaceTrack(audioTrack);
-          } else if (audioTrack) {
-            pc.addTrack(audioTrack, stream);
-          }
+        // Update senders for all active peer connections
+        Object.entries(peerConnectionsRef.current).forEach(([targetPeerId, pc]) => {
+          stream.getTracks().forEach((track) => {
+            const sender = pc.getSenders().find((s) => s.track?.kind === track.kind);
+            if (sender) {
+              sender.replaceTrack(track);
+            } else {
+              pc.addTrack(track, stream);
+            }
+          });
         });
       } catch (err) {
         console.warn('Gagal mengakses kamera/mikrofon langsung:', err);
         setIsCamOn(false);
+        setIsLocalMediaReady(true);
       }
     }
 
@@ -348,9 +363,17 @@ function GoogleMeetRoomContent() {
     };
   }, [isAuthorized, facingMode]);
 
-  // Connect WebRTC signaling and Realtime Presence via Supabase
+  // 2. Connect WebRTC signaling and Realtime Presence via Supabase
+  // (Waits until local media stream is ready so tracks are guaranteed to be added!)
   useEffect(() => {
-    if (!isAuthorized || !courseId || !myPeerId || !isSupabaseConfigured()) return;
+    if (
+      !isAuthorized ||
+      !courseId ||
+      !myPeerId ||
+      !isLocalMediaReady ||
+      !isSupabaseConfigured()
+    )
+      return;
 
     const channelName = `meet-room-${courseId}`;
     const channel = supabase.channel(channelName, {
@@ -371,7 +394,7 @@ function GoogleMeetRoomContent() {
       const pc = new RTCPeerConnection(ICE_SERVERS);
       peerConnectionsRef.current[targetPeerId] = pc;
 
-      // Add local stream tracks if available
+      // Add local stream tracks immediately before creating/answering offer!
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((track) => {
           pc.addTrack(track, localStreamRef.current!);
@@ -380,8 +403,8 @@ function GoogleMeetRoomContent() {
 
       // Handle receiving remote stream
       pc.ontrack = (event) => {
-        const stream = event.streams[0];
-        if (stream) {
+        if (event.streams && event.streams[0]) {
+          const stream = event.streams[0];
           setRemoteStreams((prev) => ({
             ...prev,
             [targetPeerId]: stream,
@@ -389,7 +412,7 @@ function GoogleMeetRoomContent() {
         }
       };
 
-      // Handle ICE Candidates
+      // Handle ICE Candidates with trickle ice
       pc.onicecandidate = (event) => {
         if (event.candidate) {
           channel.send({
@@ -404,9 +427,32 @@ function GoogleMeetRoomContent() {
         }
       };
 
+      // Handle connection state changes
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+          // Attempt ICE restart if failed
+          if (pc.connectionState === 'failed' && shouldInitiateOffer) {
+            pc.createOffer({ iceRestart: true })
+              .then((offer) => pc.setLocalDescription(offer))
+              .then(() => {
+                channel.send({
+                  type: 'broadcast',
+                  event: 'webrtc-signal',
+                  payload: {
+                    to: targetPeerId,
+                    from: myPeerId,
+                    sdp: pc.localDescription,
+                  },
+                });
+              })
+              .catch(() => {});
+          }
+        }
+      };
+
       // Initiate offer if designated caller (tie-breaker: myPeerId > targetPeerId)
       if (shouldInitiateOffer) {
-        pc.createOffer()
+        pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true })
           .then((offer) => pc.setLocalDescription(offer))
           .then(() => {
             channel.send({
@@ -445,9 +491,8 @@ function GoogleMeetRoomContent() {
               isHandRaised: p.isHandRaised,
             });
 
-            // If connection not established yet, establish it
+            // Create WebRTC connection for this peer
             if (!peerConnectionsRef.current[p.peerId]) {
-              // Tie-breaker: peer with lexicographically greater peerId creates the offer
               const shouldInitiate = myPeerId > p.peerId;
               createPeerConnection(p.peerId, shouldInitiate);
             }
@@ -503,9 +548,20 @@ function GoogleMeetRoomContent() {
       if (sdp) {
         if (sdp.type === 'offer') {
           try {
+            // Ensure local tracks are attached before setting answer
+            if (localStreamRef.current) {
+              localStreamRef.current.getTracks().forEach((track) => {
+                const senders = pc.getSenders();
+                if (!senders.some((s) => s.track?.kind === track.kind)) {
+                  pc.addTrack(track, localStreamRef.current!);
+                }
+              });
+            }
+
             await pc.setRemoteDescription(new RTCSessionDescription(sdp));
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
+
             channel.send({
               type: 'broadcast',
               event: 'webrtc-signal',
@@ -585,7 +641,7 @@ function GoogleMeetRoomContent() {
       });
       peerConnectionsRef.current = {};
     };
-  }, [isAuthorized, courseId, myPeerId, isLecturer, auth, course]);
+  }, [isAuthorized, courseId, myPeerId, isLocalMediaReady, isLecturer, auth, course]);
 
   // Handle Toggle Camera
   const handleToggleCam = () => {
@@ -971,7 +1027,7 @@ function GoogleMeetRoomContent() {
         </div>
 
         {/* Video Canvas Container */}
-        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0 h-full">
           {/* A. If Screen Sharing is Active */}
           {isScreenSharing && (
             <div className="w-full flex-1 max-h-[50vh] sm:max-h-[60vh] mb-2 relative bg-black rounded-2xl sm:rounded-3xl overflow-hidden border border-stone-700/80 shadow-2xl flex items-center justify-center">
@@ -988,27 +1044,27 @@ function GoogleMeetRoomContent() {
             </div>
           )}
 
-          {/* B. VIDEO TILES GRID (Zero Dummy / Only Real Users Currently Present) */}
+          {/* B. VIDEO TILES CONTAINER (Accurate 50:50 Mobile Split & Desktop Grid) */}
           <div
-            className={`flex-1 grid gap-2 sm:gap-3.5 min-h-0 ${
+            className={`flex-1 min-h-0 w-full h-full ${
               isScreenSharing
-                ? 'grid-cols-2 sm:grid-cols-4 max-h-[140px] sm:max-h-[180px]'
+                ? 'grid grid-cols-2 sm:grid-cols-4 max-h-[140px] sm:max-h-[180px] gap-2'
                 : totalPeopleCount === 1
-                ? 'grid-cols-1 max-w-4xl mx-auto w-full'
+                ? 'flex items-center justify-center w-full h-full max-w-4xl mx-auto'
                 : totalPeopleCount === 2
-                ? 'grid-cols-1 sm:grid-cols-2 max-w-5xl mx-auto w-full'
+                ? 'flex flex-col sm:grid sm:grid-cols-2 w-full h-full gap-2 sm:gap-3.5'
                 : totalPeopleCount <= 4
-                ? 'grid-cols-2'
-                : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-3'
+                ? 'grid grid-cols-2 grid-rows-2 w-full h-full gap-2 sm:gap-3.5'
+                : 'grid grid-cols-2 sm:grid-cols-3 w-full h-full gap-2 sm:gap-3.5'
             }`}
           >
             {/* 1. MY LOCAL TILE (User's Camera / Avatar) */}
             <div
-              className={`relative bg-[#3c4043] rounded-2xl sm:rounded-3xl overflow-hidden border transition-all flex items-center justify-center group shadow-md min-h-[160px] sm:min-h-[220px] ${
+              className={`relative bg-[#3c4043] rounded-2xl sm:rounded-3xl overflow-hidden border transition-all flex items-center justify-center group shadow-md w-full h-full min-h-0 flex-1 ${
                 !isMicOn ? 'border-stone-700/80' : 'border-stone-600/80'
               } ${isHandRaised ? 'ring-2 ring-amber-400' : ''}`}
             >
-              {/* Camera Video Stream (Direct Native WebRTC) */}
+              {/* Camera Video Stream (Direct Native WebRTC - Muted to avoid echo) */}
               <video
                 ref={localVideoRef}
                 autoPlay
@@ -1061,7 +1117,7 @@ function GoogleMeetRoomContent() {
               )}
             </div>
 
-            {/* 2. REAL REMOTE PEERS (NO DUMMY PARTICIPANTS) */}
+            {/* 2. REAL REMOTE PEERS (Zero Dummy / Equal 50:50 Share) */}
             {remotePeers.map((peer) => (
               <RemoteVideoTile
                 key={peer.peerId}
