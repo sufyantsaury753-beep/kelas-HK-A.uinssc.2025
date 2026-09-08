@@ -292,56 +292,6 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/#jadwal"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-stone-700 hover:bg-stone-50 text-sm font-semibold transition-all"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-xl bg-amber-100/70 text-[#8c4e24] flex items-center justify-center">
-                  <Calendar className="w-4 h-4" />
-                </div>
-                <span>Jadwal Kuliah Hari Ini</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-stone-400" />
-            </Link>
-
-            <Link
-              href="/#matakuliah"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-stone-700 hover:bg-stone-50 text-sm font-semibold transition-all"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-xl bg-amber-100/70 text-[#8c4e24] flex items-center justify-center">
-                  <BookOpen className="w-4 h-4" />
-                </div>
-                <span>Mata Kuliah & Repositori</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-stone-400" />
-            </Link>
-
-            <Link
-              href="/kuliah-online"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-semibold transition-all ${
-                pathname.startsWith('/kuliah-online')
-                  ? 'bg-amber-50 text-[#8c4e24]'
-                  : 'text-stone-700 hover:bg-stone-50 hover:text-stone-900'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                  pathname.startsWith('/kuliah-online') ? 'bg-[#8c4e24] text-white shadow-2xs' : 'bg-amber-100/80 text-[#8c4e24]'
-                }`}>
-                  <Video className="w-4 h-4" />
-                </div>
-                <span>Kuliah Online (Meet)</span>
-              </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                Bebas Waktu
-              </span>
-            </Link>
-
-            <Link
               href="/#pengumuman"
               onClick={() => setIsMobileMenuOpen(false)}
               className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-stone-700 hover:bg-stone-50 text-sm font-semibold transition-all"

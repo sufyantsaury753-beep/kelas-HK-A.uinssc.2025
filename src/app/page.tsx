@@ -351,13 +351,6 @@ export default function HomePage() {
                         <span>Portal PJ Mata Kuliah</span>
                       </Link>
                     )}
-                    <Link
-                      href="/kuliah-online"
-                      className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center space-x-2 active:scale-98"
-                    >
-                      <Video className="w-4 h-4 text-stone-950" />
-                      <span>Kuliah Online (Meet)</span>
-                    </Link>
                   </>
                 )
               ) : (
@@ -369,13 +362,6 @@ export default function HomePage() {
                     <LogIn className="w-4 h-4 text-amber-200" />
                     <span>Masuk Portal Presensi</span>
                   </Link>
-                  <Link
-                    href="/kuliah-online"
-                    className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center space-x-2 active:scale-98"
-                  >
-                    <Video className="w-4 h-4 text-stone-950" />
-                    <span>Kuliah Online (Meet)</span>
-                  </Link>
                   <button
                     type="button"
                     onClick={() => setShowRosterModal(true)}
@@ -384,13 +370,6 @@ export default function HomePage() {
                     <Users className="w-4 h-4 text-amber-200" />
                     <span>Daftar {students.length} Mahasiswa</span>
                   </button>
-                  <a
-                    href="#jadwal"
-                    className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm border border-white/25 transition-all flex items-center justify-center space-x-2 active:scale-98"
-                  >
-                    <CalendarDays className="w-4 h-4 text-amber-200" />
-                    <span>Jadwal Kuliah</span>
-                  </a>
                 </>
               )}
             </div>
