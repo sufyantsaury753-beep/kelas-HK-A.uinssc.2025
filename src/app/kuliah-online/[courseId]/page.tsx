@@ -27,6 +27,7 @@ import {
   Lock,
   MessageCircle,
   User,
+  Volume2,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, AuthSession } from '@/lib/types';
@@ -58,14 +59,14 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[index];
 }
 
-// Production-ready ICE Servers with Google STUN + OpenRelay TURN for 4G cellular NAT traversal
+// Enterprise-grade STUN + OpenRelay TURN servers for 4G cellular and WiFi traversal
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' },
+    { urls: 'stun:openrelay.metered.ca:80' },
     {
       urls: 'turn:openrelay.metered.ca:80',
       username: 'openrelayproject',
@@ -81,9 +82,37 @@ const ICE_SERVERS: RTCConfiguration = {
       username: 'openrelayproject',
       credential: 'openrelayproject',
     },
+    {
+      urls: 'turn:openrelay.metered.ca:80?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
   ],
   iceCandidatePoolSize: 10,
 };
+
+// Helper to gather all ICE candidates into a single complete SDP payload
+function waitForIceGathering(pc: RTCPeerConnection, maxTimeoutMs: number = 3000): Promise<void> {
+  return new Promise((resolve) => {
+    if (pc.iceGatheringState === 'complete') {
+      resolve();
+      return;
+    }
+    let timeoutId: any;
+    const checkState = () => {
+      if (pc.iceGatheringState === 'complete') {
+        clearTimeout(timeoutId);
+        pc.removeEventListener('icegatheringstatechange', checkState);
+        resolve();
+      }
+    };
+    pc.addEventListener('icegatheringstatechange', checkState);
+    timeoutId = setTimeout(() => {
+      pc.removeEventListener('icegatheringstatechange', checkState);
+      resolve();
+    }, maxTimeoutMs);
+  });
+}
 
 interface RemotePeer {
   peerId: string;
@@ -103,7 +132,7 @@ interface ChatMessage {
   isDosen?: boolean;
 }
 
-// Remote Video Tile Component (Unmuted so voice can be heard, persistent element to prevent stream drop)
+// Remote Video Tile Component (Absolute inset-0 with audio fallback to prevent layout blowout)
 function RemoteVideoTile({
   peer,
   stream,
@@ -112,16 +141,55 @@ function RemoteVideoTile({
   stream?: MediaStream;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioBlocked, setAudioBlocked] = useState(false);
 
   useEffect(() => {
-    const videoElem = videoRef.current;
-    if (videoElem && stream) {
-      videoElem.srcObject = stream;
-      videoElem
-        .play()
-        .catch((err) => console.warn('Autoplay notice on remote video:', err));
+    const videoEl = videoRef.current;
+    const audioEl = audioRef.current;
+
+    if (videoEl && stream) {
+      if (videoEl.srcObject !== stream) {
+        videoEl.srcObject = stream;
+      }
+      videoEl.play().catch(() => {});
     }
-  }, [stream]);
+
+    if (audioEl && stream) {
+      if (audioEl.srcObject !== stream) {
+        audioEl.srcObject = stream;
+      }
+      audioEl.play().catch(() => {
+        setAudioBlocked(true);
+      });
+    }
+
+    const handleTrackChange = () => {
+      if (videoEl) videoEl.play().catch(() => {});
+      if (audioEl) audioEl.play().catch(() => setAudioBlocked(true));
+    };
+
+    if (stream) {
+      stream.addEventListener('addtrack', handleTrackChange);
+      stream.addEventListener('removetrack', handleTrackChange);
+    }
+
+    return () => {
+      if (stream) {
+        stream.removeEventListener('addtrack', handleTrackChange);
+        stream.removeEventListener('removetrack', handleTrackChange);
+      }
+    };
+  }, [stream, peer.isCamOn]);
+
+  const handleManualUnmute = () => {
+    if (audioRef.current) {
+      audioRef.current.play().then(() => setAudioBlocked(false)).catch(() => {});
+    }
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  };
 
   const initials = (peer.name.replace(/[^a-zA-Z]/g, '')[0] || 'M').toUpperCase();
   const avatarColor = getAvatarColor(peer.name);
@@ -132,17 +200,23 @@ function RemoteVideoTile({
         peer.isHandRaised ? 'ring-2 ring-amber-400' : ''
       }`}
     >
-      {/* Remote Video (Never muted, user must hear peer audio!) */}
+      {/* Remote Video Stream (Muted so mobile autoplay never blocks it; sound is delivered via dedicated audio) */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
-        className={`w-full h-full object-cover ${peer.isCamOn ? 'block' : 'hidden'}`}
+        muted
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+          peer.isCamOn && stream ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
       />
 
-      {/* When Remote Cam is OFF, show Google Meet Avatar */}
-      {!peer.isCamOn && (
-        <div className="flex flex-col items-center justify-center p-4">
+      {/* Dedicated Remote Audio Stream */}
+      <audio ref={audioRef} autoPlay playsInline />
+
+      {/* OFF CAM or Waiting: Google Meet Style Circle Avatar */}
+      {(!peer.isCamOn || !stream) && (
+        <div className="flex flex-col items-center justify-center p-4 z-10">
           <div
             className={`w-20 h-20 sm:w-28 sm:h-28 rounded-full ${avatarColor} text-white flex items-center justify-center font-bold text-3xl sm:text-4xl shadow-xl ring-4 ring-white/10`}
           >
@@ -151,8 +225,20 @@ function RemoteVideoTile({
         </div>
       )}
 
+      {/* Audio Autoplay Unblock Button if browser restricted background audio */}
+      {audioBlocked && (
+        <button
+          type="button"
+          onClick={handleManualUnmute}
+          className="absolute top-12 inset-x-4 mx-auto z-20 py-1.5 px-3 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center space-x-1 shadow-lg"
+        >
+          <Volume2 className="w-3.5 h-3.5" />
+          <span>Klik untuk Dengarkan Suara</span>
+        </button>
+      )}
+
       {/* Name Badge */}
-      <div className="absolute bottom-2.5 left-2.5 max-w-[85%] bg-stone-900/80 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium text-white flex items-center space-x-1.5 shadow-md">
+      <div className="absolute bottom-2.5 left-2.5 max-w-[85%] bg-stone-900/85 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium text-white flex items-center space-x-1.5 shadow-md z-10">
         <span className="truncate">{peer.name}</span>
         {peer.role === 'DOSEN' && (
           <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">
@@ -162,7 +248,7 @@ function RemoteVideoTile({
       </div>
 
       {/* Mic Status Icon */}
-      <div className="absolute top-2.5 right-2.5">
+      <div className="absolute top-2.5 right-2.5 z-10">
         {!peer.isMicOn ? (
           <div className="w-7 h-7 rounded-full bg-rose-600/90 text-white flex items-center justify-center shadow-md">
             <MicOff className="w-3.5 h-3.5" />
@@ -176,7 +262,7 @@ function RemoteVideoTile({
 
       {/* Hand Raised Badge */}
       {peer.isHandRaised && (
-        <div className="absolute top-2.5 left-2.5 w-8 h-8 rounded-full bg-amber-400 text-stone-950 flex items-center justify-center shadow-lg animate-bounce">
+        <div className="absolute top-2.5 left-2.5 w-8 h-8 rounded-full bg-amber-400 text-stone-950 flex items-center justify-center shadow-lg animate-bounce z-10">
           <Hand className="w-4 h-4" />
         </div>
       )}
@@ -227,8 +313,9 @@ function GoogleMeetRoomContent() {
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
 
-  // WebRTC PeerConnections Map
+  // WebRTC PeerConnections Map & ICE Candidate Queue
   const peerConnectionsRef = useRef<Record<string, RTCPeerConnection>>({});
+  const iceCandidateQueueRef = useRef<Record<string, RTCIceCandidateInit[]>>({});
   const channelRef = useRef<any>(null);
 
   // Class chat messages
@@ -300,7 +387,7 @@ function GoogleMeetRoomContent() {
     ? (course?.dosen.replace(/^(Dr\.|Prof\.|H\.|Drs\.|M\.)\s+/g, '')[0] || 'D').toUpperCase()
     : (auth?.name || 'M')[0].toUpperCase();
 
-  // 1. Start Camera & Microphone directly via native WebRTC FIRST
+  // 1. Acquire Local Camera & Microphone FIRST
   useEffect(() => {
     if (!isAuthorized) return;
 
@@ -337,18 +424,6 @@ function GoogleMeetRoomContent() {
         stream.getAudioTracks().forEach((t) => (t.enabled = isMicOn));
 
         setIsLocalMediaReady(true);
-
-        // Update senders for all active peer connections
-        Object.entries(peerConnectionsRef.current).forEach(([targetPeerId, pc]) => {
-          stream.getTracks().forEach((track) => {
-            const sender = pc.getSenders().find((s) => s.track?.kind === track.kind);
-            if (sender) {
-              sender.replaceTrack(track);
-            } else {
-              pc.addTrack(track, stream);
-            }
-          });
-        });
       } catch (err) {
         console.warn('Gagal mengakses kamera/mikrofon langsung:', err);
         setIsCamOn(false);
@@ -364,7 +439,7 @@ function GoogleMeetRoomContent() {
   }, [isAuthorized, facingMode]);
 
   // 2. Connect WebRTC signaling and Realtime Presence via Supabase
-  // (Waits until local media stream is ready so tracks are guaranteed to be added!)
+  // (Uses Single Complete-SDP Gathering for bulletproof connection across 4G & WiFi)
   useEffect(() => {
     if (
       !isAuthorized ||
@@ -385,16 +460,50 @@ function GoogleMeetRoomContent() {
 
     channelRef.current = channel;
 
-    // Helper: Create RTCPeerConnection for a remote peer
-    const createPeerConnection = (targetPeerId: string, shouldInitiateOffer: boolean) => {
+    // Track remote stream updates reliably so React re-renders on track addition
+    const handleRemoteTrack = (event: RTCTrackEvent, peerId: string) => {
+      const stream =
+        event.streams && event.streams[0]
+          ? event.streams[0]
+          : new MediaStream([event.track]);
+
+      setRemoteStreams((prev) => {
+        const current = prev[peerId];
+        if (current) {
+          if (!current.getTracks().some((t) => t.id === event.track.id)) {
+            current.addTrack(event.track);
+          }
+          return { ...prev, [peerId]: new MediaStream(current.getTracks()) };
+        }
+        return { ...prev, [peerId]: stream };
+      });
+    };
+
+    // Helper: Flush queued ICE candidates safely once remote description is set
+    const flushIceCandidates = async (peerId: string, pc: RTCPeerConnection) => {
+      const queued = iceCandidateQueueRef.current[peerId] || [];
+      if (queued.length > 0) {
+        for (const cand of queued) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(cand));
+          } catch (e) {
+            console.warn('Error flushing candidate:', e);
+          }
+        }
+        delete iceCandidateQueueRef.current[peerId];
+      }
+    };
+
+    // Helper: Create RTCPeerConnection for a remote peer with full ICE gathering
+    const initiateConnection = async (targetPeerId: string) => {
       if (peerConnectionsRef.current[targetPeerId]) {
-        return peerConnectionsRef.current[targetPeerId];
+        return;
       }
 
       const pc = new RTCPeerConnection(ICE_SERVERS);
       peerConnectionsRef.current[targetPeerId] = pc;
 
-      // Add local stream tracks immediately before creating/answering offer!
+      // Add local stream tracks
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((track) => {
           pc.addTrack(track, localStreamRef.current!);
@@ -402,22 +511,14 @@ function GoogleMeetRoomContent() {
       }
 
       // Handle receiving remote stream
-      pc.ontrack = (event) => {
-        if (event.streams && event.streams[0]) {
-          const stream = event.streams[0];
-          setRemoteStreams((prev) => ({
-            ...prev,
-            [targetPeerId]: stream,
-          }));
-        }
-      };
+      pc.ontrack = (event) => handleRemoteTrack(event, targetPeerId);
 
-      // Handle ICE Candidates with trickle ice
+      // Trickle ICE candidates for ultra-fast relay connectivity
       pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          channel.send({
+        if (event.candidate && channelRef.current) {
+          channelRef.current.send({
             type: 'broadcast',
-            event: 'webrtc-signal',
+            event: 'webrtc-ice-candidate',
             payload: {
               to: targetPeerId,
               from: myPeerId,
@@ -427,48 +528,36 @@ function GoogleMeetRoomContent() {
         }
       };
 
-      // Handle connection state changes
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
-          // Attempt ICE restart if failed
-          if (pc.connectionState === 'failed' && shouldInitiateOffer) {
-            pc.createOffer({ iceRestart: true })
-              .then((offer) => pc.setLocalDescription(offer))
-              .then(() => {
-                channel.send({
-                  type: 'broadcast',
-                  event: 'webrtc-signal',
-                  payload: {
-                    to: targetPeerId,
-                    from: myPeerId,
-                    sdp: pc.localDescription,
-                  },
-                });
-              })
-              .catch(() => {});
-          }
+      pc.oniceconnectionstatechange = () => {
+        if (pc.iceConnectionState === 'failed') {
+          try {
+            pc.restartIce();
+          } catch {}
         }
       };
 
-      // Initiate offer if designated caller (tie-breaker: myPeerId > targetPeerId)
-      if (shouldInitiateOffer) {
-        pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true })
-          .then((offer) => pc.setLocalDescription(offer))
-          .then(() => {
-            channel.send({
-              type: 'broadcast',
-              event: 'webrtc-signal',
-              payload: {
-                to: targetPeerId,
-                from: myPeerId,
-                sdp: pc.localDescription,
-              },
-            });
-          })
-          .catch((err) => console.warn('Error creating WebRTC offer:', err));
-      }
+      try {
+        const offer = await pc.createOffer({
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: true,
+        });
+        await pc.setLocalDescription(offer);
 
-      return pc;
+        // Wait until all STUN & TURN candidates are gathered inside the SDP!
+        await waitForIceGathering(pc);
+
+        channel.send({
+          type: 'broadcast',
+          event: 'webrtc-signal',
+          payload: {
+            to: targetPeerId,
+            from: myPeerId,
+            sdp: pc.localDescription,
+          },
+        });
+      } catch (err) {
+        console.warn('Error creating WebRTC full offer:', err);
+      }
     };
 
     // 1. Presence Sync: Synchronize who is actually in this room
@@ -482,6 +571,9 @@ function GoogleMeetRoomContent() {
           const userList = presenceState[key] as any[];
           if (userList && userList.length > 0) {
             const p = userList[0];
+            if (!p || !p.peerId || p.peerId === myPeerId) continue;
+            if (activeRemotePeers.some((peer) => peer.peerId === p.peerId)) continue;
+
             activeRemotePeers.push({
               peerId: p.peerId,
               name: p.name,
@@ -491,10 +583,9 @@ function GoogleMeetRoomContent() {
               isHandRaised: p.isHandRaised,
             });
 
-            // Create WebRTC connection for this peer
-            if (!peerConnectionsRef.current[p.peerId]) {
-              const shouldInitiate = myPeerId > p.peerId;
-              createPeerConnection(p.peerId, shouldInitiate);
+            // If connection not established, initiate offer (caller: myPeerId > p.peerId)
+            if (!peerConnectionsRef.current[p.peerId] && myPeerId > p.peerId) {
+              initiateConnection(p.peerId);
             }
           }
         }
@@ -506,6 +597,7 @@ function GoogleMeetRoomContent() {
               peerConnectionsRef.current[peerId].close();
             } catch {}
             delete peerConnectionsRef.current[peerId];
+            delete iceCandidateQueueRef.current[peerId];
             setRemoteStreams((prev) => {
               const copy = { ...prev };
               delete copy[peerId];
@@ -524,6 +616,7 @@ function GoogleMeetRoomContent() {
                 peerConnectionsRef.current[lp.peerId].close();
               } catch {}
               delete peerConnectionsRef.current[lp.peerId];
+              delete iceCandidateQueueRef.current[lp.peerId];
               setRemoteStreams((prev) => {
                 const copy = { ...prev };
                 delete copy[lp.peerId];
@@ -534,61 +627,106 @@ function GoogleMeetRoomContent() {
         }
       });
 
-    // 2. WebRTC Signaling (SDP Offer / Answer & ICE Candidates)
+    // 2. WebRTC Signaling Receiver (Handles Single Complete-SDP Offer & Answer)
     channel.on('broadcast', { event: 'webrtc-signal' }, async ({ payload }) => {
       if (!payload || payload.to !== myPeerId) return;
 
-      const { from, sdp, candidate } = payload;
+      const { from, sdp } = payload;
+      if (!sdp) return;
+
       let pc = peerConnectionsRef.current[from];
 
-      if (!pc) {
-        pc = createPeerConnection(from, false);
-      }
-
-      if (sdp) {
-        if (sdp.type === 'offer') {
+      if (sdp.type === 'offer') {
+        if (pc) {
           try {
-            // Ensure local tracks are attached before setting answer
-            if (localStreamRef.current) {
-              localStreamRef.current.getTracks().forEach((track) => {
-                const senders = pc.getSenders();
-                if (!senders.some((s) => s.track?.kind === track.kind)) {
-                  pc.addTrack(track, localStreamRef.current!);
-                }
-              });
-            }
+            pc.close();
+          } catch {}
+        }
 
-            await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
+        pc = new RTCPeerConnection(ICE_SERVERS);
+        peerConnectionsRef.current[from] = pc;
 
-            channel.send({
+        if (localStreamRef.current) {
+          localStreamRef.current.getTracks().forEach((track) => {
+            pc.addTrack(track, localStreamRef.current!);
+          });
+        }
+
+        pc.ontrack = (event) => handleRemoteTrack(event, from);
+
+        pc.onicecandidate = (event) => {
+          if (event.candidate && channelRef.current) {
+            channelRef.current.send({
               type: 'broadcast',
-              event: 'webrtc-signal',
+              event: 'webrtc-ice-candidate',
               payload: {
                 to: from,
                 from: myPeerId,
-                sdp: answer,
+                candidate: event.candidate,
               },
             });
-          } catch (err) {
-            console.warn('Error handling WebRTC offer:', err);
           }
-        } else if (sdp.type === 'answer') {
+        };
+
+        pc.oniceconnectionstatechange = () => {
+          if (pc.iceConnectionState === 'failed') {
+            try {
+              pc.restartIce();
+            } catch {}
+          }
+        };
+
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+          await flushIceCandidates(from, pc);
+
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+
+          // Wait until answer candidates are collected inside SDP!
+          await waitForIceGathering(pc);
+
+          channel.send({
+            type: 'broadcast',
+            event: 'webrtc-signal',
+            payload: {
+              to: from,
+              from: myPeerId,
+              sdp: pc.localDescription,
+            },
+          });
+        } catch (err) {
+          console.warn('Error handling WebRTC complete offer:', err);
+        }
+      } else if (sdp.type === 'answer') {
+        if (pc && pc.signalingState === 'have-local-offer') {
           try {
             await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+            await flushIceCandidates(from, pc);
           } catch (err) {
-            console.warn('Error handling WebRTC answer:', err);
+            console.warn('Error setting WebRTC answer:', err);
           }
         }
       }
+    });
 
-      if (candidate) {
+    // 2b. WebRTC Trickle ICE Candidate Receiver
+    channel.on('broadcast', { event: 'webrtc-ice-candidate' }, async ({ payload }) => {
+      if (!payload || payload.to !== myPeerId || !payload.candidate) return;
+      const { from, candidate } = payload;
+      const pc = peerConnectionsRef.current[from];
+
+      if (pc && pc.remoteDescription && pc.remoteDescription.type) {
         try {
           await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (err) {
-          console.warn('Error adding ICE candidate:', err);
+        } catch (e) {
+          console.warn('Error adding live ICE candidate:', e);
         }
+      } else {
+        if (!iceCandidateQueueRef.current[from]) {
+          iceCandidateQueueRef.current[from] = [];
+        }
+        iceCandidateQueueRef.current[from].push(candidate);
       }
     });
 
@@ -640,6 +778,7 @@ function GoogleMeetRoomContent() {
         } catch {}
       });
       peerConnectionsRef.current = {};
+      iceCandidateQueueRef.current = {};
     };
   }, [isAuthorized, courseId, myPeerId, isLocalMediaReady, isLecturer, auth, course]);
 
@@ -926,7 +1065,7 @@ function GoogleMeetRoomContent() {
     return (
       <div className="fixed inset-0 z-50 bg-[#202124] flex flex-col items-center justify-center text-white space-y-4">
         <div className="w-12 h-12 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs text-stone-300 font-medium">Menghubungkan ke Google Meet HK A...</p>
+        <p className="text-xs text-stone-300 font-medium">Menyiapkan Google Meet HK A...</p>
       </div>
     );
   }
@@ -1027,7 +1166,7 @@ function GoogleMeetRoomContent() {
         </div>
 
         {/* Video Canvas Container */}
-        <div className="flex-1 flex flex-col overflow-hidden min-h-0 h-full">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0 h-full w-full">
           {/* A. If Screen Sharing is Active */}
           {isScreenSharing && (
             <div className="w-full flex-1 max-h-[50vh] sm:max-h-[60vh] mb-2 relative bg-black rounded-2xl sm:rounded-3xl overflow-hidden border border-stone-700/80 shadow-2xl flex items-center justify-center">
@@ -1037,47 +1176,47 @@ function GoogleMeetRoomContent() {
                 playsInline
                 className="w-full h-full object-contain"
               />
-              <div className="absolute top-3 left-3 bg-stone-900/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-stone-700 text-xs font-semibold text-white flex items-center space-x-2 shadow-md">
+              <div className="absolute top-3 left-3 bg-stone-900/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-stone-700 text-xs font-semibold text-white flex items-center space-x-2 shadow-md z-10">
                 <ScreenShare className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
                 <span>Anda sedang mempresentasikan layar</span>
               </div>
             </div>
           )}
 
-          {/* B. VIDEO TILES CONTAINER (Accurate 50:50 Mobile Split & Desktop Grid) */}
+          {/* B. VIDEO TILES CONTAINER (Strict 50:50 Mobile Split with absolute inset-0) */}
           <div
             className={`flex-1 min-h-0 w-full h-full ${
               isScreenSharing
                 ? 'grid grid-cols-2 sm:grid-cols-4 max-h-[140px] sm:max-h-[180px] gap-2'
                 : totalPeopleCount === 1
-                ? 'flex items-center justify-center w-full h-full max-w-4xl mx-auto'
+                ? 'flex items-center justify-center w-full h-full max-w-4xl mx-auto p-1'
                 : totalPeopleCount === 2
-                ? 'flex flex-col sm:grid sm:grid-cols-2 w-full h-full gap-2 sm:gap-3.5'
+                ? 'flex flex-col sm:grid sm:grid-cols-2 w-full h-full min-h-0 gap-2 sm:gap-3.5 overflow-hidden'
                 : totalPeopleCount <= 4
-                ? 'grid grid-cols-2 grid-rows-2 w-full h-full gap-2 sm:gap-3.5'
-                : 'grid grid-cols-2 sm:grid-cols-3 w-full h-full gap-2 sm:gap-3.5'
+                ? 'grid grid-cols-2 grid-rows-2 w-full h-full min-h-0 gap-2 sm:gap-3.5 overflow-hidden'
+                : 'grid grid-cols-2 sm:grid-cols-3 w-full h-full min-h-0 gap-2 sm:gap-3.5 overflow-hidden'
             }`}
           >
             {/* 1. MY LOCAL TILE (User's Camera / Avatar) */}
             <div
-              className={`relative bg-[#3c4043] rounded-2xl sm:rounded-3xl overflow-hidden border transition-all flex items-center justify-center group shadow-md w-full h-full min-h-0 flex-1 ${
+              className={`relative bg-[#3c4043] rounded-2xl sm:rounded-3xl overflow-hidden border transition-all flex items-center justify-center shadow-md w-full h-full min-h-0 flex-1 ${
                 !isMicOn ? 'border-stone-700/80' : 'border-stone-600/80'
               } ${isHandRaised ? 'ring-2 ring-amber-400' : ''}`}
             >
-              {/* Camera Video Stream (Direct Native WebRTC - Muted to avoid echo) */}
+              {/* Camera Video Stream (Pinned with absolute inset-0 so it cannot stretch container) */}
               <video
                 ref={localVideoRef}
                 autoPlay
                 playsInline
                 muted
-                className={`w-full h-full object-cover -scale-x-100 ${
-                  isCamOn ? 'block' : 'hidden'
+                className={`absolute inset-0 w-full h-full object-cover -scale-x-100 transition-opacity duration-300 ${
+                  isCamOn ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 }`}
               />
 
               {/* OFF CAM: Google Meet Elegant Circular Avatar with Initial */}
               {!isCamOn && (
-                <div className="flex flex-col items-center justify-center p-4">
+                <div className="flex flex-col items-center justify-center p-4 z-10">
                   <div
                     className={`w-20 h-20 sm:w-28 sm:h-28 rounded-full ${getAvatarColor(
                       myDisplayName
@@ -1089,7 +1228,7 @@ function GoogleMeetRoomContent() {
               )}
 
               {/* Bottom Left Label: Name Badge */}
-              <div className="absolute bottom-2.5 left-2.5 max-w-[85%] bg-stone-900/80 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium text-white flex items-center space-x-1.5 shadow-md">
+              <div className="absolute bottom-2.5 left-2.5 max-w-[85%] bg-stone-900/85 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium text-white flex items-center space-x-1.5 shadow-md z-10">
                 <span className="truncate">{myDisplayName}</span>
                 {isLecturer && (
                   <GraduationCap className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
@@ -1097,7 +1236,7 @@ function GoogleMeetRoomContent() {
               </div>
 
               {/* Top Right: Mic Status Icon */}
-              <div className="absolute top-2.5 right-2.5">
+              <div className="absolute top-2.5 right-2.5 z-10">
                 {!isMicOn ? (
                   <div className="w-7 h-7 rounded-full bg-rose-600/90 text-white flex items-center justify-center shadow-md">
                     <MicOff className="w-3.5 h-3.5" />
@@ -1111,13 +1250,13 @@ function GoogleMeetRoomContent() {
 
               {/* Hand Raised Badge */}
               {isHandRaised && (
-                <div className="absolute top-2.5 left-2.5 w-8 h-8 rounded-full bg-amber-400 text-stone-950 flex items-center justify-center shadow-lg animate-bounce">
+                <div className="absolute top-2.5 left-2.5 w-8 h-8 rounded-full bg-amber-400 text-stone-950 flex items-center justify-center shadow-lg animate-bounce z-10">
                   <Hand className="w-4 h-4" />
                 </div>
               )}
             </div>
 
-            {/* 2. REAL REMOTE PEERS (Zero Dummy / Equal 50:50 Share) */}
+            {/* 2. REAL REMOTE PEERS (Absolute 50:50 equal height share) */}
             {remotePeers.map((peer) => (
               <RemoteVideoTile
                 key={peer.peerId}
@@ -1129,7 +1268,7 @@ function GoogleMeetRoomContent() {
 
           {/* Empty room notification if alone */}
           {remotePeers.length === 0 && (
-            <div className="mt-2 py-2 px-4 bg-stone-800/60 rounded-2xl text-center text-xs text-stone-400 max-w-md mx-auto flex items-center justify-center space-x-2">
+            <div className="mt-2 py-2 px-4 bg-stone-800/60 rounded-2xl text-center text-xs text-stone-400 max-w-md mx-auto flex items-center justify-center space-x-2 flex-shrink-0">
               <User className="w-3.5 h-3.5 text-stone-400" />
               <span>Anda sendirian di ruang kuliah ini. Bagikan tautan untuk mengundang mahasiswa atau dosen.</span>
             </div>
