@@ -29,6 +29,15 @@ import {
   User,
   Volume2,
 } from 'lucide-react';
+import {
+  Room,
+  RoomEvent,
+  Track,
+  RemoteParticipant,
+  RemoteTrack,
+  ParticipantEvent,
+  VideoPresets,
+} from 'livekit-client';
 import { appStore } from '@/lib/store';
 import { Course, AuthSession } from '@/lib/types';
 import {
@@ -59,68 +68,14 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[index];
 }
 
-// Enterprise-grade STUN + OpenRelay TURN servers for 4G cellular and WiFi traversal
-const ICE_SERVERS: RTCConfiguration = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun.cloudflare.com:3478' },
-    { urls: 'stun:openrelay.metered.ca:80' },
-    {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:80?transport=tcp',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-  ],
-  iceCandidatePoolSize: 10,
-};
-
-// Helper to gather all ICE candidates into a single complete SDP payload
-function waitForIceGathering(pc: RTCPeerConnection, maxTimeoutMs: number = 3000): Promise<void> {
-  return new Promise((resolve) => {
-    if (pc.iceGatheringState === 'complete') {
-      resolve();
-      return;
-    }
-    let timeoutId: any;
-    const checkState = () => {
-      if (pc.iceGatheringState === 'complete') {
-        clearTimeout(timeoutId);
-        pc.removeEventListener('icegatheringstatechange', checkState);
-        resolve();
-      }
-    };
-    pc.addEventListener('icegatheringstatechange', checkState);
-    timeoutId = setTimeout(() => {
-      pc.removeEventListener('icegatheringstatechange', checkState);
-      resolve();
-    }, maxTimeoutMs);
-  });
-}
-
-interface RemotePeer {
+interface LiveKitRemotePeer {
   peerId: string;
   name: string;
   role: string;
   isCamOn: boolean;
   isMicOn: boolean;
   isHandRaised?: boolean;
+  participant: RemoteParticipant;
 }
 
 interface ChatMessage {
@@ -135,59 +90,100 @@ interface ChatMessage {
 // Remote Video Tile Component (Absolute inset-0 with audio fallback to prevent layout blowout)
 function RemoteVideoTile({
   peer,
-  stream,
 }: {
-  peer: RemotePeer;
-  stream?: MediaStream;
+  peer: LiveKitRemotePeer;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [audioBlocked, setAudioBlocked] = useState(false);
+  const [isCamOn, setIsCamOn] = useState(peer.isCamOn);
+  const [isMicOn, setIsMicOn] = useState(peer.isMicOn);
+
+  useEffect(() => {
+    setIsCamOn(peer.isCamOn);
+    setIsMicOn(peer.isMicOn);
+  }, [peer.isCamOn, peer.isMicOn]);
 
   useEffect(() => {
     const videoEl = videoRef.current;
     const audioEl = audioRef.current;
+    const p = peer.participant;
+    if (!p) return;
 
-    if (videoEl && stream) {
-      if (videoEl.srcObject !== stream) {
-        videoEl.srcObject = stream;
-      }
-      videoEl.play().catch(() => {});
-    }
+    const checkTracks = () => {
+      setIsCamOn(p.isCameraEnabled);
+      setIsMicOn(p.isMicrophoneEnabled);
 
-    if (audioEl && stream) {
-      if (audioEl.srcObject !== stream) {
-        audioEl.srcObject = stream;
-      }
-      audioEl.play().catch(() => {
-        setAudioBlocked(true);
+      p.trackPublications.forEach((pub) => {
+        if (pub.track) {
+          if (pub.kind === Track.Kind.Video && videoEl) {
+            pub.track.attach(videoEl);
+          } else if (pub.kind === Track.Kind.Audio && audioEl) {
+            pub.track.attach(audioEl);
+          }
+        }
       });
-    }
-
-    const handleTrackChange = () => {
-      if (videoEl) videoEl.play().catch(() => {});
-      if (audioEl) audioEl.play().catch(() => setAudioBlocked(true));
     };
 
-    if (stream) {
-      stream.addEventListener('addtrack', handleTrackChange);
-      stream.addEventListener('removetrack', handleTrackChange);
-    }
+    checkTracks();
+
+    const handleTrackSubscribed = (track: RemoteTrack) => {
+      if (track.kind === Track.Kind.Video && videoEl) {
+        track.attach(videoEl);
+        setIsCamOn(true);
+      } else if (track.kind === Track.Kind.Audio && audioEl) {
+        track.attach(audioEl);
+        audioEl.play().catch(() => setAudioBlocked(true));
+        setIsMicOn(true);
+      }
+    };
+
+    const handleTrackUnsubscribed = (track: RemoteTrack) => {
+      if (track.kind === Track.Kind.Video && videoEl) {
+        track.detach(videoEl);
+        setIsCamOn(false);
+      } else if (track.kind === Track.Kind.Audio && audioEl) {
+        track.detach(audioEl);
+        setIsMicOn(false);
+      }
+    };
+
+    const handleTrackMuted = (pub: any) => {
+      if (pub.kind === Track.Kind.Video) setIsCamOn(false);
+      if (pub.kind === Track.Kind.Audio) setIsMicOn(false);
+    };
+
+    const handleTrackUnmuted = (pub: any) => {
+      if (pub.kind === Track.Kind.Video) setIsCamOn(true);
+      if (pub.kind === Track.Kind.Audio) setIsMicOn(true);
+    };
+
+    p.on(ParticipantEvent.TrackSubscribed, handleTrackSubscribed);
+    p.on(ParticipantEvent.TrackUnsubscribed, handleTrackUnsubscribed);
+    p.on(ParticipantEvent.TrackMuted, handleTrackMuted);
+    p.on(ParticipantEvent.TrackUnmuted, handleTrackUnmuted);
 
     return () => {
-      if (stream) {
-        stream.removeEventListener('addtrack', handleTrackChange);
-        stream.removeEventListener('removetrack', handleTrackChange);
+      p.off(ParticipantEvent.TrackSubscribed, handleTrackSubscribed);
+      p.off(ParticipantEvent.TrackUnsubscribed, handleTrackUnsubscribed);
+      p.off(ParticipantEvent.TrackMuted, handleTrackMuted);
+      p.off(ParticipantEvent.TrackUnmuted, handleTrackUnmuted);
+      if (videoEl) {
+        p.trackPublications.forEach((pub) => {
+          if (pub.track?.kind === Track.Kind.Video) pub.track.detach(videoEl);
+        });
+      }
+      if (audioEl) {
+        p.trackPublications.forEach((pub) => {
+          if (pub.track?.kind === Track.Kind.Audio) pub.track.detach(audioEl);
+        });
       }
     };
-  }, [stream, peer.isCamOn]);
+  }, [peer.participant]);
 
   const handleManualUnmute = () => {
     if (audioRef.current) {
       audioRef.current.play().then(() => setAudioBlocked(false)).catch(() => {});
-    }
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => {});
     }
   };
 
@@ -207,7 +203,7 @@ function RemoteVideoTile({
         playsInline
         muted
         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-          peer.isCamOn && stream ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          isCamOn ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       />
 
@@ -215,7 +211,7 @@ function RemoteVideoTile({
       <audio ref={audioRef} autoPlay playsInline />
 
       {/* OFF CAM or Waiting: Google Meet Style Circle Avatar */}
-      {(!peer.isCamOn || !stream) && (
+      {!isCamOn && (
         <div className="flex flex-col items-center justify-center p-4 z-10">
           <div
             className={`w-20 h-20 sm:w-28 sm:h-28 rounded-full ${avatarColor} text-white flex items-center justify-center font-bold text-3xl sm:text-4xl shadow-xl ring-4 ring-white/10`}
@@ -249,7 +245,7 @@ function RemoteVideoTile({
 
       {/* Mic Status Icon */}
       <div className="absolute top-2.5 right-2.5 z-10">
-        {!peer.isMicOn ? (
+        {!isMicOn ? (
           <div className="w-7 h-7 rounded-full bg-rose-600/90 text-white flex items-center justify-center shadow-md">
             <MicOff className="w-3.5 h-3.5" />
           </div>
@@ -303,19 +299,19 @@ function GoogleMeetRoomContent() {
   const [baseUrl, setBaseUrl] = useState('');
   const [currentTime, setCurrentTime] = useState('');
 
-  // Realtime multi-user state (ONLY REAL PARTICIPANTS)
-  const [remotePeers, setRemotePeers] = useState<RemotePeer[]>([]);
-  const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
+  // Realtime multi-user state (LiveKit SFU Participants)
+  const [remotePeers, setRemotePeers] = useState<LiveKitRemotePeer[]>([]);
+  const [remoteScreenTrack, setRemoteScreenTrack] = useState<RemoteTrack | null>(null);
+  const [remoteScreenSharerName, setRemoteScreenSharerName] = useState<string>('');
+  const [raisedHands, setRaisedHands] = useState<Record<string, boolean>>({});
 
   // Video Stream References
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const screenVideoRef = useRef<HTMLVideoElement | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const screenStreamRef = useRef<MediaStream | null>(null);
+  const remoteScreenVideoRef = useRef<HTMLVideoElement | null>(null);
 
-  // WebRTC PeerConnections Map & ICE Candidate Queue
-  const peerConnectionsRef = useRef<Record<string, RTCPeerConnection>>({});
-  const iceCandidateQueueRef = useRef<Record<string, RTCIceCandidateInit[]>>({});
+  // LiveKit Room reference
+  const roomRef = useRef<Room | null>(null);
   const channelRef = useRef<any>(null);
 
   // Class chat messages
@@ -381,370 +377,161 @@ function GoogleMeetRoomContent() {
   // Display name of local user
   const myDisplayName = isLecturer
     ? `${course?.dosen || 'Dosen'} (Dosen Pengampu)`
-    : `${auth?.name || 'Mahasiswa'} (Anda)`;
+    : `${auth?.name || 'Mahasiswa'}`;
 
   const myInitials = isLecturer
     ? (course?.dosen.replace(/^(Dr\.|Prof\.|H\.|Drs\.|M\.)\s+/g, '')[0] || 'D').toUpperCase()
     : (auth?.name || 'M')[0].toUpperCase();
 
-  // 1. Acquire Local Camera & Microphone FIRST
+  // 1. Connect to LiveKit Cloud Room (High Speed SFU Media Server)
   useEffect(() => {
-    if (!isAuthorized) return;
+    if (!isAuthorized || !courseId || !myPeerId) return;
 
     let active = true;
+    let room: Room | null = null;
 
-    async function startMedia() {
+    async function initLiveKit() {
       try {
-        if (localStreamRef.current) {
-          localStreamRef.current.getTracks().forEach((track) => track.stop());
+        const res = await fetch(
+          `/api/livekit/token?room=${encodeURIComponent(courseId)}&identity=${encodeURIComponent(
+            myPeerId
+          )}&name=${encodeURIComponent(myDisplayName)}`
+        );
+        const data = await res.json();
+        if (!data.token) {
+          throw new Error(data.error || 'Gagal memperoleh token akses LiveKit');
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: facingMode,
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
+        if (!active) return;
+
+        const livekitUrl =
+          process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://kelas-hk-a-aiflm7bo.livekit.cloud';
+
+        room = new Room({
+          adaptiveStream: true,
+          dynacast: true,
+          videoCaptureDefaults: {
+            resolution: VideoPresets.h720.resolution,
+            facingMode,
           },
-          audio: true,
         });
+        roomRef.current = room;
+
+        const syncParticipants = () => {
+          if (!room || !active) return;
+          const remotes: LiveKitRemotePeer[] = [];
+          let activeRemoteScreen: { track: RemoteTrack; name: string } | null = null;
+
+          room.remoteParticipants.forEach((p) => {
+            const role = p.identity.startsWith('dosen-')
+              ? 'DOSEN'
+              : p.identity.startsWith('admin')
+              ? 'ADMIN'
+              : 'MAHASISWA';
+
+            remotes.push({
+              peerId: p.identity,
+              name: p.name || p.identity,
+              role,
+              isCamOn: p.isCameraEnabled,
+              isMicOn: p.isMicrophoneEnabled,
+              isHandRaised: Boolean(raisedHands[p.identity]),
+              participant: p,
+            });
+
+            p.trackPublications.forEach((pub) => {
+              if (pub.source === Track.Source.ScreenShare && pub.track) {
+                activeRemoteScreen = {
+                  track: pub.track as RemoteTrack,
+                  name: p.name || p.identity,
+                };
+              }
+            });
+          });
+
+          setRemotePeers(remotes);
+          if (activeRemoteScreen) {
+            setRemoteScreenTrack((activeRemoteScreen as any).track);
+            setRemoteScreenSharerName((activeRemoteScreen as any).name);
+          } else {
+            setRemoteScreenTrack(null);
+            setRemoteScreenSharerName('');
+          }
+        };
+
+        room.on(RoomEvent.Connected, syncParticipants);
+        room.on(RoomEvent.ParticipantConnected, syncParticipants);
+        room.on(RoomEvent.ParticipantDisconnected, syncParticipants);
+        room.on(RoomEvent.TrackSubscribed, syncParticipants);
+        room.on(RoomEvent.TrackUnsubscribed, syncParticipants);
+        room.on(RoomEvent.TrackMuted, syncParticipants);
+        room.on(RoomEvent.TrackUnmuted, syncParticipants);
+
+        await room.connect(livekitUrl, data.token);
 
         if (!active) {
-          stream.getTracks().forEach((t) => t.stop());
+          room.disconnect();
           return;
         }
 
-        localStreamRef.current = stream;
+        // Enable Camera & Mic based on state
+        await room.localParticipant.setCameraEnabled(isCamOn);
+        await room.localParticipant.setMicrophoneEnabled(isMicOn);
 
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-          localVideoRef.current.play().catch(() => {});
+        // Attach local camera to localVideoRef
+        const camTrack = room.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
+        if (camTrack && localVideoRef.current) {
+          camTrack.attach(localVideoRef.current);
         }
-
-        stream.getVideoTracks().forEach((t) => (t.enabled = isCamOn));
-        stream.getAudioTracks().forEach((t) => (t.enabled = isMicOn));
 
         setIsLocalMediaReady(true);
       } catch (err) {
-        console.warn('Gagal mengakses kamera/mikrofon langsung:', err);
-        setIsCamOn(false);
+        console.error('LiveKit connection error:', err);
         setIsLocalMediaReady(true);
       }
     }
 
-    startMedia();
+    initLiveKit();
 
     return () => {
       active = false;
+      if (room) {
+        room.disconnect();
+      }
+      roomRef.current = null;
     };
-  }, [isAuthorized, facingMode]);
+  }, [isAuthorized, courseId, myPeerId, myDisplayName]);
 
-  // 2. Connect WebRTC signaling and Realtime Presence via Supabase
-  // (Uses Single Complete-SDP Gathering for bulletproof connection across 4G & WiFi)
+  // Attach Remote Screen Share Video
   useEffect(() => {
-    if (
-      !isAuthorized ||
-      !courseId ||
-      !myPeerId ||
-      !isLocalMediaReady ||
-      !isSupabaseConfigured()
-    )
-      return;
+    if (remoteScreenTrack && remoteScreenVideoRef.current) {
+      remoteScreenTrack.attach(remoteScreenVideoRef.current);
+      return () => {
+        remoteScreenTrack.detach(remoteScreenVideoRef.current!);
+      };
+    }
+  }, [remoteScreenTrack]);
+
+  // 2. Connect Supabase Realtime Channel for In-Meeting Chat & Floating Emoji Reactions
+  useEffect(() => {
+    if (!isAuthorized || !courseId || !myPeerId || !isSupabaseConfigured()) return;
 
     const channelName = `meet-room-${courseId}`;
     const channel = supabase.channel(channelName, {
       config: {
-        presence: { key: myPeerId },
         broadcast: { self: false },
       },
     });
 
     channelRef.current = channel;
 
-    // Track remote stream updates reliably so React re-renders on track addition
-    const handleRemoteTrack = (event: RTCTrackEvent, peerId: string) => {
-      const stream =
-        event.streams && event.streams[0]
-          ? event.streams[0]
-          : new MediaStream([event.track]);
-
-      setRemoteStreams((prev) => {
-        const current = prev[peerId];
-        if (current) {
-          if (!current.getTracks().some((t) => t.id === event.track.id)) {
-            current.addTrack(event.track);
-          }
-          return { ...prev, [peerId]: new MediaStream(current.getTracks()) };
-        }
-        return { ...prev, [peerId]: stream };
-      });
-    };
-
-    // Helper: Flush queued ICE candidates safely once remote description is set
-    const flushIceCandidates = async (peerId: string, pc: RTCPeerConnection) => {
-      const queued = iceCandidateQueueRef.current[peerId] || [];
-      if (queued.length > 0) {
-        for (const cand of queued) {
-          try {
-            await pc.addIceCandidate(new RTCIceCandidate(cand));
-          } catch (e) {
-            console.warn('Error flushing candidate:', e);
-          }
-        }
-        delete iceCandidateQueueRef.current[peerId];
-      }
-    };
-
-    // Helper: Create RTCPeerConnection for a remote peer with full ICE gathering
-    const initiateConnection = async (targetPeerId: string) => {
-      if (peerConnectionsRef.current[targetPeerId]) {
-        return;
-      }
-
-      const pc = new RTCPeerConnection(ICE_SERVERS);
-      peerConnectionsRef.current[targetPeerId] = pc;
-
-      // Add local stream tracks
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track) => {
-          pc.addTrack(track, localStreamRef.current!);
-        });
-      }
-
-      // Handle receiving remote stream
-      pc.ontrack = (event) => handleRemoteTrack(event, targetPeerId);
-
-      // Trickle ICE candidates for ultra-fast relay connectivity
-      pc.onicecandidate = (event) => {
-        if (event.candidate && channelRef.current) {
-          channelRef.current.send({
-            type: 'broadcast',
-            event: 'webrtc-ice-candidate',
-            payload: {
-              to: targetPeerId,
-              from: myPeerId,
-              candidate: event.candidate,
-            },
-          });
-        }
-      };
-
-      pc.oniceconnectionstatechange = () => {
-        if (pc.iceConnectionState === 'failed') {
-          try {
-            pc.restartIce();
-          } catch {}
-        }
-      };
-
-      try {
-        const offer = await pc.createOffer({
-          offerToReceiveAudio: true,
-          offerToReceiveVideo: true,
-        });
-        await pc.setLocalDescription(offer);
-
-        // Wait until all STUN & TURN candidates are gathered inside the SDP!
-        await waitForIceGathering(pc);
-
-        channel.send({
-          type: 'broadcast',
-          event: 'webrtc-signal',
-          payload: {
-            to: targetPeerId,
-            from: myPeerId,
-            sdp: pc.localDescription,
-          },
-        });
-      } catch (err) {
-        console.warn('Error creating WebRTC full offer:', err);
-      }
-    };
-
-    // 1. Presence Sync: Synchronize who is actually in this room
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const presenceState = channel.presenceState();
-        const activeRemotePeers: RemotePeer[] = [];
-
-        for (const key in presenceState) {
-          if (key === myPeerId) continue;
-          const userList = presenceState[key] as any[];
-          if (userList && userList.length > 0) {
-            const p = userList[0];
-            if (!p || !p.peerId || p.peerId === myPeerId) continue;
-            if (activeRemotePeers.some((peer) => peer.peerId === p.peerId)) continue;
-
-            activeRemotePeers.push({
-              peerId: p.peerId,
-              name: p.name,
-              role: p.role,
-              isCamOn: p.isCamOn,
-              isMicOn: p.isMicOn,
-              isHandRaised: p.isHandRaised,
-            });
-
-            // If connection not established, initiate offer (caller: myPeerId > p.peerId)
-            if (!peerConnectionsRef.current[p.peerId] && myPeerId > p.peerId) {
-              initiateConnection(p.peerId);
-            }
-          }
-        }
-
-        // Clean up connections for peers that left
-        Object.keys(peerConnectionsRef.current).forEach((peerId) => {
-          if (!activeRemotePeers.some((p) => p.peerId === peerId)) {
-            try {
-              peerConnectionsRef.current[peerId].close();
-            } catch {}
-            delete peerConnectionsRef.current[peerId];
-            delete iceCandidateQueueRef.current[peerId];
-            setRemoteStreams((prev) => {
-              const copy = { ...prev };
-              delete copy[peerId];
-              return copy;
-            });
-          }
-        });
-
-        setRemotePeers(activeRemotePeers);
-      })
-      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        if (Array.isArray(leftPresences)) {
-          leftPresences.forEach((lp: any) => {
-            if (lp?.peerId && peerConnectionsRef.current[lp.peerId]) {
-              try {
-                peerConnectionsRef.current[lp.peerId].close();
-              } catch {}
-              delete peerConnectionsRef.current[lp.peerId];
-              delete iceCandidateQueueRef.current[lp.peerId];
-              setRemoteStreams((prev) => {
-                const copy = { ...prev };
-                delete copy[lp.peerId];
-                return copy;
-              });
-            }
-          });
-        }
-      });
-
-    // 2. WebRTC Signaling Receiver (Handles Single Complete-SDP Offer & Answer)
-    channel.on('broadcast', { event: 'webrtc-signal' }, async ({ payload }) => {
-      if (!payload || payload.to !== myPeerId) return;
-
-      const { from, sdp } = payload;
-      if (!sdp) return;
-
-      let pc = peerConnectionsRef.current[from];
-
-      if (sdp.type === 'offer') {
-        if (pc) {
-          try {
-            pc.close();
-          } catch {}
-        }
-
-        pc = new RTCPeerConnection(ICE_SERVERS);
-        peerConnectionsRef.current[from] = pc;
-
-        if (localStreamRef.current) {
-          localStreamRef.current.getTracks().forEach((track) => {
-            pc.addTrack(track, localStreamRef.current!);
-          });
-        }
-
-        pc.ontrack = (event) => handleRemoteTrack(event, from);
-
-        pc.onicecandidate = (event) => {
-          if (event.candidate && channelRef.current) {
-            channelRef.current.send({
-              type: 'broadcast',
-              event: 'webrtc-ice-candidate',
-              payload: {
-                to: from,
-                from: myPeerId,
-                candidate: event.candidate,
-              },
-            });
-          }
-        };
-
-        pc.oniceconnectionstatechange = () => {
-          if (pc.iceConnectionState === 'failed') {
-            try {
-              pc.restartIce();
-            } catch {}
-          }
-        };
-
-        try {
-          await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-          await flushIceCandidates(from, pc);
-
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-
-          // Wait until answer candidates are collected inside SDP!
-          await waitForIceGathering(pc);
-
-          channel.send({
-            type: 'broadcast',
-            event: 'webrtc-signal',
-            payload: {
-              to: from,
-              from: myPeerId,
-              sdp: pc.localDescription,
-            },
-          });
-        } catch (err) {
-          console.warn('Error handling WebRTC complete offer:', err);
-        }
-      } else if (sdp.type === 'answer') {
-        if (pc && pc.signalingState === 'have-local-offer') {
-          try {
-            await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-            await flushIceCandidates(from, pc);
-          } catch (err) {
-            console.warn('Error setting WebRTC answer:', err);
-          }
-        }
-      }
-    });
-
-    // 2b. WebRTC Trickle ICE Candidate Receiver
-    channel.on('broadcast', { event: 'webrtc-ice-candidate' }, async ({ payload }) => {
-      if (!payload || payload.to !== myPeerId || !payload.candidate) return;
-      const { from, candidate } = payload;
-      const pc = peerConnectionsRef.current[from];
-
-      if (pc && pc.remoteDescription && pc.remoteDescription.type) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (e) {
-          console.warn('Error adding live ICE candidate:', e);
-        }
-      } else {
-        if (!iceCandidateQueueRef.current[from]) {
-          iceCandidateQueueRef.current[from] = [];
-        }
-        iceCandidateQueueRef.current[from].push(candidate);
-      }
-    });
-
-    // 3. Peer State Updates (Cam / Mic / Raise Hand toggles)
-    channel.on('broadcast', { event: 'peer-state-update' }, ({ payload }) => {
-      if (!payload || !payload.peerId) return;
-      setRemotePeers((prev) =>
-        prev.map((p) => (p.peerId === payload.peerId ? { ...p, ...payload } : p))
-      );
-    });
-
-    // 4. In-Meeting Chat Broadcast
+    // Chat messages
     channel.on('broadcast', { event: 'chat-message' }, ({ payload }) => {
       if (!payload) return;
       setChatMessages((prev) => [...prev, { ...payload, isMe: false }]);
     });
 
-    // 5. Floating Emoji Reaction Broadcast
+    // Floating reaction emojis
     channel.on('broadcast', { event: 'emoji-reaction' }, ({ payload }) => {
       if (!payload?.emoji) return;
       const newReaction = { id: Date.now(), emoji: payload.emoji };
@@ -754,148 +541,90 @@ function GoogleMeetRoomContent() {
       }, 2800);
     });
 
-    // Subscribe to channel & track initial presence
-    channel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        await channel.track({
-          peerId: myPeerId,
-          name: isLecturer
-            ? `${course?.dosen || 'Dosen'} (Dosen Pengampu)`
-            : `${auth?.name || 'Mahasiswa'}`,
-          role: isLecturer ? 'DOSEN' : auth?.role === 'ADMIN' ? 'ADMIN' : 'MAHASISWA',
-          isCamOn: isCamOn,
-          isMicOn: isMicOn,
-          isHandRaised: isHandRaised,
-        });
-      }
+    // Raised hands state
+    channel.on('broadcast', { event: 'hand-raised-update' }, ({ payload }) => {
+      if (!payload?.peerId) return;
+      setRaisedHands((prev) => ({
+        ...prev,
+        [payload.peerId]: payload.isHandRaised,
+      }));
+      setRemotePeers((prev) =>
+        prev.map((p) =>
+          p.peerId === payload.peerId ? { ...p, isHandRaised: payload.isHandRaised } : p
+        )
+      );
     });
+
+    channel.subscribe();
 
     return () => {
       channel.unsubscribe();
-      Object.values(peerConnectionsRef.current).forEach((pc) => {
-        try {
-          pc.close();
-        } catch {}
-      });
-      peerConnectionsRef.current = {};
-      iceCandidateQueueRef.current = {};
     };
-  }, [isAuthorized, courseId, myPeerId, isLocalMediaReady, isLecturer, auth, course]);
+  }, [isAuthorized, courseId, myPeerId]);
 
   // Handle Toggle Camera
-  const handleToggleCam = () => {
+  const handleToggleCam = async () => {
     const nextState = !isCamOn;
     setIsCamOn(nextState);
-    if (localStreamRef.current) {
-      localStreamRef.current.getVideoTracks().forEach((track) => {
-        track.enabled = nextState;
-      });
-    }
-
-    if (channelRef.current) {
-      channelRef.current.send({
-        type: 'broadcast',
-        event: 'peer-state-update',
-        payload: { peerId: myPeerId, isCamOn: nextState },
-      });
-      channelRef.current.track({
-        peerId: myPeerId,
-        name: isLecturer ? `${course?.dosen} (Dosen Pengampu)` : `${auth?.name}`,
-        role: isLecturer ? 'DOSEN' : 'MAHASISWA',
-        isCamOn: nextState,
-        isMicOn: isMicOn,
-        isHandRaised: isHandRaised,
-      });
+    if (roomRef.current) {
+      await roomRef.current.localParticipant.setCameraEnabled(nextState);
+      if (nextState) {
+        const camTrack = roomRef.current.localParticipant.getTrackPublication(
+          Track.Source.Camera
+        )?.videoTrack;
+        if (camTrack && localVideoRef.current) {
+          camTrack.attach(localVideoRef.current);
+        }
+      }
     }
   };
 
   // Handle Toggle Mic
-  const handleToggleMic = () => {
+  const handleToggleMic = async () => {
     const nextState = !isMicOn;
     setIsMicOn(nextState);
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach((track) => {
-        track.enabled = nextState;
-      });
-    }
-
-    if (channelRef.current) {
-      channelRef.current.send({
-        type: 'broadcast',
-        event: 'peer-state-update',
-        payload: { peerId: myPeerId, isMicOn: nextState },
-      });
-      channelRef.current.track({
-        peerId: myPeerId,
-        name: isLecturer ? `${course?.dosen} (Dosen Pengampu)` : `${auth?.name}`,
-        role: isLecturer ? 'DOSEN' : 'MAHASISWA',
-        isCamOn: isCamOn,
-        isMicOn: nextState,
-        isHandRaised: isHandRaised,
-      });
+    if (roomRef.current) {
+      await roomRef.current.localParticipant.setMicrophoneEnabled(nextState);
     }
   };
 
   // Handle Switch Camera (Front <-> Back for Mobile)
-  const handleFlipCamera = () => {
-    setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
+  const handleFlipCamera = async () => {
+    const nextFacing = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(nextFacing);
+    if (roomRef.current) {
+      try {
+        await roomRef.current.localParticipant.setCameraEnabled(false);
+        await roomRef.current.localParticipant.setCameraEnabled(true, {
+          facingMode: nextFacing,
+        });
+        const camTrack = roomRef.current.localParticipant.getTrackPublication(
+          Track.Source.Camera
+        )?.videoTrack;
+        if (camTrack && localVideoRef.current) {
+          camTrack.attach(localVideoRef.current);
+        }
+      } catch (err) {
+        console.warn('Gagal flip camera:', err);
+      }
+    }
   };
 
   // Handle Screen Sharing
   const handleToggleScreenShare = async () => {
-    if (isScreenSharing) {
-      if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((track) => track.stop());
-        screenStreamRef.current = null;
-      }
-      setIsScreenSharing(false);
-      // Revert peer tracks to camera
-      if (localStreamRef.current) {
-        const videoTrack = localStreamRef.current.getVideoTracks()[0];
-        Object.values(peerConnectionsRef.current).forEach((pc) => {
-          const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
-          if (sender && videoTrack) sender.replaceTrack(videoTrack);
-        });
-      }
-      return;
-    }
-
+    if (!roomRef.current) return;
     try {
-      if (!navigator.mediaDevices.getDisplayMedia) {
-        alert('Fitur bagikan layar tidak didukung di perangkat ini.');
-        return;
-      }
-
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false,
-      });
-
-      screenStreamRef.current = screenStream;
-      setIsScreenSharing(true);
-
-      if (screenVideoRef.current) {
-        screenVideoRef.current.srcObject = screenStream;
-        screenVideoRef.current.play().catch(() => {});
-      }
-
-      const screenTrack = screenStream.getVideoTracks()[0];
-      Object.values(peerConnectionsRef.current).forEach((pc) => {
-        const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
-        if (sender && screenTrack) sender.replaceTrack(screenTrack);
-      });
-
-      screenTrack.onended = () => {
-        setIsScreenSharing(false);
-        screenStreamRef.current = null;
-        if (localStreamRef.current) {
-          const vTrack = localStreamRef.current.getVideoTracks()[0];
-          Object.values(peerConnectionsRef.current).forEach((pc) => {
-            const s = pc.getSenders().find((send) => send.track?.kind === 'video');
-            if (s && vTrack) s.replaceTrack(vTrack);
-          });
+      const nextState = !isScreenSharing;
+      await roomRef.current.localParticipant.setScreenShareEnabled(nextState);
+      setIsScreenSharing(nextState);
+      if (nextState) {
+        const screenTrack = roomRef.current.localParticipant.getTrackPublication(
+          Track.Source.ScreenShare
+        )?.videoTrack;
+        if (screenTrack && screenVideoRef.current) {
+          screenTrack.attach(screenVideoRef.current);
         }
-      };
+      }
     } catch (err) {
       console.warn('Batal membagikan layar:', err);
       setIsScreenSharing(false);
@@ -906,20 +635,13 @@ function GoogleMeetRoomContent() {
   const handleToggleHand = () => {
     const nextState = !isHandRaised;
     setIsHandRaised(nextState);
+    setRaisedHands((prev) => ({ ...prev, [myPeerId]: nextState }));
 
     if (channelRef.current) {
       channelRef.current.send({
         type: 'broadcast',
-        event: 'peer-state-update',
+        event: 'hand-raised-update',
         payload: { peerId: myPeerId, isHandRaised: nextState },
-      });
-      channelRef.current.track({
-        peerId: myPeerId,
-        name: isLecturer ? `${course?.dosen} (Dosen Pengampu)` : `${auth?.name}`,
-        role: isLecturer ? 'DOSEN' : 'MAHASISWA',
-        isCamOn: isCamOn,
-        isMicOn: isMicOn,
-        isHandRaised: nextState,
       });
     }
 
@@ -998,11 +720,8 @@ function GoogleMeetRoomContent() {
 
   // End Call / Exit
   const handleLeaveMeeting = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((t) => t.stop());
-    }
-    if (screenStreamRef.current) {
-      screenStreamRef.current.getTracks().forEach((t) => t.stop());
+    if (roomRef.current) {
+      roomRef.current.disconnect();
     }
     if (channelRef.current) {
       channelRef.current.unsubscribe();
@@ -1167,7 +886,7 @@ function GoogleMeetRoomContent() {
 
         {/* Video Canvas Container */}
         <div className="flex-1 flex flex-col overflow-hidden min-h-0 h-full w-full">
-          {/* A. If Screen Sharing is Active */}
+          {/* A. If Local Screen Sharing is Active */}
           {isScreenSharing && (
             <div className="w-full flex-1 max-h-[50vh] sm:max-h-[60vh] mb-2 relative bg-black rounded-2xl sm:rounded-3xl overflow-hidden border border-stone-700/80 shadow-2xl flex items-center justify-center">
               <video
@@ -1183,10 +902,26 @@ function GoogleMeetRoomContent() {
             </div>
           )}
 
+          {/* A2. If Remote Screen Sharing is Active */}
+          {remoteScreenTrack && !isScreenSharing && (
+            <div className="w-full flex-1 max-h-[50vh] sm:max-h-[60vh] mb-2 relative bg-black rounded-2xl sm:rounded-3xl overflow-hidden border border-stone-700/80 shadow-2xl flex items-center justify-center">
+              <video
+                ref={remoteScreenVideoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-contain"
+              />
+              <div className="absolute top-3 left-3 bg-stone-900/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-stone-700 text-xs font-semibold text-white flex items-center space-x-2 shadow-md z-10">
+                <ScreenShare className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+                <span>{remoteScreenSharerName || 'Peserta'} sedang mempresentasikan layar</span>
+              </div>
+            </div>
+          )}
+
           {/* B. VIDEO TILES CONTAINER (Strict 50:50 Mobile Split with absolute inset-0) */}
           <div
             className={`flex-1 min-h-0 w-full h-full ${
-              isScreenSharing
+              isScreenSharing || remoteScreenTrack
                 ? 'grid grid-cols-2 sm:grid-cols-4 max-h-[140px] sm:max-h-[180px] gap-2'
                 : totalPeopleCount === 1
                 ? 'flex items-center justify-center w-full h-full max-w-4xl mx-auto p-1'
@@ -1261,7 +996,6 @@ function GoogleMeetRoomContent() {
               <RemoteVideoTile
                 key={peer.peerId}
                 peer={peer}
-                stream={remoteStreams[peer.peerId]}
               />
             ))}
           </div>
