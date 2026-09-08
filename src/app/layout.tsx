@@ -58,7 +58,9 @@ export const metadata: Metadata = {
     apple: '/logo.png',
   },
   verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
+    google:
+      process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ||
+      'cUPEHbfq_JqOjvcE0H_NeWWkGZz4QtY2WUrnHYE7DEQ',
   },
 };
 
@@ -75,6 +77,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className={`w-full ${jakarta.variable}`}>
+      <head>
+        <meta
+          name="google-site-verification"
+          content="cUPEHbfq_JqOjvcE0H_NeWWkGZz4QtY2WUrnHYE7DEQ"
+        />
+      </head>
       <body className={`${jakarta.className} min-h-screen w-full overflow-x-hidden flex flex-col bg-white text-stone-900 antialiased selection:bg-[#9d5f2f]/20 selection:text-[#753e1f] font-sans`}>
         <Navbar />
         <main className="flex-1 w-full flex flex-col">{children}</main>
