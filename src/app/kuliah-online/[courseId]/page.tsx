@@ -68,6 +68,22 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[index];
 }
 
+// Persistent Device ID across browser reloads so LiveKit immediately kicks previous connection on rejoin
+function getPersistentDeviceId(): string {
+  if (typeof window === 'undefined') return 'srv';
+  try {
+    const key = 'hk_meet_device_id';
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = Math.random().toString(36).substring(2, 9);
+      localStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    return 'dev-' + Math.random().toString(36).substring(2, 7);
+  }
+}
+
 interface LiveKitRemotePeer {
   peerId: string;
   name: string;
@@ -111,18 +127,23 @@ function RemoteVideoTile({
     if (!p) return;
 
     const checkTracks = () => {
-      setIsCamOn(p.isCameraEnabled);
-      setIsMicOn(p.isMicrophoneEnabled);
+      let hasActiveVideo = false;
+      let hasActiveAudio = false;
 
       p.trackPublications.forEach((pub) => {
         if (pub.track) {
           if (pub.kind === Track.Kind.Video && videoEl) {
             pub.track.attach(videoEl);
+            if (!pub.isMuted) hasActiveVideo = true;
           } else if (pub.kind === Track.Kind.Audio && audioEl) {
             pub.track.attach(audioEl);
+            if (!pub.isMuted) hasActiveAudio = true;
           }
         }
       });
+
+      setIsCamOn(Boolean(p.isCameraEnabled && hasActiveVideo));
+      setIsMicOn(Boolean(p.isMicrophoneEnabled && hasActiveAudio));
     };
 
     checkTracks();
@@ -154,8 +175,14 @@ function RemoteVideoTile({
     };
 
     const handleTrackUnmuted = (pub: any) => {
-      if (pub.kind === Track.Kind.Video) setIsCamOn(true);
-      if (pub.kind === Track.Kind.Audio) setIsMicOn(true);
+      if (pub.kind === Track.Kind.Video) {
+        if (pub.track && videoEl) pub.track.attach(videoEl);
+        setIsCamOn(true);
+      }
+      if (pub.kind === Track.Kind.Audio) {
+        if (pub.track && audioEl) pub.track.attach(audioEl);
+        setIsMicOn(true);
+      }
     };
 
     p.on(ParticipantEvent.TrackSubscribed, handleTrackSubscribed);
@@ -349,14 +376,15 @@ function GoogleMeetRoomContent() {
       return;
     }
 
+    const deviceId = getPersistentDeviceId();
+
     // Check Lecturer Guest Access Token
     if (roleParam === 'dosen' && tokenParam) {
       const isValid = verifyLecturerToken(target.id, target.code, tokenParam);
       if (isValid) {
         setIsLecturer(true);
         setIsAuthorized(true);
-        const randId = Math.random().toString(36).substring(2, 7);
-        setMyPeerId(`dosen-${target.id}-${randId}`);
+        setMyPeerId(`dosen-${target.id}-${deviceId}`);
         return;
       }
     }
@@ -366,8 +394,7 @@ function GoogleMeetRoomContent() {
       setIsLecturer(false);
       setIsAuthorized(true);
       const userNim = currentAuth.nim ? currentAuth.nim.trim() : 'admin';
-      const randId = Math.random().toString(36).substring(2, 7);
-      setMyPeerId(`${userNim}-${randId}`);
+      setMyPeerId(`${userNim}-${deviceId}`);
     } else {
       setIsLecturer(false);
       setIsAuthorized(false);
@@ -432,17 +459,22 @@ function GoogleMeetRoomContent() {
 
         const syncParticipants = () => {
           if (!room || !active) return;
-          const remotes: LiveKitRemotePeer[] = [];
+          const remotesRaw: LiveKitRemotePeer[] = [];
           let activeRemoteScreen: { track: RemoteTrack; name: string } | null = null;
 
           room.remoteParticipants.forEach((p) => {
+            // Never include self
+            if (p.identity === myPeerId || p.identity === room?.localParticipant.identity) {
+              return;
+            }
+
             const role = p.identity.startsWith('dosen-')
               ? 'DOSEN'
               : p.identity.startsWith('admin')
               ? 'ADMIN'
               : 'MAHASISWA';
 
-            remotes.push({
+            remotesRaw.push({
               peerId: p.identity,
               name: p.name || p.identity,
               role,
@@ -461,6 +493,26 @@ function GoogleMeetRoomContent() {
               }
             });
           });
+
+          // Deduplicate by participant name (case-insensitive) to prevent ghost tiles during reconnects
+          const peerMap = new Map<string, LiveKitRemotePeer>();
+          for (const peer of remotesRaw) {
+            const key = peer.name.trim().toLowerCase();
+            const existing = peerMap.get(key);
+            if (!existing) {
+              peerMap.set(key, peer);
+            } else {
+              // Keep the one with active camera or newer join timestamp
+              const existingTime = existing.participant?.joinedAt?.getTime() || 0;
+              const currentTime = peer.participant?.joinedAt?.getTime() || 0;
+              if (peer.isCamOn && !existing.isCamOn) {
+                peerMap.set(key, peer);
+              } else if (currentTime >= existingTime) {
+                peerMap.set(key, peer);
+              }
+            }
+          }
+          const remotes = Array.from(peerMap.values());
 
           setRemotePeers(remotes);
           if (activeRemoteScreen) {
@@ -511,10 +563,21 @@ function GoogleMeetRoomContent() {
       }
     }
 
+    // Fast cleanup on tab close / browser refresh to evict session immediately
+    const handleBrowserExit = () => {
+      if (roomRef.current) {
+        roomRef.current.disconnect();
+      }
+    };
+    window.addEventListener('beforeunload', handleBrowserExit);
+    window.addEventListener('pagehide', handleBrowserExit);
+
     initLiveKit();
 
     return () => {
       active = false;
+      window.removeEventListener('beforeunload', handleBrowserExit);
+      window.removeEventListener('pagehide', handleBrowserExit);
       if (room) {
         room.disconnect();
       }
@@ -749,6 +812,13 @@ function GoogleMeetRoomContent() {
   // End Call / Exit
   const handleLeaveMeeting = () => {
     if (roomRef.current) {
+      try {
+        roomRef.current.localParticipant.trackPublications.forEach((pub) => {
+          pub.track?.stop();
+        });
+      } catch (e) {
+        // ignore
+      }
       roomRef.current.disconnect();
     }
     if (channelRef.current) {
