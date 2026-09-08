@@ -384,7 +384,7 @@ function GoogleMeetRoomContent() {
       if (isValid) {
         setIsLecturer(true);
         setIsAuthorized(true);
-        setMyPeerId(`dosen-${target.id}-${deviceId}`);
+        setMyPeerId(`dosen-${target.id}`);
         return;
       }
     }
@@ -394,7 +394,8 @@ function GoogleMeetRoomContent() {
       setIsLecturer(false);
       setIsAuthorized(true);
       const userNim = currentAuth.nim ? currentAuth.nim.trim() : 'admin';
-      setMyPeerId(`${userNim}-${deviceId}`);
+      const rolePrefix = currentAuth.role === 'ADMIN' ? 'admin' : 'mhs';
+      setMyPeerId(`${rolePrefix}-${userNim}`);
     } else {
       setIsLecturer(false);
       setIsAuthorized(false);
@@ -463,8 +464,14 @@ function GoogleMeetRoomContent() {
           let activeRemoteScreen: { track: RemoteTrack; name: string } | null = null;
 
           room.remoteParticipants.forEach((p) => {
-            // Never include self
-            if (p.identity === myPeerId || p.identity === room?.localParticipant.identity) {
+            // NEVER include self or any stale/ghost session belonging to the local user
+            const isSelf =
+              p.identity === myPeerId ||
+              p.identity === room?.localParticipant.identity ||
+              (p.name && myDisplayName && p.name.trim().toLowerCase() === myDisplayName.trim().toLowerCase()) ||
+              (auth?.nim && p.identity.includes(auth.nim.trim()));
+
+            if (isSelf) {
               return;
             }
 
