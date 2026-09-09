@@ -1122,8 +1122,7 @@ export default function PjDashboard() {
                             <th className="py-3 px-4 w-32">NIM</th>
                             <th className="py-3 px-4">Nama Mahasiswa</th>
                             <th className="py-3 px-3 text-center w-12">L/P</th>
-                            <th className="py-3 px-4 text-center w-96">Status Kehadiran (Pilih Satu)</th>
-                            <th className="py-3 px-4">Catatan Keterangan</th>
+                            <th className="py-3 px-4 text-center">Status Kehadiran</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-stone-100">
@@ -1216,21 +1215,6 @@ export default function PjDashboard() {
                                       Alfa
                                     </button>
                                   </div>
-                                </td>
-
-                                {/* Optional Note */}
-                                <td className="py-2.5 px-4">
-                                  <input
-                                    type="text"
-                                    placeholder="Catatan..."
-                                    defaultValue={rec?.notes || ''}
-                                    onBlur={(e) => {
-                                      if (e.target.value !== (rec?.notes || '')) {
-                                        handleStatusChange(st.nim, currentStatus, e.target.value);
-                                      }
-                                    }}
-                                    className="w-full px-2.5 py-1 text-xs rounded-lg border border-stone-200 focus:border-[#9d5f2f] focus:outline-none bg-transparent"
-                                  />
                                 </td>
                               </tr>
                             );

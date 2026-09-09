@@ -216,19 +216,17 @@ export default function AttendanceSheetPrint({
           <table className="w-full text-left border-collapse border border-stone-700 font-sans text-[10.5px] mb-3">
             <thead>
               <tr className="bg-stone-100 print:bg-stone-200/80 text-stone-900">
-                <th className="border border-stone-600 px-2 py-1 text-center w-8">No</th>
-                <th className="border border-stone-600 px-2 py-1 text-center w-28 font-mono">NIM</th>
+                <th className="border border-stone-600 px-2 py-1 text-center w-10">No</th>
+                <th className="border border-stone-600 px-2 py-1 text-center w-32 font-mono">NIM</th>
                 <th className="border border-stone-600 px-2.5 py-1">Nama Mahasiswa</th>
-                <th className="border border-stone-600 px-2 py-1 text-center w-10">L/P</th>
-                <th className="border border-stone-600 px-2 py-1 text-center w-24">Status</th>
-                <th className="border border-stone-600 px-2.5 py-1 text-left w-36">Keterangan</th>
+                <th className="border border-stone-600 px-2 py-1 text-center w-12">L/P</th>
+                <th className="border border-stone-600 px-2 py-1 text-center w-32">Status</th>
               </tr>
             </thead>
             <tbody>
               {sortedStudents.map((st, index) => {
                 const rec = sessionRecords.find((r) => r.studentNim.trim() === st.nim.trim());
                 const status = rec ? rec.status : 'ALPA';
-                const notes = rec?.notes || (status === 'HADIR' ? 'Hadir di kelas' : '-');
 
                 return (
                   <tr
@@ -245,9 +243,6 @@ export default function AttendanceSheetPrint({
                       {status === 'SAKIT' && <span className="text-amber-800">SAKIT</span>}
                       {status === 'DISPENSASI' && <span className="text-purple-800">DISPENSASI</span>}
                       {status === 'ALPA' && <span className="text-red-800">ALPA</span>}
-                    </td>
-                    <td className="border border-stone-400 px-2.5 py-0.5 text-stone-700 text-[10px] whitespace-nowrap">
-                      {notes}
                     </td>
                   </tr>
                 );

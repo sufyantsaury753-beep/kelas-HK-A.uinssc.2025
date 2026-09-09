@@ -1215,8 +1215,8 @@ export default function AdminDashboard() {
                                   <th className="py-2.5 px-3 text-center w-10">No</th>
                                   <th className="py-2.5 px-3 w-28">NIM</th>
                                   <th className="py-2.5 px-3">Nama Mahasiswa</th>
-                                  <th className="py-2.5 px-3 text-center w-64">Intervensi Status</th>
-                                  <th className="py-2.5 px-3 w-40">Keterangan</th>
+                                  <th className="py-2.5 px-3 text-center w-12">L/P</th>
+                                  <th className="py-2.5 px-3 text-center">Intervensi Status</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-stone-100 bg-white">
@@ -1241,6 +1241,9 @@ export default function AdminDashboard() {
                                             Oleh: {rec.verifiedBy}
                                           </span>
                                         )}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-center text-stone-500 font-semibold text-[11px]">
+                                        {st.gender}
                                       </td>
                                       <td className="py-2 px-3 text-center">
                                         <div className="inline-flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200">
@@ -1269,19 +1272,6 @@ export default function AdminDashboard() {
                                             );
                                           })}
                                         </div>
-                                      </td>
-                                      <td className="py-2 px-3">
-                                        <input
-                                          type="text"
-                                          placeholder="Catatan..."
-                                          defaultValue={rec?.notes || ''}
-                                          onBlur={(e) => {
-                                            if (e.target.value !== (rec?.notes || '')) {
-                                              handleStatusClick(st.nim, curStatus, e.target.value);
-                                            }
-                                          }}
-                                          className="w-full px-2 py-1 rounded-lg border border-stone-200 text-[11px] focus:ring-1 focus:ring-[#9d5f2f] focus:outline-none"
-                                        />
                                       </td>
                                     </tr>
                                   );

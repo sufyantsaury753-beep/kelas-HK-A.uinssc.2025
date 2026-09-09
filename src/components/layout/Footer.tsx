@@ -10,6 +10,11 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
+// Konfigurasi Nomor Helpdesk:
+// Untuk mengganti nomor helpdesk di masa depan, ubah nilai pada dua variabel di bawah ini:
+export const HELPDESK_PHONE_DISPLAY = '+62 831-8389-4058'; // Tampilan teks nomor telepon
+export const HELPDESK_PHONE_WA = '6283183894058';         // Format WhatsApp (angka saja tanpa simbol +, spasi, atau strip)
+
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
@@ -48,13 +53,13 @@ export default function Footer() {
           {/* Quick Action Badges (Helpdesk & Location) */}
           <div className="flex flex-wrap items-center gap-2.5">
             <a
-              href="https://wa.me/6281214305925?text=Halo%20Admin%20HK%20A%202025,%20saya%20ingin%20bertanya:"
+              href={`https://wa.me/${HELPDESK_PHONE_WA}?text=Halo%20Admin%20HK%20A%202025,%20saya%20ingin%20bertanya:`}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-white/[0.04] hover:bg-amber-500/10 hover:border-amber-500/30 border border-white/10 text-xs text-stone-200 hover:text-amber-200 transition-all group"
             >
               <Phone className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
-              <span>Helpdesk: <strong className="font-mono text-white font-medium">+62 812-1430-5925</strong></span>
+              <span>Helpdesk: <strong className="font-mono text-white font-medium">{HELPDESK_PHONE_DISPLAY}</strong></span>
               <ArrowUpRight className="w-3 h-3 text-stone-500 group-hover:text-amber-300 transition-colors" />
             </a>
 
@@ -90,7 +95,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/kuliah-online" className="hover:text-white transition-colors flex items-center group">
-                  <span className="group-hover:translate-x-0.5 transition-transform text-amber-300">Kuliah Online (Meet Virtual)</span>
+                  <span className="group-hover:translate-x-0.5 transition-transform">Kuliah Online (Meet Virtual)</span>
                 </Link>
               </li>
               <li>
