@@ -42,26 +42,42 @@ export function sortStudentsByNim(studentsList?: Student[] | null): Student[] {
   });
 }
 
-// Helpers to encode/decode enrolled students into course description for cloud persistence
-export function encodeCourseDescription(cleanDesc?: string, enrolledNims?: string[]): string {
-  const base = (cleanDesc || '').replace(/<!--ENROLLED:[\s\S]*?-->/g, '').trim();
+// Helpers to encode/decode enrolled students and meeting link into course description for cloud persistence
+export function encodeCourseDescription(cleanDesc?: string, enrolledNims?: string[], meetingUrl?: string): string {
+  let base = (cleanDesc || '')
+    .replace(/<!--ENROLLED:[\s\S]*?-->/g, '')
+    .replace(/<!--MEET:[\s\S]*?-->/g, '')
+    .trim();
   if (Array.isArray(enrolledNims) && enrolledNims.length > 0) {
-    return `${base}\n<!--ENROLLED:${enrolledNims.map((n) => n.trim()).join(',')}-->`;
+    base += `\n<!--ENROLLED:${enrolledNims.map((n) => n.trim()).join(',')}-->`;
+  }
+  if (meetingUrl && meetingUrl.trim()) {
+    base += `\n<!--MEET:${meetingUrl.trim()}-->`;
   }
   return base;
 }
 
-export function decodeCourseDescription(rawDesc?: string): { cleanDescription: string; enrolledStudentNims?: string[] } {
-  if (!rawDesc) return { cleanDescription: '', enrolledStudentNims: undefined };
-  const match = rawDesc.match(/<!--ENROLLED:(.*?)-->/);
-  const cleanDescription = rawDesc.replace(/<!--ENROLLED:[\s\S]*?-->/g, '').trim();
-  if (match && match[1]) {
-    const nims = match[1].split(',').map((n) => n.trim()).filter(Boolean);
+export function decodeCourseDescription(rawDesc?: string): { 
+  cleanDescription: string; 
+  enrolledStudentNims?: string[];
+  meetingUrl?: string;
+} {
+  if (!rawDesc) return { cleanDescription: '', enrolledStudentNims: undefined, meetingUrl: undefined };
+  const matchEnrolled = rawDesc.match(/<!--ENROLLED:(.*?)-->/);
+  const matchMeet = rawDesc.match(/<!--MEET:(.*?)-->/);
+  const cleanDescription = rawDesc
+    .replace(/<!--ENROLLED:[\s\S]*?-->/g, '')
+    .replace(/<!--MEET:[\s\S]*?-->/g, '')
+    .trim();
+  let enrolledStudentNims: string[] | undefined;
+  if (matchEnrolled && matchEnrolled[1]) {
+    const nims = matchEnrolled[1].split(',').map((n) => n.trim()).filter(Boolean);
     if (nims.length > 0) {
-      return { cleanDescription, enrolledStudentNims: nims };
+      enrolledStudentNims = nims;
     }
   }
-  return { cleanDescription, enrolledStudentNims: undefined };
+  const meetingUrl = matchMeet && matchMeet[1] ? matchMeet[1].trim() : undefined;
+  return { cleanDescription, enrolledStudentNims, meetingUrl };
 }
 
 
@@ -210,7 +226,7 @@ class Store {
       const { data: remoteCourses } = await supabase.from('courses').select('*');
       if (remoteCourses && remoteCourses.length > 0) {
         this.state.courses = remoteCourses.map((c: any) => {
-          const { cleanDescription, enrolledStudentNims: decodedEnrolled } = decodeCourseDescription(c.description);
+          const { cleanDescription, enrolledStudentNims: decodedEnrolled, meetingUrl: decodedMeet } = decodeCourseDescription(c.description);
           let enrolled = Array.isArray(c.enrolled_student_nims) && c.enrolled_student_nims.length > 0
             ? c.enrolled_student_nims
             : decodedEnrolled;
@@ -220,6 +236,7 @@ class Store {
           if (!enrolled && existing?.enrolledStudentNims && existing.enrolledStudentNims.length > 0) {
             enrolled = existing.enrolledStudentNims;
           }
+          const meetingUrl = decodedMeet || existing?.meetingUrl || undefined;
 
           return {
             id: c.id,
@@ -236,6 +253,7 @@ class Store {
             driveLink: c.drive_link || undefined,
             rpsLink: c.rps_link || undefined,
             enrolledStudentNims: enrolled,
+            meetingUrl: meetingUrl,
           };
         });
       }
@@ -537,7 +555,7 @@ class Store {
         time: course.time,
         room: course.room,
         pj_nims: course.pjNims || [],
-        description: encodeCourseDescription(course.description, course.enrolledStudentNims),
+        description: encodeCourseDescription(course.description, course.enrolledStudentNims, course.meetingUrl),
         drive_link: course.driveLink || '',
         rps_link: course.rpsLink || null,
       };
@@ -575,7 +593,7 @@ class Store {
 
       if (isSupabaseConfigured()) {
         const c = this.state.courses[idx];
-        const encodedDesc = encodeCourseDescription(c.description, c.enrolledStudentNims);
+        const encodedDesc = encodeCourseDescription(c.description, c.enrolledStudentNims, c.meetingUrl);
         const updatePayload: any = {
           code: c.code,
           name: c.name,
@@ -592,7 +610,12 @@ class Store {
         };
         supabase.from('courses').update(updatePayload).eq('id', id).then();
       }
+      this.notify();
     }
+  }
+
+  public setCourseMeetingUrl(courseId: string, meetingUrl?: string) {
+    this.updateCourse(courseId, { meetingUrl: meetingUrl ? meetingUrl.trim() || undefined : undefined });
   }
 
   public setCourseEnrolledStudents(courseId: string, studentNims: string[]) {
@@ -617,7 +640,8 @@ class Store {
         try {
           const encodedDesc = encodeCourseDescription(
             this.state.courses[idx].description,
-            cleanNims
+            cleanNims,
+            this.state.courses[idx].meetingUrl
           );
           supabase.from('courses').update({
             description: encodedDesc,

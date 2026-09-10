@@ -32,6 +32,9 @@ import {
   ArrowLeft,
   Video,
   Share2,
+  Copy,
+  MessageCircle,
+  Link2,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import {
@@ -46,7 +49,7 @@ import {
 import { AttendanceBadge } from '@/components/common/Badge';
 import AttendanceSheetPrint from '@/components/attendance/AttendanceSheetPrint';
 import { exportSingleSessionCsv, exportMatrixAttendanceCsv } from '@/lib/exportUtils';
-import { getLecturerInviteMessage } from '@/lib/meetUtils';
+import { getLecturerInviteMessage, getStudentInviteMessage, detectMeetingPlatform } from '@/lib/meetUtils';
 import confetti from 'canvas-confetti';
 
 const INDONESIAN_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -128,6 +131,10 @@ export default function PjDashboard() {
 
   // Search filter
   const [searchStudent, setSearchStudent] = useState('');
+
+  // Meeting URL configuration state
+  const [inputMeetingUrl, setInputMeetingUrl] = useState('');
+  const [copiedInviteType, setCopiedInviteType] = useState<'mhs' | 'dosen' | null>(null);
 
   // Real-time day & date information
   const today = useMemo(() => new Date(), []);
@@ -237,6 +244,32 @@ export default function PjDashboard() {
       (Array.isArray(c?.pjNims) && c.pjNims.some((pNim) => (pNim || '').trim() === cleanUserNim))
     );
   }, [courses, auth, isAdmin]);
+
+  // Sync input meeting link with active course
+  useEffect(() => {
+    if (activeCourse) {
+      setInputMeetingUrl(activeCourse.meetingUrl || '');
+    }
+  }, [activeCourse?.id, activeCourse?.meetingUrl]);
+
+  const handleSaveMeetingUrl = () => {
+    if (!activeCourse) return;
+    appStore.setCourseMeetingUrl(activeCourse.id, inputMeetingUrl);
+    setCourses(appStore.getCourses());
+    showToast(
+      inputMeetingUrl.trim()
+        ? 'Tautan kuliah online berhasil disimpan!'
+        : 'Tautan kuliah online dikosongkan (tombol mahasiswa menjadi abu-abu).'
+    );
+  };
+
+  const handleClearMeetingUrl = () => {
+    if (!activeCourse) return;
+    setInputMeetingUrl('');
+    appStore.setCourseMeetingUrl(activeCourse.id, '');
+    setCourses(appStore.getCourses());
+    showToast('Tautan kuliah online dikosongkan. Tombol mahasiswa kembali abu-abu.');
+  };
 
   const handleOpenEnrollModal = () => {
     if (!activeCourse) return;
@@ -770,6 +803,124 @@ export default function PjDashboard() {
                 </button>
               )}
             </div>
+          </div>
+
+          {/* KELOLA LINK KULIAH ONLINE (GOOGLE MEET / ZOOM) */}
+          <div className="bg-gradient-to-br from-amber-50/60 via-white to-stone-50 rounded-3xl p-5 sm:p-6 border border-amber-200/80 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-amber-200/60">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-amber-100 text-[#8c4e24] flex items-center justify-center shadow-2xs">
+                  <Video className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                    <span>Tautan Kuliah Online Resmi (Google Meet / Zoom)</span>
+                    {activeCourse.meetingUrl && activeCourse.meetingUrl.trim() ? (
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        🟢 {detectMeetingPlatform(activeCourse.meetingUrl).label} Aktif
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-300">
+                        ⚪ Belum Disematkan (Tombol Abu-abu)
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-[11px] text-stone-500 mt-0.5">
+                    Semua mahasiswa di beranda & jadwal akan melihat tombol <strong>{activeCourse.meetingUrl ? 'aktif hijau' : 'abu-abu (belum ada link)'}</strong> secara otomatis.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              <div className="relative flex-1">
+                <input
+                  type="url"
+                  value={inputMeetingUrl}
+                  onChange={(e) => setInputMeetingUrl(e.target.value)}
+                  placeholder="Tempel link Google Meet (https://meet.google.com/...) atau Zoom..."
+                  className="w-full px-3.5 py-2.5 text-xs font-mono rounded-xl border border-stone-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#8c4e24]/30 focus:border-[#8c4e24] text-stone-800"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveMeetingUrl}
+                className="px-4 py-2.5 rounded-xl bg-[#8c4e24] hover:bg-[#723f1c] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center space-x-1.5 flex-shrink-0 active:scale-95"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Simpan Link</span>
+              </button>
+
+              {activeCourse.meetingUrl && (
+                <>
+                  <a
+                    href={activeCourse.meetingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center justify-center space-x-1.5 flex-shrink-0 shadow-xs"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Uji Buka Meet</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={handleClearMeetingUrl}
+                    className="px-3 py-2.5 rounded-xl bg-stone-100 hover:bg-rose-50 hover:text-rose-700 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors flex items-center justify-center space-x-1 flex-shrink-0"
+                    title="Hapus tautan dan kembalikan tombol mahasiswa ke abu-abu"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Kosongkan</span>
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Quick Share to WhatsApp Buttons */}
+            {activeCourse.meetingUrl && activeCourse.meetingUrl.trim() && (
+              <div className="pt-2 flex flex-wrap items-center gap-2 text-xs">
+                <span className="text-[11px] font-semibold text-stone-500 mr-1">Bagikan ke WhatsApp:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      const msg = getStudentInviteMessage(activeCourse, window.location.origin);
+                      navigator.clipboard.writeText(msg);
+                      setCopiedInviteType('mhs');
+                      setTimeout(() => setCopiedInviteType(null), 3000);
+                      showToast('Pesan pengumuman grup mahasiswa berhasil disalin!');
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 hover:bg-stone-50 text-stone-700 font-medium text-xs flex items-center space-x-1.5 transition-colors shadow-2xs"
+                >
+                  {copiedInviteType === 'mhs' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-700 font-bold">Pesan Tersalin!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-stone-500" />
+                      <span>Salin Pengumuman Mahasiswa</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      const msg = getStudentInviteMessage(activeCourse, window.location.origin);
+                      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+                      window.open(waUrl, '_blank');
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center space-x-1.5 transition-colors"
+                >
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Buka WhatsApp Grup</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* TAB NAVIGATION: ABSENSI HARI INI vs ARSIP PERTEMUAN vs BERKAS MATERI */}

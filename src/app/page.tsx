@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, Announcement, Student, CourseMaterial, AuthSession } from '@/lib/types';
+import { detectMeetingPlatform } from '@/lib/meetUtils';
 
 // Lightweight animated counter component (pure JS requestAnimationFrame, 0 dependencies)
 function AnimatedCounter({
@@ -499,13 +500,28 @@ export default function HomePage() {
                       <BookOpen className="w-3.5 h-3.5" />
                       <span>Materi / Tugas</span>
                     </button>
-                    <Link
-                      href={`/kuliah-online/${c.id}`}
-                      className="py-2 px-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-extrabold text-xs flex items-center justify-center space-x-1 transition-all shadow-sm active:scale-98 text-center"
-                    >
-                      <Video className="w-3.5 h-3.5 text-stone-900" />
-                      <span>Kuliah Meet</span>
-                    </Link>
+                    {c.meetingUrl && c.meetingUrl.trim() ? (
+                      <a
+                        href={c.meetingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2 px-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs flex items-center justify-center space-x-1 transition-all shadow-sm active:scale-98 text-center ring-1 ring-emerald-300/40 animate-pulse"
+                        title={`Buka ${detectMeetingPlatform(c.meetingUrl).label}`}
+                      >
+                        <Video className="w-3.5 h-3.5 text-white" />
+                        <span className="truncate">{detectMeetingPlatform(c.meetingUrl).actionText}</span>
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="py-2 px-2 rounded-xl bg-white/10 border border-white/10 text-stone-300/60 font-semibold text-xs flex items-center justify-center space-x-1 cursor-not-allowed opacity-75"
+                        title="Tautan Google Meet / Zoom belum disematkan oleh PJ atau Dosen"
+                      >
+                        <Video className="w-3.5 h-3.5 text-stone-400" />
+                        <span>Belum Ada Link</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

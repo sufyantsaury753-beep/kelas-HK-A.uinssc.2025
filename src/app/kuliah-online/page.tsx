@@ -29,13 +29,15 @@ import {
   BookMarked,
   Info,
   ExternalLink,
+  Link2,
+  Trash2,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, AuthSession } from '@/lib/types';
 import {
   getLecturerInviteMessage,
   getStudentInviteMessage,
-  getCourseRoomName,
+  detectMeetingPlatform,
 } from '@/lib/meetUtils';
 
 const INDONESIAN_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -65,16 +67,44 @@ export default function KuliahOnlineIndexPage() {
   const [copiedType, setCopiedType] = useState<'dosen' | 'mhs' | null>(null);
   const [baseUrl, setBaseUrl] = useState('');
 
+  // Quick edit modal state for PJ / Admin
+  const [quickEditCourse, setQuickEditCourse] = useState<Course | null>(null);
+  const [quickMeetingUrl, setQuickMeetingUrl] = useState('');
+  const [quickNotice, setQuickNotice] = useState<string | null>(null);
+
   const today = new Date();
   const todayDayName = INDONESIAN_DAYS[today.getDay()];
 
   useEffect(() => {
-    setCourses(appStore.getCourses());
-    setAuth(appStore.getAuth());
+    const update = () => {
+      setCourses(appStore.getCourses());
+      setAuth(appStore.getAuth());
+    };
+    update();
     if (typeof window !== 'undefined') {
       setBaseUrl(window.location.origin);
     }
+    const unsub = appStore.subscribe(update);
+    return () => unsub();
   }, []);
+
+  const isUserAdmin = auth?.role === 'ADMIN';
+  const isUserPjForCourse = (crs: Course) => {
+    if (isUserAdmin) return true;
+    const userNim = (auth?.nim || '').trim();
+    return Array.isArray(crs.pjNims) && crs.pjNims.some((pNim) => pNim.trim() === userNim);
+  };
+
+  const handleSaveQuickMeetingUrl = () => {
+    if (!quickEditCourse) return;
+    appStore.setCourseMeetingUrl(quickEditCourse.id, quickMeetingUrl);
+    setCourses(appStore.getCourses());
+    setQuickNotice(quickMeetingUrl.trim() ? 'Tautan berhasil disimpan!' : 'Tautan berhasil dikosongkan!');
+    setTimeout(() => {
+      setQuickEditCourse(null);
+      setQuickNotice(null);
+    }, 900);
+  };
 
   const filteredCourses = courses.filter(
     (c) =>
@@ -243,26 +273,71 @@ export default function KuliahOnlineIndexPage() {
                     </span>
                   </div>
                 </div>
+
+                {/* Status Kuliah Online */}
+                <div className="flex items-center justify-between text-[11px] px-3 py-2 rounded-xl mb-3 border bg-stone-50 border-stone-200">
+                  <span className="text-stone-500 font-medium">Status Kuliah:</span>
+                  {c.meetingUrl && c.meetingUrl.trim() ? (
+                    <span className="font-bold text-emerald-700 flex items-center space-x-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>{detectMeetingPlatform(c.meetingUrl).label} (Aktif)</span>
+                    </span>
+                  ) : (
+                    <span className="font-medium text-stone-400 italic">
+                      ⚪ Belum Ada Link (Abu-abu)
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Action Buttons */}
               <div className="space-y-2 pt-2 border-t border-stone-100">
-                <Link
-                  href={`/kuliah-online/${c.id}`}
-                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#8c4e24] to-[#723f1c] hover:brightness-110 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-md shadow-[#8c4e24]/15 transition-all active:scale-95"
-                >
-                  <Video className="w-4 h-4 text-amber-300" />
-                  <span>Masuk Ruang Kuliah</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+                {c.meetingUrl && c.meetingUrl.trim() ? (
+                  <a
+                    href={c.meetingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:brightness-110 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-md shadow-emerald-900/20 transition-all active:scale-95 animate-pulse text-center"
+                  >
+                    <Video className="w-4 h-4 text-white" />
+                    <span>{detectMeetingPlatform(c.meetingUrl).actionText}</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full py-2.5 px-4 rounded-xl bg-stone-100 border border-stone-200 text-stone-400 font-bold text-xs flex items-center justify-center space-x-2 cursor-not-allowed opacity-80"
+                    title="Tautan perkuliahan belum disematkan oleh PJ atau Dosen"
+                  >
+                    <Video className="w-4 h-4 text-stone-400" />
+                    <span>Link Belum Disematkan (Abu-abu)</span>
+                  </button>
+                )}
+
+                {/* Quick Edit Button for PJ or Admin */}
+                {isUserPjForCourse(c) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuickEditCourse(c);
+                      setQuickMeetingUrl(c.meetingUrl || '');
+                      setQuickNotice(null);
+                    }}
+                    className="w-full py-1.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-[#8c4e24] border border-amber-300 font-bold text-[11px] flex items-center justify-center space-x-1.5 transition-colors"
+                  >
+                    <Link2 className="w-3.5 h-3.5 text-[#8c4e24]" />
+                    <span>{c.meetingUrl ? 'Ubah Link Meet (PJ/Admin)' : 'Sematkan Link Meet (PJ/Admin)'}</span>
+                  </button>
+                )}
 
                 <button
                   type="button"
                   onClick={() => setSelectedShareCourse(c)}
-                  className="w-full py-2 px-3 rounded-xl bg-amber-50/80 hover:bg-amber-100 text-[#8c4e24] border border-amber-200 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-colors"
+                  className="w-full py-2 px-3 rounded-xl bg-stone-50 hover:bg-stone-100 text-stone-700 border border-stone-200 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-colors"
                 >
-                  <Share2 className="w-3.5 h-3.5 text-[#8c4e24]" />
-                  <span>Bagikan Link Dosen / Mahasiswa</span>
+                  <Share2 className="w-3.5 h-3.5 text-stone-500" />
+                  <span>Bagikan Link WA</span>
                 </button>
               </div>
             </div>
@@ -391,6 +466,92 @@ export default function KuliahOnlineIndexPage() {
               >
                 Tutup
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Edit Modal for PJ / Admin */}
+      {quickEditCourse && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 border border-stone-200 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-[#8c4e24] flex items-center justify-center">
+                  <Video className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-900 text-sm">Sematkan Link Kuliah Online</h3>
+                  <p className="text-[10px] text-stone-500">{quickEditCourse.name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQuickEditCourse(null)}
+                className="text-stone-400 hover:text-stone-700 p-1 text-base font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {quickNotice && (
+              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center space-x-2">
+                <Check className="w-4 h-4 text-emerald-600" />
+                <span>{quickNotice}</span>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Tautan Google Meet / Zoom
+                </label>
+                <input
+                  type="url"
+                  value={quickMeetingUrl}
+                  onChange={(e) => setQuickMeetingUrl(e.target.value)}
+                  placeholder="https://meet.google.com/... atau https://zoom.us/..."
+                  className="w-full px-3.5 py-2 text-xs font-mono rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#8c4e24]/30 focus:border-[#8c4e24]"
+                />
+                <p className="text-[10px] text-stone-400 mt-1">
+                  Kosongkan jika perkuliahan selesai agar tombol mahasiswa kembali abu-abu.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setQuickEditCourse(null)}
+                  className="px-3.5 py-2 rounded-xl border border-stone-300 hover:bg-stone-50 text-xs font-semibold text-stone-600"
+                >
+                  Batal
+                </button>
+                {quickEditCourse.meetingUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuickMeetingUrl('');
+                      appStore.setCourseMeetingUrl(quickEditCourse.id, '');
+                      setCourses(appStore.getCourses());
+                      setQuickNotice('Tautan berhasil dikosongkan!');
+                      setTimeout(() => {
+                        setQuickEditCourse(null);
+                        setQuickNotice(null);
+                      }, 900);
+                    }}
+                    className="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold"
+                  >
+                    Kosongkan
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleSaveQuickMeetingUrl}
+                  className="px-4 py-2 rounded-xl bg-[#8c4e24] hover:bg-[#723f1c] text-white text-xs font-bold shadow-xs active:scale-95"
+                >
+                  Simpan Tautan
+                </button>
+              </div>
             </div>
           </div>
         </div>

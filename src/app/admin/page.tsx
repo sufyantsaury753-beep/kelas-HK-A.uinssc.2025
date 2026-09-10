@@ -33,6 +33,8 @@ import {
   Save,
   Check,
   ArrowLeft,
+  Video,
+  ExternalLink,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import {
@@ -48,6 +50,7 @@ import {
 import { parsePdfRoster, parseCsvRoster } from '@/lib/pdfParser';
 import AttendanceSheetPrint from '@/components/attendance/AttendanceSheetPrint';
 import { exportSingleSessionCsv } from '@/lib/exportUtils';
+import { detectMeetingPlatform } from '@/lib/meetUtils';
 import confetti from 'canvas-confetti';
 
 export default function AdminDashboard() {
@@ -154,6 +157,7 @@ export default function AdminDashboard() {
   const [editCourseSks, setEditCourseSks] = useState<number>(2);
   const [editCourseSemester, setEditCourseSemester] = useState<number>(3);
   const [editCourseDrive, setEditCourseDrive] = useState('');
+  const [editCourseMeetingUrl, setEditCourseMeetingUrl] = useState('');
   const [courseEditNotice, setCourseEditNotice] = useState<string | null>(null);
 
   // Add Course Modal State
@@ -167,6 +171,7 @@ export default function AdminDashboard() {
   const [newCourseSks, setNewCourseSks] = useState<number>(2);
   const [newCourseSemester, setNewCourseSemester] = useState<number>(4);
   const [newCourseDrive, setNewCourseDrive] = useState('');
+  const [newCourseMeetingUrl, setNewCourseMeetingUrl] = useState('');
 
   const handleOpenEditCourse = (course: Course) => {
     setEditingCourse(course);
@@ -179,6 +184,7 @@ export default function AdminDashboard() {
     setEditCourseSks(course.sks !== undefined && course.sks !== null ? course.sks : 2);
     setEditCourseSemester(course.semester || 3);
     setEditCourseDrive(course.driveLink || '');
+    setEditCourseMeetingUrl(course.meetingUrl || '');
     setCourseEditNotice(null);
   };
 
@@ -196,6 +202,7 @@ export default function AdminDashboard() {
       sks: Number(editCourseSks),
       semester: Number(editCourseSemester) || 3,
       driveLink: editCourseDrive.trim(),
+      meetingUrl: editCourseMeetingUrl.trim() || undefined,
     });
 
     setCourseEditNotice(`Data mata kuliah "${editCourseName}" berhasil disimpan!`);
@@ -237,6 +244,7 @@ export default function AdminDashboard() {
       pjNims: [],
       description: `Mata kuliah ${newCourseName.trim()} Semester ${newCourseSemester || 4}`,
       driveLink: newCourseDrive.trim() || '',
+      meetingUrl: newCourseMeetingUrl.trim() || undefined,
       enrolledStudentNims: students.map((s) => s.nim),
     };
 
@@ -247,6 +255,7 @@ export default function AdminDashboard() {
       setNewCourseName('');
       setNewCourseDosen('');
       setNewCourseDrive('');
+      setNewCourseMeetingUrl('');
       try {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
       } catch {}
@@ -627,6 +636,25 @@ export default function AdminDashboard() {
                       <span className="text-stone-300">•</span>
                       <MapPin className="w-3.5 h-3.5 text-[#9d5f2f] flex-shrink-0" />
                       <span className="font-semibold line-clamp-1">{crs.room}</span>
+                    </div>
+
+                    {/* Kuliah Online / Meet Status */}
+                    <div className="flex items-center justify-between text-[11px] p-2 rounded-xl bg-stone-50 border border-stone-200 mb-3">
+                      <span className="text-stone-500 font-medium">Link Kuliah:</span>
+                      {crs.meetingUrl && crs.meetingUrl.trim() ? (
+                        <a
+                          href={crs.meetingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-emerald-700 font-bold hover:underline flex items-center gap-1"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          <span>{detectMeetingPlatform(crs.meetingUrl).label} (Aktif)</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      ) : (
+                        <span className="text-stone-400 font-semibold italic">⚪ Belum ada link (Abu-abu)</span>
+                      )}
                     </div>
 
                     {/* Assigned PJ List */}
@@ -2127,6 +2155,22 @@ export default function AdminDashboard() {
                 />
               </div>
 
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Tautan Kuliah Online Resmi (Google Meet / Zoom)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://meet.google.com/... atau https://zoom.us/..."
+                  value={editCourseMeetingUrl}
+                  onChange={(e) => setEditCourseMeetingUrl(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] font-mono"
+                />
+                <p className="text-[10px] text-stone-400 mt-0.5">
+                  Jika dikosongkan, tombol "Kuliah Meet" di beranda mahasiswa akan otomatis berwarna abu-abu.
+                </p>
+              </div>
+
               <div className="pt-3 flex items-center space-x-2 border-t border-stone-100">
                 <button
                   type="button"
@@ -2293,6 +2337,19 @@ export default function AdminDashboard() {
                   value={newCourseDrive}
                   onChange={(e) => setNewCourseDrive(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Tautan Kuliah Online Resmi (Google Meet / Zoom)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://meet.google.com/... atau https://zoom.us/..."
+                  value={newCourseMeetingUrl}
+                  onChange={(e) => setNewCourseMeetingUrl(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:ring-2 focus:ring-[#9d5f2f] font-mono"
                 />
               </div>
 
