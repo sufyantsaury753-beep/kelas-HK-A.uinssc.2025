@@ -18,8 +18,6 @@ import {
   FileCode,
   Folder,
   FolderOpen,
-  ChevronRight,
-  ChevronDown,
   Calendar,
   Users,
   Share2,
@@ -33,11 +31,66 @@ import {
   FileCheck,
   CheckCircle2,
   Info,
+  Layers,
+  Eye,
+  ScrollText,
+  Scale,
+  Briefcase,
+  PieChart,
+  Globe,
+  HeartHandshake,
+  Gavel,
+  MapPin,
+  BookMarked,
+  ShieldAlert,
+  Landmark,
+  Languages,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, AuthSession, LibraryItem, LibraryCategory } from '@/lib/types';
 
-// Category metadata for styling and icons
+// Map academic icons for courses
+function getCourseIcon(courseId: string, courseName: string) {
+  const lower = (courseId + ' ' + courseName).toLowerCase();
+  if (lower.includes('tafsir')) return BookOpen;
+  if (lower.includes('tarikh') || lower.includes('tasyri')) return ScrollText;
+  if (lower.includes('qowaid') || lower.includes('fiqhiyah')) return Scale;
+  if (lower.includes('bisnis')) return Briefcase;
+  if (lower.includes('kewarisan') || lower.includes('waris')) return PieChart;
+  if (lower.includes('internasional')) return Globe;
+  if (lower.includes('perkawinan')) return HeartHandshake;
+  if (lower.includes('ibadah')) return Sparkles;
+  if (lower.includes('perdata')) return Gavel;
+  if (lower.includes('agraria')) return MapPin;
+  if (lower.includes('hadits')) return BookMarked;
+  if (lower.includes('pidana')) return ShieldAlert;
+  if (lower.includes('acara') || lower.includes('sidang') || lower.includes('peradilan')) return Gavel;
+  if (lower.includes('skripsi') || lower.includes('seminar') || lower.includes('komprehensif')) return GraduationCap;
+  if (lower.includes('zakat') || lower.includes('wakaf')) return Landmark;
+  if (lower.includes('bahasa') || lower.includes('arab') || lower.includes('inggris')) return Languages;
+  return BookOpen;
+}
+
+// Helper to convert Google Drive / Docs view links to direct download links
+function getDownloadUrl(url: string): string {
+  if (!url) return '';
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveMatch && driveMatch[1]) {
+    return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+  }
+  const docsMatch = url.match(/docs\.google\.com\/(document|presentation|spreadsheets)\/d\/([a-zA-Z0-9_-]+)/);
+  if (docsMatch && docsMatch[1] && docsMatch[2]) {
+    if (docsMatch[1] === 'document') {
+      return `https://docs.google.com/document/d/${docsMatch[2]}/export?format=pdf`;
+    }
+    if (docsMatch[1] === 'presentation') {
+      return `https://docs.google.com/presentation/d/${docsMatch[2]}/export/pdf`;
+    }
+  }
+  return url;
+}
+
+// Category metadata matching the website theme
 const CATEGORY_CONFIG: Record<
   LibraryCategory,
   { label: string; icon: any; badgeBg: string; border: string; text: string }
@@ -45,51 +98,51 @@ const CATEGORY_CONFIG: Record<
   MAKALAH: {
     label: 'Makalah',
     icon: FileText,
-    badgeBg: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300',
-    border: 'border-emerald-200 dark:border-emerald-800',
-    text: 'text-emerald-700 dark:text-emerald-300',
+    badgeBg: 'bg-amber-100/70 text-amber-900',
+    border: 'border-amber-300',
+    text: 'text-amber-900',
   },
   ARTIKEL: {
     label: 'Artikel Ilmiah',
     icon: FileCode,
-    badgeBg: 'bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300',
-    border: 'border-blue-200 dark:border-blue-800',
-    text: 'text-blue-700 dark:text-blue-300',
+    badgeBg: 'bg-stone-100 text-stone-800',
+    border: 'border-stone-300',
+    text: 'text-stone-800',
   },
   PPT: {
-    label: 'Slide Presentasi (PPT)',
+    label: 'Slide PPT',
     icon: Presentation,
-    badgeBg: 'bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-300',
-    border: 'border-amber-200 dark:border-amber-800',
-    text: 'text-amber-700 dark:text-amber-300',
+    badgeBg: 'bg-amber-200/70 text-[#723f1c]',
+    border: 'border-amber-400',
+    text: 'text-[#723f1c]',
   },
   RESUME: {
-    label: 'Resume & Peta Konsep',
+    label: 'Resume Materi',
     icon: FileCheck,
-    badgeBg: 'bg-purple-50 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300',
-    border: 'border-purple-200 dark:border-purple-800',
-    text: 'text-purple-700 dark:text-purple-300',
+    badgeBg: 'bg-orange-100/70 text-orange-900',
+    border: 'border-orange-300',
+    text: 'text-orange-900',
   },
   TUGAS: {
     label: 'Tugas Proyek',
     icon: CheckCircle2,
-    badgeBg: 'bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300',
-    border: 'border-rose-200 dark:border-rose-800',
-    text: 'text-rose-700 dark:text-rose-300',
+    badgeBg: 'bg-stone-200/70 text-stone-800',
+    border: 'border-stone-300',
+    text: 'text-stone-800',
   },
   MODUL: {
     label: 'Modul & Buku',
     icon: BookOpen,
-    badgeBg: 'bg-teal-50 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300',
-    border: 'border-teal-200 dark:border-teal-800',
-    text: 'text-teal-700 dark:text-teal-300',
+    badgeBg: 'bg-amber-50 text-[#8c4e24]',
+    border: 'border-amber-300',
+    text: 'text-[#8c4e24]',
   },
   RPS: {
     label: 'RPS & Silabus',
     icon: Info,
-    badgeBg: 'bg-indigo-50 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300',
-    border: 'border-indigo-200 dark:border-indigo-800',
-    text: 'text-indigo-700 dark:text-indigo-300',
+    badgeBg: 'bg-stone-100 text-stone-700',
+    border: 'border-stone-300',
+    text: 'text-stone-700',
   },
 };
 
@@ -101,6 +154,7 @@ export default function LibraryPage() {
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const [activeSemester, setActiveSemester] = useState<number>(3);
   const [selectedSemester, setSelectedSemester] = useState<number>(3);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -137,21 +191,17 @@ export default function LibraryPage() {
     return () => unsub();
   }, []);
 
-  // Update default selected course when uploadSemester changes
-  useEffect(() => {
-    const semCourses = courses.filter((c) => Number(c.semester) === Number(uploadSemester));
-    if (semCourses.length > 0) {
-      setUploadCourseId(semCourses[0].id);
-    } else {
-      setUploadCourseId('custom');
-    }
-  }, [uploadSemester, courses]);
+  // When changing semester, reset selected course to ALL
+  const handleSelectSemester = (sem: number) => {
+    setSelectedSemester(sem);
+    setSelectedCourseId('ALL');
+  };
 
-  // Handle open upload modal with prefilled data
+  // Pre-fill course when opening upload modal
   const handleOpenUpload = (targetCourseId?: string, targetSem?: number) => {
     const sem = targetSem || selectedSemester;
     setUploadSemester(sem);
-    if (targetCourseId) {
+    if (targetCourseId && targetCourseId !== 'ALL') {
       setUploadCourseId(targetCourseId);
     } else {
       const semCourses = courses.filter((c) => Number(c.semester) === Number(sem));
@@ -228,14 +278,16 @@ export default function LibraryPage() {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  // Filter courses & library items for the current view
+  // Filter courses for the selected semester
   const semesterCourses = useMemo(() => {
     return courses.filter((c) => Number(c.semester) === Number(selectedSemester));
   }, [courses, selectedSemester]);
 
+  // Filter items based on Semester, Course, Category, and Search Query
   const filteredItems = useMemo(() => {
     return libraryItems.filter((item) => {
       const matchSem = Number(item.semester) === Number(selectedSemester);
+      const matchCourse = selectedCourseId === 'ALL' || item.courseId === selectedCourseId;
       const matchCat = selectedCategory === 'ALL' || item.category === selectedCategory;
       const q = searchQuery.toLowerCase().trim();
       const matchQuery =
@@ -244,15 +296,19 @@ export default function LibraryPage() {
         item.authors.toLowerCase().includes(q) ||
         (item.courseName || '').toLowerCase().includes(q) ||
         (item.description || '').toLowerCase().includes(q);
-      return matchSem && matchCat && matchQuery;
+      return matchSem && matchCourse && matchCat && matchQuery;
     });
-  }, [libraryItems, selectedSemester, selectedCategory, searchQuery]);
+  }, [libraryItems, selectedSemester, selectedCourseId, selectedCategory, searchQuery]);
 
   // Statistics
   const totalItemsAll = libraryItems.length;
-  const totalMakalah = libraryItems.filter((i) => i.category === 'MAKALAH').length;
-  const totalArtikelPpt = libraryItems.filter((i) => i.category === 'ARTIKEL' || i.category === 'PPT').length;
   const currentSemItemsCount = libraryItems.filter((i) => Number(i.semester) === Number(selectedSemester)).length;
+
+  // Selected Course details
+  const activeSelectedCourse = useMemo(() => {
+    if (selectedCourseId === 'ALL') return null;
+    return courses.find((c) => c.id === selectedCourseId) || null;
+  }, [courses, selectedCourseId]);
 
   // If user is not logged in, show protected screen with friendly login invitation
   if (!auth) {
@@ -298,7 +354,7 @@ export default function LibraryPage() {
 
   return (
     <div className="min-h-screen bg-[#faf8f5] py-6 sm:py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-7">
         {/* BREADCRUMB & HERO HEADER */}
         <div className="space-y-4">
           <div className="flex items-center space-x-2 text-xs text-stone-500">
@@ -308,7 +364,7 @@ export default function LibraryPage() {
             </Link>
             <span>/</span>
             <Link href="/mahasiswa" className="hover:text-[#8c4e24] transition-colors">
-              Portal Presensi
+              Portal Mahasiswa
             </Link>
             <span>/</span>
             <span className="font-semibold text-stone-800">E-Library HK A 2025</span>
@@ -318,8 +374,8 @@ export default function LibraryPage() {
             {/* Background Glow */}
             <div className="absolute top-0 right-0 w-96 h-96 bg-radial from-amber-500/20 to-transparent pointer-events-none blur-3xl" />
 
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-2.5 max-w-2xl">
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+              <div className="space-y-2 max-w-2xl">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/30 flex items-center space-x-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -330,15 +386,15 @@ export default function LibraryPage() {
                   </span>
                 </div>
 
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-                  Perpustakaan & Repositori Karya HK A 2025
+                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  Perpustakaan & Repositori Tugas HK A 2025
                 </h1>
 
                 <p className="text-xs sm:text-sm text-stone-300 leading-relaxed">
-                  Pusat arsip tugas, makalah kelompok, artikel ilmiah, resume, dan materi presentasi mahasiswa Hukum Keluarga A 2025 dari awal perkuliahan hingga skripsi.
+                  Arsip tugas, makalah kelompok, artikel ilmiah, resume, dan presentasi perkuliahan kelas Hukum Keluarga A.
                 </p>
 
-                <div className="flex items-center space-x-2 text-xs text-amber-200/90 pt-1">
+                <div className="flex items-center space-x-2 text-xs text-amber-200/90 pt-0.5">
                   <User className="w-3.5 h-3.5" />
                   <span>
                     Masuk sebagai: <strong>{auth.name}</strong> ({auth.nim || auth.role})
@@ -346,11 +402,11 @@ export default function LibraryPage() {
                 </div>
               </div>
 
-              <div className="flex-shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => handleOpenUpload()}
-                  className="px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-extrabold text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-lg shadow-amber-950/40 transition-all active:scale-95"
+                  className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-extrabold text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-lg shadow-amber-950/40 transition-all active:scale-95"
                 >
                   <Plus className="w-4 h-4 stroke-[3]" />
                   <span>Unggah Karya / Tugas Baru</span>
@@ -360,39 +416,15 @@ export default function LibraryPage() {
           </div>
         </div>
 
-        {/* SUMMARY STATS BAR */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-2xs text-center space-y-1">
-            <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">Total Karya</span>
-            <span className="text-2xl font-black text-stone-900">{totalItemsAll}</span>
-            <span className="text-[10px] text-stone-400 block">Sem 1–8 Tersimpan</span>
-          </div>
-          <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-2xs text-center space-y-1">
-            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Makalah Kelompok</span>
-            <span className="text-2xl font-black text-emerald-700">{totalMakalah}</span>
-            <span className="text-[10px] text-stone-400 block">Kajian Fiqih & Hukum</span>
-          </div>
-          <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-2xs text-center space-y-1">
-            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">Artikel & Slide PPT</span>
-            <span className="text-2xl font-black text-blue-700">{totalArtikelPpt}</span>
-            <span className="text-[10px] text-stone-400 block">Bahan Tayang Presentasi</span>
-          </div>
-          <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-2xs text-center space-y-1">
-            <span className="text-[10px] font-bold text-[#8c4e24] uppercase tracking-wider block">Semester {selectedSemester}</span>
-            <span className="text-2xl font-black text-[#8c4e24]">{currentSemItemsCount} Berkas</span>
-            <span className="text-[10px] text-stone-400 block">Dalam Tampilan Aktif</span>
-          </div>
-        </div>
-
         {/* SEMESTER TAB NAVIGATION (1 to 8) */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-bold uppercase tracking-wider text-stone-600 flex items-center space-x-1.5">
               <GraduationCap className="w-4 h-4 text-[#8c4e24]" />
-              <span>Pilih Semester (1 s.d. 8)</span>
+              <span>Pilih Semester Perkuliahan</span>
             </h2>
             <span className="text-xs text-stone-500 font-medium">
-              Semester Saat Ini: <strong className="text-[#8c4e24]">Semester {activeSemester}</strong>
+              Semester Aktif Saat Ini: <strong className="text-[#8c4e24]">Semester {activeSemester}</strong>
             </span>
           </div>
 
@@ -406,10 +438,10 @@ export default function LibraryPage() {
                 <button
                   key={sem}
                   type="button"
-                  onClick={() => setSelectedSemester(sem)}
-                  className={`py-3 px-2 rounded-2xl text-center transition-all relative border ${
+                  onClick={() => handleSelectSemester(sem)}
+                  className={`py-2.5 px-2 rounded-2xl text-center transition-all relative border ${
                     isSelected
-                      ? 'bg-gradient-to-b from-[#8c4e24] to-[#723f1c] text-white border-[#723f1c] shadow-md shadow-[#8c4e24]/25 scale-102'
+                      ? 'bg-gradient-to-b from-[#8c4e24] to-[#723f1c] text-white border-[#723f1c] shadow-md shadow-[#8c4e24]/25 scale-102 font-bold'
                       : 'bg-white hover:bg-amber-50/70 text-stone-700 border-stone-200/90 hover:border-amber-300'
                   }`}
                 >
@@ -438,6 +470,118 @@ export default function LibraryPage() {
           </div>
         </div>
 
+        {/* TAMPILAN MATA KULIAH BULAT MEWAH (SESUAI BERANDA) */}
+        <section className="bg-white rounded-3xl p-5 sm:p-7 border border-stone-200/80 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-stone-100">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-50 text-[#8c4e24] border border-amber-200 flex items-center justify-center">
+                <BookOpen className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-stone-900">
+                  Mata Kuliah Semester {selectedSemester}
+                </h3>
+                <p className="text-[11px] text-stone-500">
+                  Pilih lingkaran mata kuliah di bawah untuk menyaring tugas & karya:
+                </p>
+              </div>
+            </div>
+
+            <div className="text-xs text-stone-500">
+              Menampilkan:{' '}
+              <strong className="text-[#8c4e24]">
+                {selectedCourseId === 'ALL'
+                  ? `Semua Mata Kuliah (${semesterCourses.length} MK)`
+                  : activeSelectedCourse?.name || 'Mata Kuliah'}
+              </strong>
+            </div>
+          </div>
+
+          {/* CIRCULAR BUBBLE GRID (Mobile: 3/4 per baris, Desktop: 6/7 per baris) */}
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-y-6 gap-x-2 sm:gap-4 py-2">
+            {/* Bubble 1: SEMUA MATA KULIAH */}
+            <button
+              type="button"
+              onClick={() => setSelectedCourseId('ALL')}
+              className="group flex flex-col items-center text-center focus:outline-none transition-all hover:-translate-y-1 active:scale-95"
+            >
+              <div
+                className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-[#2a1306] via-[#1c0c04] to-[#100602] text-white p-1 shadow-md transition-all duration-300 flex flex-col items-center justify-center ${
+                  selectedCourseId === 'ALL'
+                    ? 'ring-4 ring-amber-400 border-2 border-amber-300 scale-105 shadow-xl shadow-amber-950/40'
+                    : 'border-2 border-amber-500/40 group-hover:border-amber-300 group-hover:scale-102'
+                }`}
+              >
+                <div className="absolute inset-1 rounded-full bg-radial from-amber-500/10 to-transparent pointer-events-none" />
+                <Layers className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300 mb-0.5 relative z-10" />
+                <span className="relative z-10 text-[9px] sm:text-[10px] font-mono font-extrabold text-amber-200/95 tracking-tight px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/25">
+                  SEMUA
+                </span>
+              </div>
+              <span
+                className={`text-[11px] sm:text-xs font-bold mt-2 line-clamp-2 max-w-[85px] sm:max-w-[100px] leading-tight ${
+                  selectedCourseId === 'ALL' ? 'text-[#8c4e24] underline decoration-amber-500 decoration-2' : 'text-stone-800'
+                }`}
+              >
+                Semua MK
+              </span>
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 mt-1 font-semibold">
+                {currentSemItemsCount} Berkas
+              </span>
+            </button>
+
+            {/* Bubbles for each course in this semester */}
+            {semesterCourses.map((c) => {
+              const isSelected = selectedCourseId === c.id;
+              const CourseIcon = getCourseIcon(c.id, c.name);
+              const courseFilesCount = libraryItems.filter(
+                (i) => Number(i.semester) === Number(selectedSemester) && i.courseId === c.id
+              ).length;
+
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setSelectedCourseId(c.id)}
+                  className="group flex flex-col items-center text-center focus:outline-none transition-all hover:-translate-y-1 active:scale-95"
+                >
+                  <div
+                    className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-[#2a1306] via-[#1c0c04] to-[#100602] text-white p-1 shadow-md transition-all duration-300 flex flex-col items-center justify-center ${
+                      isSelected
+                        ? 'ring-4 ring-amber-400 border-2 border-amber-300 scale-105 shadow-xl shadow-amber-950/40'
+                        : 'border-2 border-amber-500/40 group-hover:border-amber-300 group-hover:scale-102'
+                    }`}
+                  >
+                    <div className="absolute inset-1 rounded-full bg-radial from-amber-500/10 to-transparent pointer-events-none" />
+                    <CourseIcon className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300 mb-0.5 relative z-10" />
+                    <span className="relative z-10 text-[9px] sm:text-[10px] font-mono font-extrabold text-amber-200/95 tracking-tight px-1.5 py-0.2 rounded-full bg-amber-500/15 border border-amber-400/25">
+                      {c.sks} SKS
+                    </span>
+                  </div>
+
+                  <span
+                    className={`text-[11px] sm:text-xs font-bold mt-2 line-clamp-2 max-w-[85px] sm:max-w-[100px] leading-tight ${
+                      isSelected ? 'text-[#8c4e24] underline decoration-amber-500 decoration-2' : 'text-stone-800'
+                    }`}
+                  >
+                    {c.name}
+                  </span>
+
+                  <span
+                    className={`text-[9px] px-2 py-0.5 rounded-full mt-1 font-semibold ${
+                      courseFilesCount > 0
+                        ? 'bg-amber-100 text-[#723f1c] font-bold'
+                        : 'bg-stone-100 text-stone-400'
+                    }`}
+                  >
+                    {courseFilesCount} Berkas
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         {/* SEARCH & CATEGORY FILTER BAR */}
         <div className="bg-white rounded-3xl p-4 sm:p-5 border border-stone-200/80 shadow-xs space-y-3.5">
           <div className="flex flex-col sm:flex-row gap-3">
@@ -448,7 +592,7 @@ export default function LibraryPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari judul makalah, nama penyusun, mata kuliah, atau topik..."
+                placeholder="Cari judul makalah, nama penyusun, kata kunci, atau topik..."
                 className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-stone-200 bg-stone-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8c4e24]/30 focus:border-[#8c4e24]"
               />
               {searchQuery && (
@@ -465,11 +609,15 @@ export default function LibraryPage() {
             {/* Quick Upload Button */}
             <button
               type="button"
-              onClick={() => handleOpenUpload(undefined, selectedSemester)}
+              onClick={() => handleOpenUpload(selectedCourseId !== 'ALL' ? selectedCourseId : undefined, selectedSemester)}
               className="px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-[#8c4e24] border border-amber-300 font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors flex-shrink-0"
             >
               <Plus className="w-4 h-4" />
-              <span>Tambah Berkas di Sem {selectedSemester}</span>
+              <span>
+                {selectedCourseId !== 'ALL' && activeSelectedCourse
+                  ? `Upload di ${activeSelectedCourse.name.split(' ')[0]}`
+                  : `Upload di Sem ${selectedSemester}`}
+              </span>
             </button>
           </div>
 
@@ -478,20 +626,23 @@ export default function LibraryPage() {
             <button
               type="button"
               onClick={() => setSelectedCategory('ALL')}
-              className={`px-3 py-1.5 rounded-xl font-bold transition-colors whitespace-nowrap ${
+              className={`px-3.5 py-1.5 rounded-xl font-bold transition-colors whitespace-nowrap ${
                 selectedCategory === 'ALL'
-                  ? 'bg-stone-900 text-white'
+                  ? 'bg-[#8c4e24] text-white shadow-xs'
                   : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
               }`}
             >
-              Semua Kategori ({currentSemItemsCount})
+              Semua Kategori
             </button>
 
             {(Object.keys(CATEGORY_CONFIG) as LibraryCategory[]).map((cat) => {
               const cfg = CATEGORY_CONFIG[cat];
               const isCatSelected = selectedCategory === cat;
               const countInCat = libraryItems.filter(
-                (i) => Number(i.semester) === Number(selectedSemester) && i.category === cat
+                (i) =>
+                  Number(i.semester) === Number(selectedSemester) &&
+                  (selectedCourseId === 'ALL' || i.courseId === selectedCourseId) &&
+                  i.category === cat
               ).length;
 
               return (
@@ -501,12 +652,12 @@ export default function LibraryPage() {
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3 py-1.5 rounded-xl font-semibold transition-colors whitespace-nowrap flex items-center space-x-1.5 border ${
                     isCatSelected
-                      ? `${cfg.badgeBg} ${cfg.border} font-bold ring-2 ring-amber-400/50`
+                      ? 'bg-amber-100 text-[#723f1c] border-amber-300 font-bold shadow-2xs'
                       : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
                   }`}
                 >
                   <span>{cfg.label}</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/5 dark:bg-white/10">
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-stone-100 text-stone-600">
                     {countInCat}
                   </span>
                 </button>
@@ -515,193 +666,191 @@ export default function LibraryPage() {
           </div>
         </div>
 
-        {/* REPOSITORY CONTENT: LIST OF COURSES & FILES */}
-        <div className="space-y-6">
-          {semesterCourses.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 border border-stone-200 text-center space-y-3">
-              <Folder className="w-12 h-12 text-stone-300 mx-auto" />
-              <h3 className="font-bold text-stone-800 text-sm">Belum Ada Mata Kuliah di Semester {selectedSemester}</h3>
-              <p className="text-xs text-stone-500 max-w-sm mx-auto">
-                Mata kuliah untuk semester ini belum dikonfigurasi. Anda tetap dapat mengunggah berkas dengan memasukkan nama mata kuliah secara manual.
+        {/* DAFTAR CARD BERKAS MEWAH & RINGAN (SESUAI REFERENSI GAMBAR 3) */}
+        <section className="space-y-3.5">
+          {/* Header section berkas */}
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center space-x-2">
+              <h3 className="text-sm font-black text-stone-900">
+                {selectedCourseId === 'ALL'
+                  ? `Daftar Berkas & Tugas Semester ${selectedSemester}`
+                  : `Berkas: ${activeSelectedCourse?.name || 'Mata Kuliah'}`}
+              </h3>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-100 text-[#723f1c] font-bold border border-amber-300">
+                {filteredItems.length} Dokumen
+              </span>
+            </div>
+
+            {selectedCourseId !== 'ALL' && (
+              <button
+                type="button"
+                onClick={() => setSelectedCourseId('ALL')}
+                className="text-xs text-[#8c4e24] hover:underline font-semibold"
+              >
+                Lihat Semua MK →
+              </button>
+            )}
+          </div>
+
+          {filteredItems.length === 0 ? (
+            /* Empty State */
+            <div className="bg-white rounded-3xl p-8 border border-dashed border-stone-300 text-center space-y-3 shadow-2xs">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-[#8c4e24] border border-amber-200/80 flex items-center justify-center mx-auto">
+                <Folder className="w-6 h-6 text-[#8c4e24]" />
+              </div>
+              <h4 className="font-bold text-stone-800 text-sm">
+                {searchQuery || selectedCategory !== 'ALL'
+                  ? 'Tidak Ada Berkas yang Cocok'
+                  : 'Belum Ada Berkas yang Tersimpan'}
+              </h4>
+              <p className="text-xs text-stone-500 max-w-md mx-auto leading-relaxed">
+                {searchQuery || selectedCategory !== 'ALL'
+                  ? 'Coba ganti kata kunci pencarian atau ubah filter kategori di atas.'
+                  : `Belum ada tugas, makalah, atau slide presentasi yang diunggah untuk ${
+                      selectedCourseId === 'ALL'
+                        ? `Semester ${selectedSemester}`
+                        : activeSelectedCourse?.name || 'mata kuliah ini'
+                    }. Jadilah yang pertama menyumbang karya!`}
               </p>
               <button
                 type="button"
-                onClick={() => handleOpenUpload(undefined, selectedSemester)}
-                className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-[#8c4e24] text-white font-bold text-xs shadow-xs hover:bg-[#723f1c]"
+                onClick={() => handleOpenUpload(selectedCourseId !== 'ALL' ? selectedCourseId : undefined, selectedSemester)}
+                className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-[#8c4e24] hover:bg-[#723f1c] text-white font-bold text-xs shadow-xs transition-all active:scale-95"
               >
                 <Plus className="w-4 h-4" />
-                <span>Unggah Berkas Baru</span>
+                <span>Unggah Berkas Pertama</span>
               </button>
             </div>
           ) : (
-            semesterCourses.map((course) => {
-              const courseItems = filteredItems.filter((i) => i.courseId === course.id);
+            /* List of Sleek & Luxurious Horizontal Cards */
+            <div className="space-y-3">
+              {filteredItems.map((item) => {
+                const cfg = CATEGORY_CONFIG[item.category] || CATEGORY_CONFIG.MAKALAH;
+                const canDelete =
+                  auth.role === 'ADMIN' ||
+                  item.uploadedByNim === auth.nim ||
+                  courses.some(
+                    (c) =>
+                      c.id === item.courseId &&
+                      Array.isArray(c.pjNims) &&
+                      c.pjNims.includes(auth.nim || '')
+                  );
 
-              return (
-                <div
-                  key={course.id}
-                  className="bg-white rounded-3xl border border-stone-200/90 shadow-xs overflow-hidden transition-all"
-                >
-                  {/* Course Header Banner */}
-                  <div className="p-4 sm:p-5 bg-gradient-to-r from-stone-50 via-amber-50/20 to-stone-50 border-b border-stone-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-start sm:items-center space-x-3">
-                      <div className="w-10 h-10 rounded-2xl bg-amber-100/80 text-[#8c4e24] border border-amber-200/80 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                        <BookOpen className="w-5 h-5" />
+                const downloadLink = getDownloadUrl(item.fileUrl);
+
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200/80 hover:border-amber-300/80 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 group"
+                  >
+                    {/* Sisi Kiri: Judul, Kategori, Mata Kuliah, & Penulis */}
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Kategori Badge Harmonis */}
+                        <span
+                          className={`text-[10px] font-bold px-2.5 py-0.5 rounded-lg border ${cfg.badgeBg} ${cfg.border}`}
+                        >
+                          {cfg.label}
+                        </span>
+
+                        {/* Nama Mata Kuliah */}
+                        <span className="text-[11px] font-bold text-[#8c4e24] bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/70">
+                          {item.courseName || 'Mata Kuliah'}
+                        </span>
+
+                        {/* Tanggal */}
+                        <span className="text-[10px] text-stone-400 font-mono">
+                          {item.uploadedAt}
+                        </span>
                       </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-stone-200/70 text-stone-700">
-                            {course.code}
-                          </span>
-                          <span className="text-[11px] font-semibold text-stone-500">
-                            {course.sks} SKS • Dosen: <strong className="text-stone-700">{course.dosen}</strong>
-                          </span>
-                        </div>
-                        <h3 className="text-base font-extrabold text-stone-900 mt-0.5">
-                          {course.name}
-                        </h3>
+
+                      {/* Judul Berkas */}
+                      <h4 className="text-sm sm:text-base font-extrabold text-stone-900 leading-snug">
+                        {item.title}
+                      </h4>
+
+                      {/* Deskripsi Singkat jika ada */}
+                      {item.description && (
+                        <p className="text-xs text-stone-500 line-clamp-1 leading-relaxed">
+                          {item.description}
+                        </p>
+                      )}
+
+                      {/* Penulis / Kelompok */}
+                      <div className="flex items-center space-x-1.5 text-xs text-stone-600 pt-0.5">
+                        <Users className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+                        <span className="font-semibold line-clamp-1">{item.authors}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2 flex-shrink-0">
-                      <span className="text-xs font-bold px-3 py-1 rounded-full bg-stone-100 text-stone-600 border border-stone-200">
-                        {courseItems.length} Berkas
-                      </span>
+                    {/* Sisi Kanan: Tombol [Lihat] (Coklat Syariah) & [Download] (Emas Amber) */}
+                    <div className="flex items-center justify-end space-x-2 flex-shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-stone-100">
+                      {/* Tombol LIHAT (Coklat Syariah #8c4e24) */}
+                      <a
+                        href={item.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2.5 rounded-xl bg-[#8c4e24] hover:bg-[#723f1c] text-white font-bold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-xs active:scale-95"
+                        title="Buka / Baca Dokumen di Layar"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-amber-200" />
+                        <span>Lihat</span>
+                      </a>
+
+                      {/* Tombol DOWNLOAD (Emas Amber) */}
+                      <a
+                        href={downloadLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-extrabold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-xs active:scale-95"
+                        title="Unduh Berkas ke Perangkat"
+                      >
+                        <Download className="w-3.5 h-3.5 text-stone-950" />
+                        <span>Download</span>
+                      </a>
+
+                      {/* Tombol Salin Link */}
                       <button
                         type="button"
-                        onClick={() => handleOpenUpload(course.id, selectedSemester)}
-                        className="px-3 py-1.5 rounded-xl bg-white border border-stone-200 hover:border-amber-300 hover:bg-amber-50/50 text-[#8c4e24] text-xs font-bold flex items-center space-x-1 transition-colors shadow-2xs"
+                        onClick={() => handleCopy(item.id, item.fileUrl)}
+                        title="Salin Tautan Berkas"
+                        className="p-2 rounded-xl border border-stone-200 hover:bg-stone-50 text-stone-600 transition-colors"
                       >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Upload Tugas</span>
+                        {copiedId === item.id ? (
+                          <Check className="w-4 h-4 text-emerald-600" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
                       </button>
-                    </div>
-                  </div>
 
-                  {/* Course Files Grid */}
-                  <div className="p-4 sm:p-5">
-                    {courseItems.length === 0 ? (
-                      <div className="py-6 px-4 rounded-2xl bg-stone-50/60 border border-dashed border-stone-200 text-center space-y-2">
-                        <Folder className="w-7 h-7 text-stone-300 mx-auto" />
-                        <p className="text-xs text-stone-500">
-                          {searchQuery || selectedCategory !== 'ALL'
-                            ? 'Tidak ada berkas yang sesuai dengan filter pencarian.'
-                            : 'Belum ada makalah atau tugas yang diunggah untuk mata kuliah ini.'}
-                        </p>
+                      {/* Tombol Bagikan WhatsApp */}
+                      <button
+                        type="button"
+                        onClick={() => handleShareWA(item)}
+                        title="Bagikan ke WhatsApp Kelas"
+                        className="p-2 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-[#8c4e24] transition-colors"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+
+                      {/* Tombol Hapus jika berhak */}
+                      {canDelete && (
                         <button
                           type="button"
-                          onClick={() => handleOpenUpload(course.id, selectedSemester)}
-                          className="text-xs text-[#8c4e24] font-bold hover:underline"
+                          onClick={() => handleDeleteItem(item)}
+                          title="Hapus Berkas Ini"
+                          className="p-2 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-100 text-rose-700 transition-colors"
                         >
-                          + Tambahkan Berkas Pertama
+                          <Trash2 className="w-4 h-4" />
                         </button>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                        {courseItems.map((item) => {
-                          const cfg = CATEGORY_CONFIG[item.category] || CATEGORY_CONFIG.MAKALAH;
-                          const CatIcon = cfg.icon;
-                          const canDelete =
-                            auth.role === 'ADMIN' ||
-                            item.uploadedByNim === auth.nim ||
-                            (Array.isArray(course.pjNims) && course.pjNims.includes(auth.nim || ''));
-
-                          return (
-                            <div
-                              key={item.id}
-                              className="bg-white rounded-2xl p-4 border border-stone-200/80 hover:border-amber-300/80 hover:shadow-md transition-all flex flex-col justify-between space-y-3 relative group"
-                            >
-                              <div className="space-y-2">
-                                {/* Top Category & Delete Action */}
-                                <div className="flex items-center justify-between">
-                                  <span
-                                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-lg border flex items-center space-x-1 ${cfg.badgeBg} ${cfg.border}`}
-                                  >
-                                    <CatIcon className="w-3 h-3" />
-                                    <span>{cfg.label}</span>
-                                  </span>
-
-                                  <div className="flex items-center space-x-1">
-                                    <span className="text-[10px] text-stone-400 font-mono">
-                                      {item.uploadedAt}
-                                    </span>
-                                    {canDelete && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDeleteItem(item)}
-                                        title="Hapus berkas ini"
-                                        className="p-1 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition-colors opacity-80 group-hover:opacity-100"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Title */}
-                                <h4 className="text-sm font-bold text-stone-900 leading-snug">
-                                  {item.title}
-                                </h4>
-
-                                {/* Description / Abstract */}
-                                {item.description && (
-                                  <p className="text-xs text-stone-500 line-clamp-2 leading-relaxed">
-                                    {item.description}
-                                  </p>
-                                )}
-
-                                {/* Authors / Kelompok */}
-                                <div className="flex items-center space-x-1.5 text-xs text-stone-600 pt-0.5">
-                                  <Users className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
-                                  <span className="font-semibold line-clamp-1">{item.authors}</span>
-                                </div>
-                              </div>
-
-                              {/* Footer Action Buttons */}
-                              <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between gap-2 text-xs">
-                                <a
-                                  href={item.fileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex-1 py-2 px-3 rounded-xl bg-[#8c4e24] hover:bg-[#723f1c] text-white font-bold flex items-center justify-center space-x-1.5 transition-all shadow-2xs active:scale-95 text-center"
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                  <span>Buka / Baca Dokumen</span>
-                                </a>
-
-                                <button
-                                  type="button"
-                                  onClick={() => handleCopy(item.id, item.fileUrl)}
-                                  title="Salin tautan dokumen"
-                                  className="py-2 px-2.5 rounded-xl border border-stone-200 hover:bg-stone-50 text-stone-600 transition-colors"
-                                >
-                                  {copiedId === item.id ? (
-                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                  ) : (
-                                    <Copy className="w-3.5 h-3.5" />
-                                  )}
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => handleShareWA(item)}
-                                  title="Bagikan ke WhatsApp"
-                                  className="py-2 px-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100 text-emerald-700 transition-colors"
-                                >
-                                  <Share2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
-        </div>
+        </section>
       </div>
 
       {/* UPLOAD / TAMBAH TUGAS MODAL */}
@@ -729,7 +878,7 @@ export default function LibraryPage() {
             </div>
 
             {uploadNotice && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center space-x-2 animate-in fade-in">
+              <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-[#723f1c] text-xs font-semibold flex items-center space-x-2 animate-in fade-in">
                 <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                 <span>{uploadNotice}</span>
               </div>
