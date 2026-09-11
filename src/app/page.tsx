@@ -343,6 +343,13 @@ export default function HomePage() {
                       <CheckCircle2 className="w-4 h-4 text-amber-200" />
                       <span>Presensi Saya ({(auth.name || 'Mahasiswa').split(' ')[0]})</span>
                     </Link>
+                    <Link
+                      href="/library"
+                      className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-extrabold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center space-x-2 active:scale-98"
+                    >
+                      <BookOpen className="w-4 h-4 text-stone-950" />
+                      <span>E-Library (Sem 1-8)</span>
+                    </Link>
                     {isUserPj && (
                       <Link
                         href="/pj"

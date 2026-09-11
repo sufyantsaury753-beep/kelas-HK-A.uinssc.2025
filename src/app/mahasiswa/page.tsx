@@ -210,6 +210,13 @@ export default function MahasiswaDashboard() {
               <ArrowLeft className="w-4 h-4 text-amber-200" />
               <span>Kembali ke Beranda</span>
             </Link>
+            <Link
+              href="/library"
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 text-xs font-bold shadow-md transition-all flex items-center space-x-1.5 active:scale-95"
+            >
+              <BookOpen className="w-4 h-4 text-stone-950" />
+              <span>E-Library & Tugas</span>
+            </Link>
             <button
               onClick={() => setShowPinModal(true)}
               className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold backdrop-blur-sm border border-white/20 transition-all flex items-center space-x-1.5"
@@ -229,6 +236,36 @@ export default function MahasiswaDashboard() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* E-Library & Repositori Tugas Banner */}
+      <div className="bg-gradient-to-r from-[#1f1007] via-[#2f170b] to-[#170a04] text-white rounded-3xl p-5 sm:p-6 border border-amber-900/40 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-start space-x-3.5 max-w-2xl">
+          <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 text-stone-950 rounded-2xl shadow-md flex-shrink-0">
+            <BookOpen className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Fitur Baru E-Library
+              </span>
+              <span className="text-[10px] text-stone-400">Semester 1 s.d. 8</span>
+            </div>
+            <h3 className="text-sm sm:text-base font-black text-white">
+              Perpustakaan & Repositori Tugas HK A 2025
+            </h3>
+            <p className="text-xs text-stone-300 leading-relaxed">
+              Akses seluruh arsip makalah kelompok, artikel ilmiah, resume materi, dan bahan tayang presentasi PPT perkuliahan. Anda juga dapat mengunggah tugas kelompok Anda di sini.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/library"
+          className="w-full md:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 text-xs font-extrabold rounded-2xl shadow-md transition-all flex items-center justify-center space-x-1.5 flex-shrink-0 active:scale-95"
+        >
+          <span>Buka Perpustakaan Digital</span>
+          <ExternalLink className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
       {/* PJ Banner if assigned */}

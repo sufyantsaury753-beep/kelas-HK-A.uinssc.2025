@@ -30,6 +30,7 @@ interface AppState {
   announcements: Announcement[];
   adminPin: string;
   activeSemester?: number;
+  libraryItems: LibraryItem[];
 }
 
 // Helper to sort students ascending by NIM (e.g. 03, 04, 05, etc.)
@@ -91,6 +92,7 @@ function getInitialState(): AppState {
     announcements: INITIAL_ANNOUNCEMENTS,
     adminPin: 'adminhk2025',
     activeSemester: 3,
+    libraryItems: INITIAL_LIBRARY_ITEMS,
   };
 }
 
@@ -163,6 +165,7 @@ class Store {
           materials: Array.isArray(parsed.materials) ? parsed.materials : INITIAL_MATERIALS,
           announcements: Array.isArray(parsed.announcements) ? parsed.announcements : INITIAL_ANNOUNCEMENTS,
           adminPin: parsed.adminPin || 'adminhk2025',
+          libraryItems: Array.isArray(parsed.libraryItems) && parsed.libraryItems.length > 0 ? parsed.libraryItems : INITIAL_LIBRARY_ITEMS,
         };
       } else {
         this.save();
@@ -354,6 +357,32 @@ class Store {
           uploadedBy: m.uploaded_by || 'Mahasiswa',
           uploadedAt: m.uploaded_at || '2026-09-01',
         }));
+      }
+
+
+      // 7. Fetch Library Items
+      try {
+        const { data: remoteLib } = await supabase.from('library_items').select('*');
+        if (remoteLib && remoteLib.length > 0) {
+          this.state.libraryItems = remoteLib.map((l: any) => ({
+            id: l.id,
+            courseId: l.course_id,
+            courseName: l.course_name || undefined,
+            semester: Number(l.semester) || 3,
+            title: l.title,
+            category: l.category || 'MAKALAH',
+            authors: l.authors || 'Mahasiswa HK A',
+            fileUrl: l.file_url || l.url,
+            fileType: l.file_type || undefined,
+            fileSize: l.file_size || undefined,
+            description: l.description || undefined,
+            uploadedByNim: l.uploaded_by_nim || '',
+            uploadedByName: l.uploaded_by_name || 'Mahasiswa',
+            uploadedAt: l.uploaded_at || new Date().toISOString().split('T')[0],
+          }));
+        }
+      } catch (libErr) {
+        // Fallback: table might not exist in Supabase yet, keep local libraryItems
       }
 
       this.save();
@@ -905,6 +934,79 @@ class Store {
       } catch (err) {
         console.error('Error batch syncing records to Supabase:', err);
       }
+    }
+  }
+
+
+  // --- E-Library & Repositori Tugas (Semester 1 s.d. 8) ---
+  public getLibraryItems(semester?: number, courseId?: string, category?: string): LibraryItem[] {
+    let list = this.state.libraryItems || [];
+    if (semester !== undefined && semester !== null) {
+      list = list.filter((item) => Number(item.semester) === Number(semester));
+    }
+    if (courseId) {
+      list = list.filter((item) => item.courseId === courseId);
+    }
+    if (category && category !== 'ALL') {
+      list = list.filter((item) => item.category === category);
+    }
+    return [...list].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+  }
+
+  public addLibraryItem(itemData: Omit<LibraryItem, 'id' | 'uploadedAt'>): LibraryItem {
+    const id = `lib-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const newItem: LibraryItem = {
+      ...itemData,
+      id,
+      uploadedAt: new Date().toISOString().split('T')[0],
+    };
+
+    if (!this.state.libraryItems) {
+      this.state.libraryItems = [];
+    }
+    this.state.libraryItems.unshift(newItem);
+    this.save();
+
+    if (isSupabaseConfigured()) {
+      supabase
+        .from('library_items')
+        .upsert({
+          id,
+          course_id: itemData.courseId,
+          course_name: itemData.courseName || null,
+          semester: itemData.semester,
+          title: itemData.title,
+          category: itemData.category,
+          authors: itemData.authors,
+          file_url: itemData.fileUrl,
+          file_type: itemData.fileType || 'LINK',
+          file_size: itemData.fileSize || null,
+          description: itemData.description || null,
+          uploaded_by_nim: itemData.uploadedByNim,
+          uploaded_by_name: itemData.uploadedByName,
+          uploaded_at: newItem.uploadedAt,
+        })
+        .then(({ error }) => {
+          if (error) console.warn('Supabase library_items sync note:', error);
+        });
+    }
+
+    return newItem;
+  }
+
+  public deleteLibraryItem(id: string) {
+    if (!this.state.libraryItems) return;
+    this.state.libraryItems = this.state.libraryItems.filter((i) => i.id !== id);
+    this.save();
+
+    if (isSupabaseConfigured()) {
+      supabase
+        .from('library_items')
+        .delete()
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.warn('Supabase library_items delete note:', error);
+        });
     }
   }
 

@@ -754,6 +754,14 @@ export default function PjDashboard() {
                 <span>Peserta MK ({enrolledCourseStudents.length} Mhs)</span>
               </button>
 
+              <Link
+                href="/library"
+                className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-xs active:scale-95"
+              >
+                <BookOpen className="w-4 h-4 text-stone-950" />
+                <span>E-Library Angkatan</span>
+              </Link>
+
               <button
                 onClick={() => setShowAddMaterialModal(true)}
                 className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-semibold transition-colors flex items-center space-x-1.5"

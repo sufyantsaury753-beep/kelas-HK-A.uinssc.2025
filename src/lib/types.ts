@@ -91,3 +91,30 @@ export interface AuthSession {
   assignedCourseIds?: string[]; // for PJ
   isLoggedIn: boolean;
 }
+
+export type LibraryCategory =
+  | 'MAKALAH'
+  | 'ARTIKEL'
+  | 'PPT'
+  | 'RESUME'
+  | 'TUGAS'
+  | 'MODUL'
+  | 'RPS';
+
+export interface LibraryItem {
+  id: string;
+  courseId: string;
+  courseName?: string;
+  semester: number; // 1 to 8
+  title: string;
+  category: LibraryCategory;
+  authors: string; // Penyusun / Kelompok
+  fileUrl: string; // Link Google Drive atau berkas dokumen
+  fileType?: 'PDF' | 'DOCX' | 'PPTX' | 'DRIVE' | 'LINK';
+  fileSize?: string;
+  description?: string;
+  uploadedByNim: string;
+  uploadedByName: string;
+  uploadedAt: string;
+}
+

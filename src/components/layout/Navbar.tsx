@@ -176,6 +176,17 @@ export default function Navbar() {
               <span>Kuliah Online</span>
             </Link>
             <Link
+              href="/library"
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
+                pathname.startsWith('/library')
+                  ? 'text-[#9d5f2f] bg-amber-50/80 font-bold'
+                  : 'text-stone-600 hover:text-[#9d5f2f] hover:bg-stone-50'
+              }`}
+            >
+              <BookOpen className="w-4 h-4 text-[#9d5f2f]" />
+              <span>E-Library</span>
+            </Link>
+            <Link
               href="/#pengumuman"
               className="px-3.5 py-2 rounded-lg text-sm font-medium text-stone-600 hover:text-[#9d5f2f] hover:bg-stone-50 transition-colors"
             >
@@ -301,6 +312,46 @@ export default function Navbar() {
                   <Bell className="w-4 h-4" />
                 </div>
                 <span>Pengumuman Kelas</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-stone-400" />
+            </Link>
+
+            {/* Kuliah Online */}
+            <Link
+              href="/kuliah-online"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-stone-700 hover:bg-stone-50 text-sm font-semibold transition-all ${
+                pathname.startsWith('/kuliah-online') ? 'bg-amber-50 text-[#8c4e24]' : ''
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-[#8c4e24] flex items-center justify-center">
+                  <Video className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="leading-tight font-bold text-xs">Kuliah Online</p>
+                  <p className="text-[10px] text-stone-500 font-normal">Google Meet & Zoom Resmi</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-stone-400" />
+            </Link>
+
+            {/* E-Library & Repositori Tugas */}
+            <Link
+              href="/library"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-stone-700 hover:bg-stone-50 text-sm font-semibold transition-all ${
+                pathname.startsWith('/library') ? 'bg-amber-50 text-[#8c4e24]' : ''
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-[#8c4e24] flex items-center justify-center">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="leading-tight font-bold text-xs">E-Library & Repositori Tugas</p>
+                  <p className="text-[10px] text-stone-500 font-normal">Semester 1 s.d. 8 • Makalah & PPT</p>
+                </div>
               </div>
               <ChevronRight className="w-4 h-4 text-stone-400" />
             </Link>
