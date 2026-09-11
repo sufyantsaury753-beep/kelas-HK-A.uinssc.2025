@@ -215,7 +215,7 @@ export default function MahasiswaDashboard() {
               className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 text-xs font-bold shadow-md transition-all flex items-center space-x-1.5 active:scale-95"
             >
               <BookOpen className="w-4 h-4 text-stone-950" />
-              <span>E-Library & Tugas</span>
+              <span>E-Library</span>
             </Link>
             <button
               onClick={() => setShowPinModal(true)}
@@ -238,57 +238,61 @@ export default function MahasiswaDashboard() {
         </div>
       </div>
 
-      {/* E-Library & Repositori Tugas Banner */}
-      <div className="bg-gradient-to-r from-[#1f1007] via-[#2f170b] to-[#170a04] text-white rounded-3xl p-5 sm:p-6 border border-amber-900/40 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {/* E-Library Banner */}
+      <div className="bg-gradient-to-br from-[#8c4e24] via-[#783e18] to-[#5a2a0c] text-white rounded-3xl p-5 sm:p-6 border border-amber-500/30 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-start space-x-3.5 max-w-2xl">
-          <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 text-stone-950 rounded-2xl shadow-md flex-shrink-0">
+          <div className="p-3 bg-white text-[#783e18] rounded-2xl shadow-md flex-shrink-0">
             <BookOpen className="w-6 h-6" />
           </div>
           <div className="space-y-1">
             <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Fitur Baru E-Library
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-black/30 text-amber-200 border border-amber-300/30">
+                E-Library
               </span>
-              <span className="text-[10px] text-stone-400">Semester 1 s.d. 8</span>
             </div>
-            <h3 className="text-sm sm:text-base font-black text-white">
+            <h3 className="text-sm sm:text-base font-extrabold text-white">
               Perpustakaan & Repositori Tugas HK A 2025
             </h3>
-            <p className="text-xs text-stone-300 leading-relaxed">
-              Akses seluruh arsip makalah kelompok, artikel ilmiah, resume materi, dan bahan tayang presentasi PPT perkuliahan. Anda juga dapat mengunggah tugas kelompok Anda di sini.
+            <p className="text-xs text-amber-100/90 leading-relaxed">
+              Akses seluruh arsip makalah kelompok, artikel ilmiah, resume materi, modul, dan bahan tayang presentasi PPT perkuliahan HK A 2025.
             </p>
           </div>
         </div>
         <Link
           href="/library"
-          className="w-full md:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 text-xs font-extrabold rounded-2xl shadow-md transition-all flex items-center justify-center space-x-1.5 flex-shrink-0 active:scale-95"
+          className="w-full md:w-auto px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-extrabold rounded-2xl shadow-md transition-all flex items-center justify-center space-x-1.5 flex-shrink-0 active:scale-95"
         >
-          <span>Buka Perpustakaan Digital</span>
+          <span>Buka E-Library</span>
           <ExternalLink className="w-3.5 h-3.5" />
         </Link>
       </div>
 
       {/* PJ Banner if assigned */}
       {myPjCourses.length > 0 && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300/80 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-gradient-to-br from-[#8c4e24] via-[#783e18] to-[#5a2a0c] text-white border border-amber-500/30 rounded-3xl p-5 sm:p-6 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start space-x-3.5">
-            <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-sm flex-shrink-0">
-              <Sparkles className="w-5 h-5" />
+            <div className="p-3 bg-amber-400 text-stone-950 rounded-2xl shadow-sm flex-shrink-0">
+              <Sparkles className="w-6 h-6 stroke-[2.5]" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-amber-950">
+              <div className="flex items-center space-x-2 mb-1">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-black/30 text-amber-200 border border-amber-300/30">
+                  Penugasan PJ
+                </span>
+              </div>
+              <h3 className="text-sm sm:text-base font-extrabold text-white">
                 Anda Ditugaskan Sebagai Penanggung Jawab (PJ)
               </h3>
-              <p className="text-xs text-amber-800/90 mt-0.5">
+              <p className="text-xs text-amber-100/90 mt-0.5">
                 Mata kuliah yang Anda ampu:{' '}
-                <strong>{myPjCourses.map((c) => c.name).join(', ')}</strong>.
+                <strong className="text-white">{myPjCourses.map((c) => c.name).join(', ')}</strong>.
                 Anda berhak membuka sesi absensi, mencatat kehadiran rekan kelas, dan mengunduh rekapitulasi.
               </p>
             </div>
           </div>
           <Link
             href="/pj"
-            className="px-4 py-2 bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold rounded-xl shadow-sm transition-colors flex items-center space-x-1 flex-shrink-0"
+            className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-extrabold rounded-2xl shadow-sm transition-all flex items-center space-x-1.5 flex-shrink-0 active:scale-95"
           >
             <span>Buka Dashboard PJ</span>
             <ExternalLink className="w-3.5 h-3.5" />
@@ -336,65 +340,65 @@ export default function MahasiswaDashboard() {
               return (
                 <div
                   key={sess.id}
-                  className="bg-white border border-stone-200 hover:border-emerald-300 rounded-2xl p-4 sm:p-5 shadow-xs transition-all flex flex-col justify-between space-y-3.5"
+                  className="bg-gradient-to-br from-[#8c4e24] via-[#783e18] to-[#5a2a0c] text-white rounded-2xl p-4 sm:p-5 border border-amber-500/30 shadow-md hover:shadow-xl transition-all flex flex-col justify-between space-y-3.5 group"
                 >
                   <div>
                     {/* Header Row: Meeting Badge & Attendance Status */}
                     <div className="flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-black/30 text-amber-200 border border-amber-300/30">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
                         Pertemuan Ke-{sess.meetingNumber}
                       </span>
                       {alreadyChecked ? (
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center space-x-1 border border-emerald-300 shadow-2xs">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="px-2.5 py-1 rounded-full bg-white/20 text-white font-bold text-xs flex items-center space-x-1 border border-white/20 shadow-2xs">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
                           <span>Hadir Terverifikasi</span>
                         </span>
                       ) : (
-                        <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-bold text-xs flex items-center space-x-1 border border-amber-300 animate-pulse">
+                        <span className="px-2.5 py-1 rounded-full bg-amber-400 text-stone-950 font-extrabold text-xs flex items-center space-x-1 border border-amber-300 animate-pulse">
                           <span>Belum Presensi</span>
                         </span>
                       )}
                     </div>
 
                     {/* Course Title & Lecturer */}
-                    <h3 className="font-extrabold text-stone-900 text-base sm:text-lg mt-2.5 leading-snug">
+                    <h3 className="font-extrabold text-white text-base sm:text-lg mt-2.5 leading-snug group-hover:text-amber-100 transition-colors">
                       {crs?.name}
                     </h3>
-                    <p className="text-xs text-stone-500 flex items-center space-x-1.5 mt-0.5">
-                      <GraduationCap className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
+                    <p className="text-xs text-amber-100/90 flex items-center space-x-1.5 mt-0.5">
+                      <GraduationCap className="w-3.5 h-3.5 text-amber-200 flex-shrink-0" />
                       <span>{crs?.dosen}</span>
                     </p>
                   </div>
 
                   {/* Compact Session Details */}
-                  <div className="bg-stone-50 p-2.5 sm:p-3 rounded-xl border border-stone-200/60 text-xs space-y-1">
-                    <div className="flex items-start space-x-2 text-stone-700">
-                      <span className="text-stone-400 font-medium text-[11px] flex-shrink-0">Topik:</span>
-                      <span className="font-semibold text-stone-800 line-clamp-1">{sess.topic}</span>
+                  <div className="bg-black/20 p-2.5 sm:p-3 rounded-xl border border-white/10 text-xs space-y-1">
+                    <div className="flex items-start space-x-2 text-white">
+                      <span className="text-amber-200/80 font-medium text-[11px] flex-shrink-0">Topik:</span>
+                      <span className="font-semibold text-white line-clamp-1">{sess.topic}</span>
                     </div>
-                    <div className="flex items-center space-x-1.5 text-[11px] text-stone-500">
-                      <Clock className="w-3 h-3 text-stone-400 flex-shrink-0" />
+                    <div className="flex items-center space-x-1.5 text-[11px] text-amber-100/80">
+                      <Clock className="w-3 h-3 text-amber-200/80 flex-shrink-0" />
                       <span>{sess.date} ({sess.startTime} - {sess.endTime} WIB)</span>
                     </div>
                   </div>
 
                   {/* Action Area: Verified Confirmation or Checkin Button */}
                   {alreadyChecked ? (
-                    <div className="flex items-center justify-between pt-2 text-xs text-stone-500 border-t border-stone-100">
-                      <span className="text-[11px] text-emerald-700 font-semibold flex items-center space-x-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <div className="flex items-center justify-between pt-2 text-xs text-amber-200/80 border-t border-white/15">
+                      <span className="text-[11px] text-amber-200 font-semibold flex items-center space-x-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
                         <span>Presensi Mandiri Berhasil</span>
                       </span>
-                      <span className="text-[10px] font-mono text-stone-400">
+                      <span className="text-[10px] font-mono text-amber-100/70">
                         {alreadyChecked.timestamp || 'Tervalidasi'}
                       </span>
                     </div>
                   ) : (
-                    <div className="space-y-2 pt-2 border-t border-stone-100">
+                    <div className="space-y-2 pt-2 border-t border-white/15">
                       {sess.checkinCode && (
                         <div>
-                          <label className="block text-[11px] font-semibold text-stone-600 mb-1">
+                          <label className="block text-[11px] font-semibold text-amber-100 mb-1">
                             Masukkan Kode Presensi dari PJ:
                           </label>
                           <input
@@ -403,15 +407,15 @@ export default function MahasiswaDashboard() {
                             placeholder="Kode 4 angka"
                             value={activeCheckinCode}
                             onChange={(e) => setActiveCheckinCode(e.target.value)}
-                            className="w-full px-3 py-2 text-center font-mono text-sm tracking-widest rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            className="w-full px-3 py-2 text-center font-mono text-sm tracking-widest rounded-xl bg-white text-stone-900 border border-amber-300 font-bold focus:ring-2 focus:ring-amber-400 focus:outline-none"
                           />
                         </div>
                       )}
                       <button
                         onClick={() => handleSelfCheckin(sess)}
-                        className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-md shadow-emerald-700/20 transition-all flex items-center justify-center space-x-1.5"
+                        className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-95 text-stone-950 font-extrabold text-xs shadow-md shadow-amber-950/20 transition-all flex items-center justify-center space-x-1.5"
                       >
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle2 className="w-4 h-4 text-stone-950" />
                         <span>Kirim Presensi Hadir Sekarang</span>
                       </button>
                     </div>

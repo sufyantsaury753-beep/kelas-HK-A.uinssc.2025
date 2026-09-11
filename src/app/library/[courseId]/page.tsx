@@ -209,7 +209,7 @@ export default function CourseLibraryDetailPage() {
         </div>
 
         {/* COURSE HEADER HERO CARD */}
-        <div className="bg-gradient-to-br from-[#1a0f08] via-[#2d180d] to-[#120703] rounded-3xl p-6 sm:p-7 text-white shadow-xl relative overflow-hidden border border-amber-900/40">
+        <div className="bg-gradient-to-br from-[#8c4e24] via-[#783e18] to-[#5a2a0c] rounded-3xl p-6 sm:p-7 text-white shadow-md relative overflow-hidden border border-amber-500/30">
           <div className="relative z-10 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-xs font-bold px-3 py-1 rounded-full bg-white/15 text-amber-300 border border-white/15">
@@ -298,38 +298,38 @@ export default function CourseLibraryDetailPage() {
               return (
                 <div
                   key={item.id}
-                  className="bg-gradient-to-br from-[#2a1408] via-[#381a0b] to-[#1e0d04] text-white rounded-2xl p-4 sm:p-5 border border-amber-500/40 shadow-md hover:shadow-xl hover:border-amber-400/80 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 group"
+                  className="bg-gradient-to-br from-[#8c4e24] via-[#783e18] to-[#5a2a0c] text-white rounded-2xl p-4 sm:p-5 border border-amber-500/30 shadow-md hover:shadow-xl transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 group"
                 >
                   {/* Sisi Kiri: Jenis Tugas, Mata Kuliah, & Judul (Tanpa teks berlebihan) */}
                   <div className="space-y-1.5 flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      {/* Jenis Tugas Badge Emas */}
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-lg bg-amber-400/20 text-amber-300 border border-amber-400/30 uppercase tracking-wider">
+                      {/* Jenis Tugas Badge */}
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-black/30 text-amber-200 border border-amber-300/30 uppercase tracking-wider">
                         {item.category}
                       </span>
                       {/* Mata Kuliah */}
-                      <span className="text-[11px] font-semibold text-stone-300">
+                      <span className="text-[11px] font-semibold text-amber-100/90">
                         {course.name}
                       </span>
                     </div>
 
                     {/* Judul Tugas */}
-                    <h4 className="text-sm sm:text-base font-extrabold text-white leading-snug">
+                    <h4 className="text-sm sm:text-base font-extrabold text-white leading-snug group-hover:text-amber-100 transition-colors">
                       {item.title}
                     </h4>
                   </div>
 
                   {/* Sisi Kanan: Tombol [Lihat] & [Download] */}
-                  <div className="flex items-center justify-end space-x-2 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
-                    {/* Tombol LIHAT */}
+                  <div className="flex items-center justify-end space-x-2 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/20">
+                    {/* Tombol LIHAT (persis gaya Materi / Tugas di Beranda) */}
                     <a
                       href={item.fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs border border-white/20 transition-all flex items-center space-x-1.5 active:scale-95 shadow-xs"
+                      className="py-2 px-3.5 rounded-xl bg-white hover:bg-amber-50 text-[#783e18] font-bold text-xs flex items-center space-x-1.5 transition-all shadow-sm active:scale-95"
                       title="Lihat Dokumen"
                     >
-                      <Eye className="w-3.5 h-3.5 text-amber-300" />
+                      <Eye className="w-3.5 h-3.5 text-[#783e18]" />
                       <span>Lihat</span>
                     </a>
 
@@ -338,7 +338,7 @@ export default function CourseLibraryDetailPage() {
                       href={downloadLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-extrabold text-xs transition-all flex items-center space-x-1.5 shadow-sm active:scale-95"
+                      className="py-2 px-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-extrabold text-xs transition-all flex items-center space-x-1.5 shadow-sm active:scale-95"
                       title="Download Dokumen"
                     >
                       <Download className="w-3.5 h-3.5 text-stone-950" />

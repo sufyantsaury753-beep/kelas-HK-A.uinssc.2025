@@ -184,7 +184,7 @@ export default function LibraryDirectoryPage() {
             <span className="font-semibold text-stone-800">E-Library HK A 2025</span>
           </div>
 
-          <div className="bg-gradient-to-br from-[#1a0f08] via-[#2d180d] to-[#120703] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-amber-900/40">
+          <div className="bg-gradient-to-br from-[#8c4e24] via-[#783e18] to-[#5a2a0c] rounded-3xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden border border-amber-500/30">
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
               <div className="space-y-2 max-w-xl">
                 <div className="flex items-center gap-2">
@@ -328,8 +328,8 @@ export default function LibraryDirectoryPage() {
                     href={`/library/${c.id}`}
                     className="group flex flex-col items-center text-center focus:outline-none transition-all hover:-translate-y-1 active:scale-95 outline-none [-webkit-tap-highlight-color:transparent]"
                   >
-                    {/* Circular Bubble with luxury espresso gradient & golden ring */}
-                    <div className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-b from-[#2a1306] via-[#1c0c04] to-[#100602] text-white p-1 shadow-md shadow-amber-950/30 group-hover:shadow-xl group-hover:shadow-[#8c4e24]/30 transition-all duration-300 flex flex-col items-center justify-center border-2 border-amber-500/40 group-hover:border-amber-300 group-hover:scale-105">
+                    {/* Circular Bubble with warm HK A brown gradient & golden ring */}
+                    <div className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-b from-[#8c4e24] via-[#783e18] to-[#5a2a0c] text-white p-1 shadow-md shadow-amber-950/20 group-hover:shadow-xl group-hover:shadow-[#8c4e24]/30 transition-all duration-300 flex flex-col items-center justify-center border-2 border-amber-400/40 group-hover:border-amber-300 group-hover:scale-105">
                       <div className="absolute inset-1 rounded-full bg-radial from-amber-500/10 to-transparent pointer-events-none" />
                       <CourseIcon className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300 mb-1 relative z-10" />
                       <span className="relative z-10 text-[9px] sm:text-[10px] font-mono font-extrabold text-amber-200/95 tracking-tight px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/25">

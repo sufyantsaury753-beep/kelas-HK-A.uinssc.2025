@@ -349,8 +349,8 @@ export default function Navbar() {
                   <BookOpen className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="leading-tight font-bold text-xs">E-Library & Repositori Tugas</p>
-                  <p className="text-[10px] text-stone-500 font-normal">Semester 1 s.d. 8 • Makalah & PPT</p>
+                  <p className="leading-tight font-bold text-xs">E-Library</p>
+                  <p className="text-[10px] text-stone-500 font-normal">Makalah, PPT & Materi Kuliah</p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-stone-400" />
