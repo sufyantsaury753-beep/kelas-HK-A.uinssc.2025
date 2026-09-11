@@ -14,6 +14,8 @@ import {
   Users,
   Sparkles,
   ShieldCheck,
+  Upload,
+  Link2,
   Calendar,
   Clock,
   MapPin,
@@ -29,6 +31,7 @@ import {
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, AuthSession, LibraryItem, LibraryCategory } from '@/lib/types';
+import { formatFileSize, detectFileType, uploadLibraryFile, readFileAsDataUrl } from '@/lib/storage';
 
 // Helper to convert Google Drive / Docs view links to direct download links
 function getDownloadUrl(url: string): string {
@@ -70,6 +73,40 @@ export default function CourseLibraryDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [showDriveGuide, setShowDriveGuide] = useState(false);
+  const [uploadMode, setUploadMode] = useState<'FILE' | 'LINK'>('FILE');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgressText, setUploadProgressText] = useState<string>('');
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedFile(file);
+
+    // Auto fill title if empty
+    if (!uploadTitle.trim()) {
+      const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+      const formattedTitle = nameWithoutExt.replace(/[-_]+/g, ' ').trim();
+      setUploadTitle(formattedTitle);
+    }
+
+    // Auto detect category
+    const lower = file.name.toLowerCase();
+    if (lower.endsWith('.ppt') || lower.endsWith('.pptx') || lower.includes('presentasi') || lower.includes('slide')) {
+      setUploadCategory('PPT');
+    } else if (lower.includes('rps') || lower.includes('silabus')) {
+      setUploadCategory('RPS');
+    } else if (lower.includes('artikel') || lower.includes('jurnal')) {
+      setUploadCategory('ARTIKEL');
+    } else if (lower.includes('resume') || lower.includes('catatan') || lower.includes('rangkuman')) {
+      setUploadCategory('RESUME');
+    } else if (lower.includes('modul') || lower.includes('buku')) {
+      setUploadCategory('MODUL');
+    } else if (lower.includes('tugas') || lower.includes('proyek')) {
+      setUploadCategory('TUGAS');
+    } else {
+      setUploadCategory('MAKALAH');
+    }
+  };
 
   useEffect(() => {
     const init = () => {
@@ -91,13 +128,59 @@ export default function CourseLibraryDetailPage() {
   // Handle submit new task (Admin only)
   const handleSaveItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadTitle.trim() || !uploadFileUrl.trim() || !course) {
-      alert('Mohon isi judul karya dan tautan berkas!');
+    if (!course) return;
+
+    if (uploadMode === 'FILE' && !selectedFile) {
+      alert('Mohon pilih berkas dari perangkat Anda terlebih dahulu!');
+      return;
+    }
+
+    if (uploadMode === 'LINK' && !uploadFileUrl.trim()) {
+      alert('Mohon isi tautan berkas (Google Drive / tautan online)!');
+      return;
+    }
+
+    if (!uploadTitle.trim()) {
+      alert('Mohon isi judul tugas / karya!');
       return;
     }
 
     setIsSubmitting(true);
+    setUploadProgressText('Sedang memproses berkas...');
+
     try {
+      let finalFileUrl = uploadFileUrl.trim();
+      let finalFileType: 'PDF' | 'DOCX' | 'PPTX' | 'LINK' | 'DRIVE' = 'LINK';
+      let finalFileSize: string | undefined = undefined;
+
+      if (uploadMode === 'FILE' && selectedFile) {
+        setUploadProgressText('Mengunggah ke cloud storage...');
+        finalFileType = detectFileType(selectedFile.name);
+        finalFileSize = formatFileSize(selectedFile.size);
+
+        const uploadRes = await uploadLibraryFile(selectedFile, course.id);
+        if (uploadRes.url) {
+          finalFileUrl = uploadRes.url;
+        } else {
+          console.warn('Storage upload note:', uploadRes.error);
+          const allowLocal = confirm(
+            `${uploadRes.error}\n\nSimpan sementara di browser lokal perangkat ini agar berkas tidak hilang?\n(Disarankan membuat bucket 'library-files' di Supabase agar teman sekelas bisa mengunduhnya).`
+          );
+          if (allowLocal) {
+            setUploadProgressText('Menyimpan secara lokal...');
+            finalFileUrl = await readFileAsDataUrl(selectedFile);
+          } else {
+            setIsSubmitting(false);
+            setUploadProgressText('');
+            return;
+          }
+        }
+      } else {
+        if (finalFileUrl.includes('drive.google.com') || finalFileUrl.includes('docs.google.com')) {
+          finalFileType = 'DRIVE';
+        }
+      }
+
       appStore.addLibraryItem({
         courseId: course.id,
         courseName: course.name,
@@ -105,22 +188,26 @@ export default function CourseLibraryDetailPage() {
         title: uploadTitle.trim(),
         category: uploadCategory,
         authors: uploadAuthors.trim() || 'Mahasiswa HK A',
-        fileUrl: uploadFileUrl.trim(),
+        fileUrl: finalFileUrl,
+        fileType: finalFileType,
+        fileSize: finalFileSize,
         description: uploadDescription.trim() || undefined,
         uploadedByNim: auth?.nim || 'ADMIN',
         uploadedByName: auth?.name || 'Administrator',
       });
 
-      setUploadNotice('Berkas berhasil disimpan ke mata kuliah ini!');
+      setUploadNotice('Berkas berhasil disimpan ke E-Library!');
       setTimeout(() => {
         setShowUploadModal(false);
         setUploadNotice(null);
         setUploadTitle('');
         setUploadFileUrl('');
+        setSelectedFile(null);
         setUploadDescription('');
-      }, 1000);
-    } catch (err) {
-      alert('Gagal menyimpan berkas.');
+        setUploadProgressText('');
+      }, 1200);
+    } catch (err: any) {
+      alert('Gagal menyimpan berkas: ' + (err?.message || 'Terjadi kesalahan'));
     } finally {
       setIsSubmitting(false);
     }
@@ -389,7 +476,114 @@ export default function CourseLibraryDetailPage() {
               </div>
             )}
 
-            <form onSubmit={handleSaveItem} className="space-y-3 text-xs">
+            <form onSubmit={handleSaveItem} className="space-y-3.5 text-xs">
+              {/* Tab Selector Mode Upload */}
+              <div className="flex rounded-2xl bg-stone-100 p-1 border border-stone-200">
+                <button
+                  type="button"
+                  onClick={() => setUploadMode('FILE')}
+                  className={`flex-1 py-2 rounded-xl font-bold text-xs flex items-center justify-center space-x-1.5 transition-all ${
+                    uploadMode === 'FILE'
+                      ? 'bg-white text-[#8c4e24] shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload Langsung (HP/Laptop)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUploadMode('LINK')}
+                  className={`flex-1 py-2 rounded-xl font-bold text-xs flex items-center justify-center space-x-1.5 transition-all ${
+                    uploadMode === 'LINK'
+                      ? 'bg-white text-[#8c4e24] shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  <span>Tautan Google Drive</span>
+                </button>
+              </div>
+
+              {/* Mode 1: Direct File Upload */}
+              {uploadMode === 'FILE' ? (
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">
+                    Pilih Berkas dari Perangkat
+                  </label>
+                  {selectedFile ? (
+                    <div className="p-3.5 rounded-2xl border-2 border-amber-400 bg-amber-50/50 flex items-center justify-between gap-3">
+                      <div className="flex items-center space-x-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-amber-100 text-[#8c4e24] flex items-center justify-center flex-shrink-0 shadow-2xs">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-extrabold text-stone-900 text-xs truncate max-w-[200px] sm:max-w-[250px]">
+                            {selectedFile.name}
+                          </p>
+                          <p className="text-[10px] text-[#723f1c] font-semibold mt-0.5">
+                            {formatFileSize(selectedFile.size)} • Siap disimpan
+                          </p>
+                        </div>
+                      </div>
+                      <label className="px-3 py-1.5 rounded-xl bg-white hover:bg-stone-100 text-[#8c4e24] text-[11px] font-bold border border-stone-200 cursor-pointer shadow-2xs flex-shrink-0 active:scale-95">
+                        Ganti File
+                        <input
+                          type="file"
+                          onChange={handleFileSelect}
+                          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar,image/*"
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <label className="border-2 border-dashed border-stone-300 hover:border-[#8c4e24] bg-stone-50/70 hover:bg-amber-50/40 rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all group active:scale-98">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 text-[#8c4e24] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                        <Upload className="w-5 h-5" />
+                      </div>
+                      <span className="font-extrabold text-stone-900 text-xs">
+                        Ketuk untuk pilih berkas dari HP / Laptop
+                      </span>
+                      <span className="text-[10px] text-stone-500 mt-0.5">
+                        Mendukung PDF, Word (DOC/DOCX), PowerPoint (PPT/PPTX), dll.
+                      </span>
+                      <input
+                        type="file"
+                        onChange={handleFileSelect}
+                        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar,image/*"
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              ) : (
+                /* Mode 2: Google Drive Link */
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-stone-700">Tautan Berkas (Google Drive)</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowDriveGuide(!showDriveGuide)}
+                      className="text-[10px] text-[#8c4e24] underline"
+                    >
+                      Panduan Drive
+                    </button>
+                  </div>
+                  <input
+                    type="url"
+                    value={uploadFileUrl}
+                    onChange={(e) => setUploadFileUrl(e.target.value)}
+                    placeholder="https://drive.google.com/file/d/..."
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 font-mono text-[11px]"
+                  />
+                  {showDriveGuide && (
+                    <p className="text-[10px] text-amber-800 bg-amber-50 p-2 rounded-lg mt-1 border border-amber-200">
+                      Pastikan akses file di Google Drive diset ke &quot;Siapa saja yang memiliki link&quot;.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="block font-bold text-stone-700 mb-1">Jenis Dokumen</label>
                 <select
@@ -420,29 +614,14 @@ export default function CourseLibraryDetailPage() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block font-bold text-stone-700">Tautan Berkas (Google Drive)</label>
-                  <button
-                    type="button"
-                    onClick={() => setShowDriveGuide(!showDriveGuide)}
-                    className="text-[10px] text-[#8c4e24] underline"
-                  >
-                    Panduan Drive
-                  </button>
-                </div>
+                <label className="block font-bold text-stone-700 mb-1">Penyusun / Kelompok (Opsional)</label>
                 <input
-                  type="url"
-                  required
-                  value={uploadFileUrl}
-                  onChange={(e) => setUploadFileUrl(e.target.value)}
-                  placeholder="https://drive.google.com/file/d/..."
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300 font-mono text-[11px]"
+                  type="text"
+                  value={uploadAuthors}
+                  onChange={(e) => setUploadAuthors(e.target.value)}
+                  placeholder="Contoh: Kelompok 1 (Ahmad, Siti, Budi)"
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 font-medium"
                 />
-                {showDriveGuide && (
-                  <p className="text-[10px] text-amber-800 bg-amber-50 p-2 rounded-lg mt-1 border border-amber-200">
-                    Pastikan akses file di Google Drive diset ke &quot;Siapa saja yang memiliki link&quot;.
-                  </p>
-                )}
               </div>
 
               <div className="flex items-center justify-end space-x-2 pt-2 border-t border-stone-100">
@@ -456,9 +635,13 @@ export default function CourseLibraryDetailPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-xl bg-[#8c4e24] hover:bg-[#723f1c] text-white font-bold"
+                  className="px-5 py-2 rounded-xl bg-[#8c4e24] hover:bg-[#723f1c] text-white font-bold flex items-center space-x-1.5 active:scale-95 shadow-xs"
                 >
-                  {isSubmitting ? 'Menyimpan...' : 'Simpan Tugas'}
+                  {isSubmitting ? (
+                    <span>{uploadProgressText || 'Menyimpan...'}</span>
+                  ) : (
+                    <span>Simpan Tugas</span>
+                  )}
                 </button>
               </div>
             </form>
