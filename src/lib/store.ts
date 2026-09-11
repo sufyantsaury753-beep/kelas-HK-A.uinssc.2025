@@ -7,6 +7,8 @@ import {
   Announcement,
   AuthSession,
   AttendanceStatus,
+  LibraryItem,
+  LibraryCategory,
 } from './types';
 import {
   INITIAL_STUDENTS,
@@ -15,6 +17,7 @@ import {
   INITIAL_MATERIALS,
   INITIAL_SESSIONS,
   INITIAL_RECORDS,
+  INITIAL_LIBRARY_ITEMS,
 } from './initialData';
 import { supabase, isSupabaseConfigured } from './supabase';
 
