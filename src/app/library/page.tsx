@@ -26,6 +26,7 @@ import {
   Landmark,
   Languages,
   Check,
+  ChevronDown,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, AuthSession, LibraryItem, LibraryCategory } from '@/lib/types';
@@ -58,6 +59,8 @@ export default function LibraryDirectoryPage() {
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const [activeSemester, setActiveSemester] = useState<number>(3);
   const [selectedSemester, setSelectedSemester] = useState<number>(3);
+  const [hasManuallySelectedSemester, setHasManuallySelectedSemester] = useState(false);
+  const [showSemesterModal, setShowSemesterModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Upload modal for Admin only
@@ -81,6 +84,12 @@ export default function LibraryDirectoryPage() {
       setCourses(allCourses);
       const currentActiveSem = appStore.getActiveSemester() || 3;
       setActiveSemester(currentActiveSem);
+      setHasManuallySelectedSemester((manual) => {
+        if (!manual) {
+          setSelectedSemester(currentActiveSem);
+        }
+        return manual;
+      });
       setLibraryItems(appStore.getLibraryItems());
     };
 
@@ -225,58 +234,42 @@ export default function LibraryDirectoryPage() {
           </div>
         </div>
 
-        {/* SEMESTER SELECTION PILLS (1 to 8) */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-stone-600 flex items-center space-x-1.5">
-              <GraduationCap className="w-4 h-4 text-[#8c4e24]" />
-              <span>Pilih Semester Perkuliahan</span>
-            </h2>
-            <span className="text-xs text-stone-500 font-medium">
-              Semester Aktif: <strong className="text-[#8c4e24]">Semester {activeSemester}</strong>
-            </span>
+        {/* COMPACT LUXURY SEMESTER SELECTOR BAR */}
+        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-stone-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-amber-100 text-[#8c4e24] flex items-center justify-center flex-shrink-0 shadow-2xs border border-amber-200/60">
+              <GraduationCap className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h2 className="text-base sm:text-lg font-black text-stone-900">
+                  Semester {selectedSemester}
+                </h2>
+                {selectedSemester === activeSemester ? (
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    Semester Aktif
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">
+                    Arsip Semester
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-stone-500 mt-0.5">
+                {libraryItems.filter((i) => Number(i.semester) === Number(selectedSemester)).length} Berkas Tugas Tersedia • Semester {activeSemester === selectedSemester ? 'Aktif Saat Ini' : `Arsip`}
+              </p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => {
-              const isSelected = selectedSemester === sem;
-              const isActiveSem = activeSemester === sem;
-              const countInSem = libraryItems.filter((i) => Number(i.semester) === sem).length;
-
-              return (
-                <button
-                  key={sem}
-                  type="button"
-                  onClick={() => setSelectedSemester(sem)}
-                  className={`py-2.5 px-2 rounded-2xl text-center transition-all relative border outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] ${
-                    isSelected
-                      ? 'bg-gradient-to-b from-[#8c4e24] to-[#723f1c] text-white border-[#723f1c] shadow-md shadow-[#8c4e24]/25 scale-102 font-bold'
-                      : 'bg-white hover:bg-amber-50/70 text-stone-700 border-stone-200/90 hover:border-amber-300'
-                  }`}
-                >
-                  {isActiveSem && (
-                    <span
-                      className={`absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-extrabold px-1.5 py-0.2 rounded-full border shadow-2xs uppercase tracking-tighter ${
-                        isSelected
-                          ? 'bg-amber-400 text-stone-950 border-amber-300'
-                          : 'bg-[#8c4e24] text-white border-amber-400/40'
-                      }`}
-                    >
-                      Aktif
-                    </span>
-                  )}
-                  <div className="text-xs sm:text-sm font-black">Semester {sem}</div>
-                  <div
-                    className={`text-[10px] font-medium mt-0.5 ${
-                      isSelected ? 'text-amber-200' : 'text-stone-400'
-                    }`}
-                  >
-                    {countInSem} Berkas
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowSemesterModal(true)}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-[#8c4e24] hover:bg-[#723f1c] text-white font-extrabold text-xs flex items-center justify-center space-x-2 shadow-sm transition-all active:scale-95 [-webkit-tap-highlight-color:transparent]"
+          >
+            <GraduationCap className="w-4 h-4 text-amber-300" />
+            <span>Pilih Semester (1 - 8)</span>
+            <ChevronDown className="w-4 h-4 text-amber-200" />
+          </button>
         </div>
 
         {/* TAMPILAN MATA KULIAH BULAT MEWAH (KLIK MASUK KE HALAMAN BARU) */}
@@ -328,10 +321,10 @@ export default function LibraryDirectoryPage() {
                     href={`/library/${c.id}`}
                     className="group flex flex-col items-center text-center focus:outline-none transition-all hover:-translate-y-1 active:scale-95 outline-none [-webkit-tap-highlight-color:transparent]"
                   >
-                    {/* Circular Bubble with warm HK A brown gradient & golden ring */}
-                    <div className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-b from-[#8c4e24] via-[#783e18] to-[#5a2a0c] text-white p-1 shadow-md shadow-amber-950/20 group-hover:shadow-xl group-hover:shadow-[#8c4e24]/30 transition-all duration-300 flex flex-col items-center justify-center border-2 border-amber-400/40 group-hover:border-amber-300 group-hover:scale-105">
+                    {/* Circular Bubble with luxury espresso gradient & golden ring (sama persis Beranda) */}
+                    <div className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-b from-[#2a1306] via-[#1c0c04] to-[#100602] text-white p-1 shadow-md shadow-amber-950/40 group-hover:shadow-xl group-hover:shadow-[#8c4e24]/30 transition-all duration-300 flex flex-col items-center justify-center border-2 border-amber-500/40 group-hover:border-amber-300 group-hover:scale-105">
                       <div className="absolute inset-1 rounded-full bg-radial from-amber-500/10 to-transparent pointer-events-none" />
-                      <CourseIcon className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300 mb-1 relative z-10" />
+                      <CourseIcon className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300 drop-shadow-[0_2px_6px_rgba(245,158,11,0.3)] mb-1 relative z-10" />
                       <span className="relative z-10 text-[9px] sm:text-[10px] font-mono font-extrabold text-amber-200/95 tracking-tight px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/25">
                         {c.sks} SKS
                       </span>
@@ -496,6 +489,90 @@ export default function LibraryDirectoryPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PILIH SEMESTER (1 S.D. 8) */}
+      {showSemesterModal && (
+        <div className="fixed inset-0 z-50 bg-stone-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 border border-stone-200 shadow-2xl space-y-4 my-8 animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-[#8c4e24] flex items-center justify-center">
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-stone-900 text-sm sm:text-base">Pilih Semester Perkuliahan</h3>
+                  <p className="text-[11px] text-stone-500">
+                    Semester Aktif Saat Ini:{' '}
+                    <strong className="text-[#8c4e24]">Semester {activeSemester}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSemesterModal(false)}
+                className="text-stone-400 hover:text-stone-700 p-1 font-bold text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 py-1">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => {
+                const isSelected = selectedSemester === sem;
+                const isActiveSem = activeSemester === sem;
+                const countInSem = libraryItems.filter((i) => Number(i.semester) === sem).length;
+
+                return (
+                  <button
+                    key={sem}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSemester(sem);
+                      setHasManuallySelectedSemester(true);
+                      setShowSemesterModal(false);
+                    }}
+                    className={`py-3 px-2 rounded-2xl text-center transition-all relative border outline-none active:scale-95 [-webkit-tap-highlight-color:transparent] ${
+                      isSelected
+                        ? 'bg-gradient-to-b from-[#8c4e24] to-[#723f1c] text-white border-[#723f1c] shadow-md shadow-[#8c4e24]/25 scale-102 font-bold'
+                        : 'bg-stone-50 hover:bg-amber-50 text-stone-700 border-stone-200 hover:border-amber-300'
+                    }`}
+                  >
+                    {isActiveSem && (
+                      <span
+                        className={`absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-extrabold px-1.5 py-0.2 rounded-full border shadow-2xs uppercase tracking-tighter ${
+                          isSelected
+                            ? 'bg-amber-400 text-stone-950 border-amber-300'
+                            : 'bg-[#8c4e24] text-white border-amber-400/40'
+                        }`}
+                      >
+                        Aktif
+                      </span>
+                    )}
+                    <div className="text-xs sm:text-sm font-black">Semester {sem}</div>
+                    <div
+                      className={`text-[10px] font-medium mt-0.5 ${
+                        isSelected ? 'text-amber-200' : 'text-stone-400'
+                      }`}
+                    >
+                      {countInSem} Berkas
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="pt-2 border-t border-stone-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowSemesterModal(false)}
+                className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}
