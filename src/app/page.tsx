@@ -502,7 +502,8 @@ export default function HomePage() {
                     <button
                       type="button"
                       onClick={() => setSelectedCourse(c)}
-                      className="py-2 px-2 rounded-xl bg-white hover:bg-amber-50 text-[#783e18] font-bold text-xs flex items-center justify-center space-x-1 transition-all shadow-sm active:scale-98"
+                      className="py-2 px-2 rounded-xl bg-white hover:bg-amber-50 text-[#783e18] font-bold text-xs flex items-center justify-center space-x-1 transition-all shadow-sm active:scale-98 outline-none focus:outline-none select-none [-webkit-tap-highlight-color:transparent]"
+                      style={{ WebkitTapHighlightColor: 'transparent', outline: 'none' }}
                     >
                       <BookOpen className="w-3.5 h-3.5" />
                       <span>Materi / Tugas</span>
@@ -583,10 +584,14 @@ export default function HomePage() {
                       key={c.id}
                       type="button"
                       onClick={() => setSelectedCourse(c)}
-                      className="group flex flex-col items-center text-center focus:outline-none transition-all hover:-translate-y-1 active:scale-95"
+                      className="group flex flex-col items-center text-center outline-none focus:outline-none focus:ring-0 select-none transition-all hover:-translate-y-1 active:scale-95 [-webkit-tap-highlight-color:transparent]"
+                      style={{ WebkitTapHighlightColor: 'transparent', outline: 'none' }}
                     >
                       {/* Circular Bubble with luxury espresso gradient & golden ring */}
-                      <div className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-b from-[#2a1306] via-[#1c0c04] to-[#100602] text-white p-1 shadow-md shadow-amber-950/40 group-hover:shadow-xl group-hover:shadow-[#8c4e24]/30 transition-all duration-300 flex flex-col items-center justify-center border-2 border-amber-500/40 group-hover:border-amber-300 group-hover:scale-105">
+                      <div
+                        className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-b from-[#2a1306] via-[#1c0c04] to-[#100602] text-white p-1 shadow-md shadow-amber-950/40 group-hover:shadow-xl group-hover:shadow-[#8c4e24]/30 transition-all duration-300 flex flex-col items-center justify-center border-2 border-amber-500/40 group-hover:border-amber-300 group-hover:scale-105 select-none"
+                        style={{ WebkitTapHighlightColor: 'transparent', outline: 'none' }}
+                      >
                         {/* Soft radial glow */}
                         <div className="absolute inset-1 rounded-full bg-radial from-amber-500/10 to-transparent pointer-events-none" />
 
@@ -605,10 +610,10 @@ export default function HomePage() {
                       </div>
 
                       {/* Course Name centered underneath */}
-                      <h3 className="mt-2.5 font-bold text-[11px] sm:text-xs text-stone-800 group-hover:text-[#8c4e24] transition-colors line-clamp-2 leading-tight px-1 max-w-[105px] sm:max-w-[125px]">
+                      <h3 className="mt-2.5 font-bold text-[11px] sm:text-xs text-stone-800 group-hover:text-[#8c4e24] transition-colors line-clamp-2 leading-tight px-1 max-w-[105px] sm:max-w-[125px] select-none pointer-events-none">
                         {c.name}
                       </h3>
-                      <span className="text-[10px] text-stone-500 bg-stone-100 group-hover:bg-amber-50 group-hover:text-[#8c4e24] mt-1 font-semibold px-2 py-0.5 rounded-md border border-stone-200/60 transition-colors line-clamp-1 max-w-[95px]">
+                      <span className="text-[10px] text-stone-500 bg-stone-100 group-hover:bg-amber-50 group-hover:text-[#8c4e24] mt-1 font-semibold px-2 py-0.5 rounded-md border border-stone-200/60 transition-colors line-clamp-1 max-w-[95px] select-none pointer-events-none">
                         {c.day ? `${c.day}` : c.code}
                       </span>
                     </button>

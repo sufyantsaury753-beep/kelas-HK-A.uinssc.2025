@@ -407,10 +407,14 @@ export default function LibraryDirectoryPage() {
                   <Link
                     key={c.id}
                     href={`/library/${c.id}`}
-                    className="group flex flex-col items-center text-center focus:outline-none transition-all hover:-translate-y-1 active:scale-95 outline-none [-webkit-tap-highlight-color:transparent]"
+                    className="group flex flex-col items-center text-center outline-none focus:outline-none focus:ring-0 select-none transition-all hover:-translate-y-1 active:scale-95 [-webkit-tap-highlight-color:transparent]"
+                    style={{ WebkitTapHighlightColor: 'transparent', outline: 'none' }}
                   >
                     {/* Circular Bubble with luxury espresso gradient & golden ring (sama persis Beranda) */}
-                    <div className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-b from-[#2a1306] via-[#1c0c04] to-[#100602] text-white p-1 shadow-md shadow-amber-950/40 group-hover:shadow-xl group-hover:shadow-[#8c4e24]/30 transition-all duration-300 flex flex-col items-center justify-center border-2 border-amber-500/40 group-hover:border-amber-300 group-hover:scale-105">
+                    <div
+                      className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-b from-[#2a1306] via-[#1c0c04] to-[#100602] text-white p-1 shadow-md shadow-amber-950/40 group-hover:shadow-xl group-hover:shadow-[#8c4e24]/30 transition-all duration-300 flex flex-col items-center justify-center border-2 border-amber-500/40 group-hover:border-amber-300 group-hover:scale-105 select-none"
+                      style={{ WebkitTapHighlightColor: 'transparent', outline: 'none' }}
+                    >
                       <div className="absolute inset-1 rounded-full bg-radial from-amber-500/10 to-transparent pointer-events-none" />
                       <CourseIcon className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300 drop-shadow-[0_2px_6px_rgba(245,158,11,0.3)] mb-1 relative z-10" />
                       <span className="relative z-10 text-[9px] sm:text-[10px] font-mono font-extrabold text-amber-200/95 tracking-tight px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/25">
@@ -418,12 +422,12 @@ export default function LibraryDirectoryPage() {
                       </span>
                     </div>
 
-                    <span className="text-[11px] sm:text-xs font-bold text-stone-900 mt-2 line-clamp-2 max-w-[90px] sm:max-w-[105px] leading-tight group-hover:text-[#8c4e24] transition-colors">
+                    <span className="text-[11px] sm:text-xs font-bold text-stone-900 mt-2 line-clamp-2 max-w-[90px] sm:max-w-[105px] leading-tight group-hover:text-[#8c4e24] transition-colors select-none pointer-events-none">
                       {c.name}
                     </span>
 
                     <span
-                      className={`text-[9px] px-2 py-0.5 rounded-full mt-1 font-semibold ${
+                      className={`text-[9px] px-2 py-0.5 rounded-full mt-1 font-semibold select-none pointer-events-none ${
                         courseFilesCount > 0
                           ? 'bg-amber-100 text-[#723f1c] font-bold'
                           : 'bg-stone-100 text-stone-400'
