@@ -70,6 +70,25 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Portal Kelas HK A 2025',
+  alternateName: [
+    'Kelas HK A 2025',
+    'Kelas HK A 2025 UIN Siber Cirebon',
+    'Hukum Keluarga A 2025',
+    'Portal Akademik HK A 2025',
+  ],
+  url: 'https://kelas-hk-a-uinssc-2025.vercel.app',
+  description:
+    'Portal Resmi Kelas Hukum Keluarga A 2025, Fakultas Syariah, UIN Siber Syekh Nurjati Cirebon.',
+  publisher: {
+    '@type': 'EducationalOrganization',
+    name: 'UIN Siber Syekh Nurjati Cirebon',
+  },
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -81,6 +100,10 @@ export default function RootLayout({
         <meta
           name="google-site-verification"
           content="cUPEHbfq_JqOjvcE0H_NeWWkGZz4QtY2WUrnHYE7DEQ"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body className={`${jakarta.className} min-h-screen w-full overflow-x-hidden flex flex-col bg-white text-stone-900 antialiased selection:bg-[#9d5f2f]/20 selection:text-[#753e1f] font-sans`}>

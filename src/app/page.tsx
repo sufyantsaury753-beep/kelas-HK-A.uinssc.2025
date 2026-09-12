@@ -313,6 +313,11 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Badge Portal Resmi Kelas HK A 2025 */}
+            <div className="animate-fade-up inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-amber-300/30 text-amber-200 text-[11px] sm:text-xs font-bold mb-3 shadow-xs">
+              <span>Portal Resmi Kelas HK A 2025</span>
+            </div>
+
             {/* Core Title (Clean, Bold, Centered) */}
             <h1 className="animate-fade-up delay-100 text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight mb-2">
               Hukum Keluarga A 2025
