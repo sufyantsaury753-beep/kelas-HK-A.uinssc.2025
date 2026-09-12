@@ -93,6 +93,67 @@ export default function LibraryDirectoryPage() {
   const [uploadMode, setUploadMode] = useState<'FILE' | 'LINK'>('FILE');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgressText, setUploadProgressText] = useState<string>('');
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  // Unduh otomatis langsung ke penyimpanan perangkat
+  const handleDirectDownload = async (item: LibraryItem) => {
+    setDownloadingId(item.id);
+    try {
+      const url = item.fileUrl;
+      // Konversi link view Google Drive ke direct download
+      if (url.includes('drive.google.com/file/d/')) {
+        const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (driveMatch && driveMatch[1]) {
+          window.open(`https://drive.google.com/uc?export=download&id=${driveMatch[1]}`, '_blank');
+          return;
+        }
+      }
+
+      let ext = (item.fileType || 'pdf').toLowerCase();
+      if (ext === 'docx') ext = 'docx';
+      else if (ext === 'pptx') ext = 'pptx';
+      else if (ext === 'img') ext = 'jpg';
+      else if (ext === 'link' || ext === 'drive') ext = 'pdf';
+
+      const urlPath = url.split('?')[0];
+      const existingExt = urlPath.split('.').pop()?.toLowerCase();
+      if (existingExt && ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp'].includes(existingExt)) {
+        ext = existingExt;
+      }
+
+      const cleanTitle = (item.title || 'Berkas-Tugas')
+        .replace(/[^a-zA-Z0-9\s_-]/g, '')
+        .trim()
+        .replace(/\s+/g, '_');
+      const fileName = `${cleanTitle}.${ext}`;
+
+      // Ambil berkas sebagai blob (CORS Supabase Storage aktif)
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+
+      // Trigger unduhan langsung ke perangkat
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+    } catch (err) {
+      console.warn('Direct fetch download fallback:', err);
+      const a = document.createElement('a');
+      a.href = item.fileUrl;
+      a.download = item.title;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   useEffect(() => {
     const init = () => {
@@ -683,16 +744,25 @@ export default function LibraryDirectoryPage() {
                         <span>Buka / Lihat</span>
                       </a>
 
-                      <a
-                        href={item.fileUrl}
-                        download
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="py-2 px-3 rounded-xl bg-[#8c4e24] hover:bg-[#753e1f] text-white font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors shadow-xs text-center"
+                      <button
+                        type="button"
+                        disabled={downloadingId === item.id}
+                        onClick={() => handleDirectDownload(item)}
+                        className="py-2 px-3 rounded-xl bg-[#8c4e24] hover:bg-[#753e1f] text-white font-bold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-xs text-center disabled:opacity-60 cursor-pointer active:scale-98"
+                        title="Unduh langsung ke penyimpanan perangkat"
                       >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Unduh</span>
-                      </a>
+                        {downloadingId === item.id ? (
+                          <>
+                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Mengunduh...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Unduh</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>

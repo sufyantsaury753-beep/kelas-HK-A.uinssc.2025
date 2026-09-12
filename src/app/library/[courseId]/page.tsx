@@ -76,6 +76,63 @@ export default function CourseLibraryDetailPage() {
   const [uploadMode, setUploadMode] = useState<'FILE' | 'LINK'>('FILE');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgressText, setUploadProgressText] = useState<string>('');
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDirectDownload = async (item: LibraryItem) => {
+    setDownloadingId(item.id);
+    try {
+      const url = item.fileUrl;
+      if (url.includes('drive.google.com/file/d/')) {
+        const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (driveMatch && driveMatch[1]) {
+          window.open(`https://drive.google.com/uc?export=download&id=${driveMatch[1]}`, '_blank');
+          return;
+        }
+      }
+
+      let ext = (item.fileType || 'pdf').toLowerCase();
+      if (ext === 'docx') ext = 'docx';
+      else if (ext === 'pptx') ext = 'pptx';
+      else if (ext === 'img') ext = 'jpg';
+      else if (ext === 'link' || ext === 'drive') ext = 'pdf';
+
+      const urlPath = url.split('?')[0];
+      const existingExt = urlPath.split('.').pop()?.toLowerCase();
+      if (existingExt && ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp'].includes(existingExt)) {
+        ext = existingExt;
+      }
+
+      const cleanTitle = (item.title || 'Berkas-Tugas')
+        .replace(/[^a-zA-Z0-9\s_-]/g, '')
+        .trim()
+        .replace(/\s+/g, '_');
+      const fileName = `${cleanTitle}.${ext}`;
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+    } catch (err) {
+      console.warn('Direct download fallback:', err);
+      const a = document.createElement('a');
+      a.href = item.fileUrl;
+      a.download = item.title;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -427,17 +484,26 @@ export default function CourseLibraryDetailPage() {
                       <span>Lihat</span>
                     </a>
 
-                    {/* Tombol DOWNLOAD */}
-                    <a
-                      href={downloadLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="py-2 px-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-extrabold text-xs transition-all flex items-center space-x-1.5 shadow-sm active:scale-95"
-                      title="Download Dokumen"
+                    {/* Tombol DOWNLOAD LANGSUNG */}
+                    <button
+                      type="button"
+                      disabled={downloadingId === item.id}
+                      onClick={() => handleDirectDownload(item)}
+                      className="py-2 px-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-extrabold text-xs transition-all flex items-center space-x-1.5 shadow-sm active:scale-95 disabled:opacity-60 cursor-pointer"
+                      title="Download langsung ke perangkat"
                     >
-                      <Download className="w-3.5 h-3.5 text-stone-950" />
-                      <span>Download</span>
-                    </a>
+                      {downloadingId === item.id ? (
+                        <>
+                          <span className="w-3.5 h-3.5 border-2 border-stone-950 border-t-transparent rounded-full animate-spin" />
+                          <span>Mengunduh...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-3.5 h-3.5 text-stone-950" />
+                          <span>Download</span>
+                        </>
+                      )}
+                    </button>
 
                     {/* Tombol Hapus: Admin atau Pemilik Berkas */}
                     {(isAdmin || (auth?.nim && item.uploadedByNim === auth.nim)) && (
