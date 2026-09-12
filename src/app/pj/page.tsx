@@ -995,113 +995,113 @@ export default function PjDashboard() {
               ) : (
                 /* CASE 2: ATTENDANCE UNLOCKED (TODAY IS THE COURSE DAY OR ADMIN SIMULATING) */
                 <div className="space-y-6">
-                  {/* Attendance Session Header & Quick Controls - Ringkas & Hemat Ruang */}
-                  <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-stone-200 shadow-xs space-y-3">
-                    {/* Baris 1: Info Pertemuan, Tanggal & Tombol Cetak / CSV / Sesi */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-stone-100">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
+                  {/* Attendance Session Header & Quick Controls - Berjarak & Rata Kiri Kanan */}
+                  <div className="bg-white rounded-3xl p-4 sm:p-6 border border-stone-200 shadow-xs space-y-4">
+                    {/* Baris 1: Status Sesi & Pemilih Tanggal (Rata Kiri Kanan) */}
+                    <div className="flex items-center justify-between gap-3 w-full">
+                      <div className="flex items-center space-x-2">
+                        <span className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-2xs">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                           <span>Pertemuan Ke-{currentSession ? currentSession.meetingNumber : activeCourseSessions.length + 1}</span>
                         </span>
-
-                        {currentSession && (
-                          <div className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg bg-stone-100 border border-stone-200 text-stone-700 text-xs">
-                            <Calendar className="w-3 h-3 text-[#9d5f2f]" />
-                            <input
-                              type="date"
-                              value={currentSession.date}
-                              onChange={(e) => {
-                                if (e.target.value) {
-                                  appStore.updateSession(currentSession.id, { date: e.target.value });
-                                  showToast(`Tanggal sesi diubah menjadi ${e.target.value}`);
-                                }
-                              }}
-                              className="bg-transparent text-xs font-semibold text-stone-800 focus:outline-none cursor-pointer"
-                              title="Ubah tanggal pertemuan"
-                            />
-                          </div>
-                        )}
-
-                        <span className="text-[11px] text-stone-500 font-mono hidden md:inline">
+                        <span className="text-xs text-stone-500 font-mono hidden md:inline">
                           {activeCourse.time}
                         </span>
                       </div>
 
-                      {/* Tombol Cetak, CSV, Sesi Manual */}
-                      <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                        {currentSession && (
-                          <>
-                            <button
-                              onClick={() => setShowPrintModal(true)}
-                              className="px-2.5 py-1.5 bg-stone-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition-all flex items-center space-x-1 shadow-2xs active:scale-95"
-                              title="Cetak Berita Acara & Absensi Resmi (PDF)"
-                            >
-                              <Printer className="w-3.5 h-3.5 text-amber-400" />
-                              <span>Cetak PDF</span>
-                            </button>
-                            <button
-                              onClick={() =>
-                                exportSingleSessionCsv(
-                                  activeCourse,
-                                  currentSession,
-                                  students,
-                                  currentRecords
-                                )
+                      {currentSession && (
+                        <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-stone-100 border border-stone-300/80 text-stone-700 text-xs font-semibold shadow-2xs">
+                          <Calendar className="w-3.5 h-3.5 text-[#9d5f2f]" />
+                          <input
+                            type="date"
+                            value={currentSession.date}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                appStore.updateSession(currentSession.id, { date: e.target.value });
+                                showToast(`Tanggal sesi diubah menjadi ${e.target.value}`);
                               }
-                              className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-700 text-xs font-semibold rounded-xl transition-colors flex items-center space-x-1"
-                              title="Unduh Data CSV"
-                            >
-                              <Download className="w-3.5 h-3.5 text-emerald-700" />
-                              <span>CSV</span>
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() => {
-                            setNewMeetingNum(activeCourseSessions.length + 1);
-                            setShowNewSessionModal(true);
-                          }}
-                          className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl transition-colors flex items-center space-x-1"
-                          title="Buka atau Jadwalkan Sesi Baru Manual"
-                        >
-                          <Plus className="w-3.5 h-3.5 text-[#8c4e24]" />
-                          <span>Sesi Manual</span>
-                        </button>
-                      </div>
+                            }}
+                            className="bg-transparent text-xs font-bold text-stone-800 focus:outline-none cursor-pointer"
+                            title="Ubah tanggal pertemuan"
+                          />
+                        </div>
+                      )}
                     </div>
 
-                    {/* Baris 2: Rekap Mini Ringkas & Tombol Tandai Semua Hadir */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                      {/* 5 Status Counters - Ringkas & Satu Deret */}
-                      <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold">
-                        <span className="text-[11px] text-stone-400 uppercase font-bold mr-1 hidden xs:inline">Rekap:</span>
-                        <span className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px]">
-                          Hadir: <b>{hadirCount}</b>
-                        </span>
-                        <span className="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 text-[11px]">
-                          Izin: <b>{izinCount}</b>
-                        </span>
-                        <span className="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-[11px]">
-                          Sakit: <b>{sakitCount}</b>
-                        </span>
-                        <span className="px-2 py-0.5 rounded-lg bg-purple-50 text-purple-800 border border-purple-200 text-[11px]">
-                          Disp: <b>{dispensasiCount}</b>
-                        </span>
-                        <span className="px-2 py-0.5 rounded-lg bg-rose-50 text-rose-800 border border-rose-200 text-[11px]">
-                          Alfa: <b>{alpaCount}</b>
-                        </span>
-                      </div>
-
-                      {/* Tombol Cepat Tandai Semua Hadir */}
+                    {/* Baris 2: Tombol Cetak PDF, CSV, Sesi Manual (Rata Kiri Kanan 3 Kolom di HP) */}
+                    <div className="grid grid-cols-3 sm:flex sm:items-center sm:justify-end gap-2 w-full pt-1 pb-3.5 border-b border-stone-100">
+                      {currentSession && (
+                        <>
+                          <button
+                            onClick={() => setShowPrintModal(true)}
+                            className="w-full sm:w-auto px-3 py-2 bg-stone-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-xs active:scale-95 text-center"
+                            title="Cetak Berita Acara & Absensi Resmi (PDF)"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span>Cetak PDF</span>
+                          </button>
+                          <button
+                            onClick={() =>
+                              exportSingleSessionCsv(
+                                activeCourse,
+                                currentSession,
+                                students,
+                                currentRecords
+                              )
+                            }
+                            className="w-full sm:w-auto px-3 py-2 bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-800 text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-1.5 text-center"
+                            title="Unduh Data CSV"
+                          >
+                            <Download className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                            <span>CSV</span>
+                          </button>
+                        </>
+                      )}
                       <button
-                        onClick={handleMarkAllHadir}
-                        className="w-full sm:w-auto px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-xs flex items-center justify-center space-x-1.5 active:scale-95 shrink-0"
+                        onClick={() => {
+                          setNewMeetingNum(activeCourseSessions.length + 1);
+                          setShowNewSessionModal(true);
+                        }}
+                        className="w-full sm:w-auto px-3 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[#8c4e24] text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-1.5 text-center"
+                        title="Buka atau Jadwalkan Sesi Baru Manual"
                       >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Semua Hadir (1 Klik)</span>
+                        <Plus className="w-3.5 h-3.5 text-[#8c4e24]" />
+                        <span>Sesi Manual</span>
                       </button>
                     </div>
+
+                    {/* Baris 3: Rekap 5 Status Kehadiran (Grid 5 Kolom Rata Kiri Kanan) */}
+                    <div className="grid grid-cols-5 gap-1.5 sm:gap-2 w-full text-center">
+                      <div className="py-2 px-1 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-2xs flex flex-col items-center justify-center">
+                        <span className="text-[10px] sm:text-[11px] font-medium text-emerald-700">Hadir</span>
+                        <strong className="text-xs sm:text-sm font-black mt-0.5">{hadirCount}</strong>
+                      </div>
+                      <div className="py-2 px-1 rounded-xl bg-blue-50 text-blue-900 border border-blue-200 shadow-2xs flex flex-col items-center justify-center">
+                        <span className="text-[10px] sm:text-[11px] font-medium text-blue-700">Izin</span>
+                        <strong className="text-xs sm:text-sm font-black mt-0.5">{izinCount}</strong>
+                      </div>
+                      <div className="py-2 px-1 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 shadow-2xs flex flex-col items-center justify-center">
+                        <span className="text-[10px] sm:text-[11px] font-medium text-amber-700">Sakit</span>
+                        <strong className="text-xs sm:text-sm font-black mt-0.5">{sakitCount}</strong>
+                      </div>
+                      <div className="py-2 px-1 rounded-xl bg-purple-50 text-purple-900 border border-purple-200 shadow-2xs flex flex-col items-center justify-center">
+                        <span className="text-[10px] sm:text-[11px] font-medium text-purple-700">Disp</span>
+                        <strong className="text-xs sm:text-sm font-black mt-0.5">{dispensasiCount}</strong>
+                      </div>
+                      <div className="py-2 px-1 rounded-xl bg-rose-50 text-rose-900 border border-rose-200 shadow-2xs flex flex-col items-center justify-center">
+                        <span className="text-[10px] sm:text-[11px] font-medium text-rose-700">Alfa</span>
+                        <strong className="text-xs sm:text-sm font-black mt-0.5">{alpaCount}</strong>
+                      </div>
+                    </div>
+
+                    {/* Baris 4: Tombol Cepat Tandai Semua Hadir (Full Width, Lega, Berjarak) */}
+                    <button
+                      onClick={handleMarkAllHadir}
+                      className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs sm:text-sm transition-all shadow-md shadow-emerald-700/20 flex items-center justify-center space-x-2"
+                    >
+                      <Check className="w-4 h-4 stroke-[3]" />
+                      <span>Tandai Semua Hadir (1 Klik)</span>
+                    </button>
                   </div>
 
                   {/* KUMPULAN NAMA-NAMA 30 MAHASISWA & TOMBOL STATUS */}
