@@ -201,104 +201,34 @@ export default function MahasiswaDashboard() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/"
-              replace
-              className="hidden md:inline-flex px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold backdrop-blur-sm border border-white/20 transition-all items-center space-x-1.5 active:scale-95"
-            >
-              <ArrowLeft className="w-4 h-4 text-amber-200" />
-              <span>Kembali ke Beranda</span>
-            </Link>
+          <div className="flex flex-wrap items-center gap-2.5 mt-2 md:mt-0">
             <Link
               href="/library"
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 text-xs font-bold shadow-md transition-all flex items-center space-x-1.5 active:scale-95"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 text-xs font-bold shadow-md transition-all flex items-center space-x-1.5 active:scale-95"
             >
               <BookOpen className="w-4 h-4 text-stone-950" />
               <span>E-Library</span>
             </Link>
-            <button
-              onClick={() => setShowPinModal(true)}
-              className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold backdrop-blur-sm border border-white/20 transition-all flex items-center space-x-1.5"
-            >
-              <KeyRound className="w-4 h-4 text-amber-300" />
-              <span>Ganti PIN</span>
-            </button>
             {myPjCourses.length > 0 && (
               <Link
                 href="/pj"
                 replace
-                className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-900 text-xs font-bold shadow-lg transition-all flex items-center space-x-1.5"
+                className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-900 text-xs font-bold shadow-lg transition-all flex items-center space-x-1.5 active:scale-95"
               >
                 <Sparkles className="w-4 h-4 text-stone-950" />
                 <span>Portal PJ ({myPjCourses.length} MK)</span>
               </Link>
             )}
+            <button
+              onClick={() => setShowPinModal(true)}
+              className="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold backdrop-blur-sm border border-white/20 transition-all flex items-center space-x-1.5 active:scale-95"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-amber-300" />
+              <span>Ganti PIN</span>
+            </button>
           </div>
         </div>
       </div>
-
-      {/* E-Library Banner */}
-      <div className="bg-gradient-to-br from-[#8c4e24] via-[#783e18] to-[#5a2a0c] text-white rounded-3xl p-5 sm:p-6 border border-amber-500/30 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-start space-x-3.5 max-w-2xl">
-          <div className="p-3 bg-white text-[#783e18] rounded-2xl shadow-md flex-shrink-0">
-            <BookOpen className="w-6 h-6" />
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-black/30 text-amber-200 border border-amber-300/30">
-                E-Library
-              </span>
-            </div>
-            <h3 className="text-sm sm:text-base font-extrabold text-white">
-              Perpustakaan & Repositori Tugas HK A 2025
-            </h3>
-            <p className="text-xs text-amber-100/90 leading-relaxed">
-              Akses seluruh arsip makalah kelompok, artikel ilmiah, resume materi, modul, dan bahan tayang presentasi PPT perkuliahan HK A 2025.
-            </p>
-          </div>
-        </div>
-        <Link
-          href="/library"
-          className="w-full md:w-auto px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-extrabold rounded-2xl shadow-md transition-all flex items-center justify-center space-x-1.5 flex-shrink-0 active:scale-95"
-        >
-          <span>Buka E-Library</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-
-      {/* PJ Banner if assigned */}
-      {myPjCourses.length > 0 && (
-        <div className="bg-gradient-to-br from-[#8c4e24] via-[#783e18] to-[#5a2a0c] text-white border border-amber-500/30 rounded-3xl p-5 sm:p-6 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-start space-x-3.5">
-            <div className="p-3 bg-amber-400 text-stone-950 rounded-2xl shadow-sm flex-shrink-0">
-              <Sparkles className="w-6 h-6 stroke-[2.5]" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-black/30 text-amber-200 border border-amber-300/30">
-                  Penugasan PJ
-                </span>
-              </div>
-              <h3 className="text-sm sm:text-base font-extrabold text-white">
-                Anda Ditugaskan Sebagai Penanggung Jawab (PJ)
-              </h3>
-              <p className="text-xs text-amber-100/90 mt-0.5">
-                Mata kuliah yang Anda ampu:{' '}
-                <strong className="text-white">{myPjCourses.map((c) => c.name).join(', ')}</strong>.
-                Anda berhak membuka sesi absensi, mencatat kehadiran rekan kelas, dan mengunduh rekapitulasi.
-              </p>
-            </div>
-          </div>
-          <Link
-            href="/pj"
-            className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-extrabold rounded-2xl shadow-sm transition-all flex items-center space-x-1.5 flex-shrink-0 active:scale-95"
-          >
-            <span>Buka Dashboard PJ</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      )}
 
       {/* Active Check-in Alert Section (If any session is open) */}
       {openSessions.length > 0 && (

@@ -510,49 +510,36 @@ export default function PjDashboard() {
         </div>
       )}
 
-      {/* Top Banner PJ - Kalem, Elegan & Hemat Ruang */}
-      <div className="bg-[#241206] text-white rounded-3xl p-4 sm:p-6 border border-[#3b1d0a] shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center space-x-2 text-xs font-medium text-amber-200/90 mb-1">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Portal PJ • {todayFormatted}</span>
-            {isAdmin && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-stone-950">
-                Admin
-              </span>
-            )}
-          </div>
-          <h1 className="text-base sm:text-xl font-bold text-white tracking-tight">
-            {auth.name} {auth.nim ? `(${auth.nim})` : ''}
-          </h1>
-          <p className="text-xs text-stone-300 mt-0.5">
-            Penanggung Jawab Presensi Kelas HK A 2025
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Link
-            href="/"
-            replace
-            className="hidden md:inline-flex px-3.5 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition-all items-center space-x-1.5 active:scale-95"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Kembali ke Beranda</span>
-          </Link>
+      {/* Top Navigation Minimalis */}
+      <div className="flex items-center justify-between text-xs text-stone-500 py-1">
+        <div className="flex items-center space-x-2">
           <Link
             href="/mahasiswa"
             replace
-            className="px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition-all flex items-center space-x-1.5 active:scale-95"
+            className="hover:text-stone-900 flex items-center space-x-1.5 font-bold text-[#8c4e24] transition-colors"
           >
-            <span>Dashboard Pribadi</span>
+            <ArrowLeft className="w-4 h-4" />
+            <span>Portal Mahasiswa</span>
+          </Link>
+          <span>/</span>
+          <span className="font-semibold text-stone-800">Portal PJ Presensi</span>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Link
+            href="/"
+            replace
+            className="hidden sm:inline-flex px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-all items-center space-x-1"
+          >
+            <span>Beranda</span>
           </Link>
           {isAdmin && (
             <Link
               href="/admin"
               replace
-              className="px-4 py-2 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold transition-all active:scale-95"
+              className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold transition-all"
             >
-              Admin
+              Admin Panel
             </Link>
           )}
         </div>
@@ -721,14 +708,14 @@ export default function PjDashboard() {
               </div>
             </div>
 
-            {/* Top Toolbar Actions */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Top Toolbar Actions - Rapi 2x2 di Mobile, Flex di Desktop */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full lg:w-auto mt-3 lg:mt-0">
               <Link
                 href={`/kuliah-online/${activeCourse.id}`}
-                className="px-3.5 py-2 bg-gradient-to-r from-[#8c4e24] to-[#723f1c] hover:brightness-110 text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-sm active:scale-95"
+                className="px-3.5 py-2.5 sm:py-2 bg-gradient-to-r from-[#8c4e24] to-[#723f1c] hover:brightness-110 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 shadow-sm active:scale-95 text-center"
               >
-                <Video className="w-4 h-4 text-amber-300" />
-                <span>Kuliah Online (Meet)</span>
+                <Video className="w-4 h-4 text-amber-300 shrink-0" />
+                <span>Kuliah Online</span>
               </Link>
 
               <button
@@ -740,34 +727,18 @@ export default function PjDashboard() {
                     showToast('Tautan undangan Dosen Pengampu berhasil disalin untuk WhatsApp!');
                   }
                 }}
-                className="px-3.5 py-2 bg-amber-100 hover:bg-amber-200 text-[#8c4e24] border border-amber-300 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-2xs active:scale-95"
+                className="px-3.5 py-2.5 sm:py-2 bg-amber-100 hover:bg-amber-200 text-[#8c4e24] border border-amber-300 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 shadow-2xs active:scale-95 text-center"
               >
-                <Share2 className="w-4 h-4 text-[#8c4e24]" />
-                <span>Salin Tautan Dosen (WA)</span>
+                <Share2 className="w-4 h-4 text-[#8c4e24] shrink-0" />
+                <span>Tautan Dosen (WA)</span>
               </button>
 
               <button
                 onClick={handleOpenEnrollModal}
-                className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-[#8c4e24] border border-amber-200/80 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-2xs"
+                className="px-3.5 py-2.5 sm:py-2 bg-amber-50 hover:bg-amber-100 text-[#8c4e24] border border-amber-200/80 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 shadow-2xs text-center"
               >
-                <Users className="w-4 h-4 text-[#9d5f2f]" />
-                <span>Peserta MK ({enrolledCourseStudents.length} Mhs)</span>
-              </button>
-
-              <Link
-                href="/library"
-                className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-xs active:scale-95"
-              >
-                <BookOpen className="w-4 h-4 text-stone-950" />
-                <span>E-Library Angkatan</span>
-              </Link>
-
-              <button
-                onClick={() => setShowAddMaterialModal(true)}
-                className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-semibold transition-colors flex items-center space-x-1.5"
-              >
-                <FolderDown className="w-4 h-4 text-[#9d5f2f]" />
-                <span>Unggah Materi / Tugas</span>
+                <Users className="w-4 h-4 text-[#9d5f2f] shrink-0" />
+                <span>Peserta ({enrolledCourseStudents.length})</span>
               </button>
 
               <button
@@ -780,10 +751,10 @@ export default function PjDashboard() {
                   )
                 }
                 title="Download Rekapitulasi Presensi Semester"
-                className="px-3.5 py-2 bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 rounded-xl text-xs font-semibold transition-colors flex items-center space-x-1.5 shadow-xs"
+                className="px-3.5 py-2.5 sm:py-2 bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 rounded-xl text-xs font-semibold transition-colors flex items-center justify-center space-x-1.5 shadow-xs text-center"
               >
-                <Download className="w-4 h-4 text-emerald-700" />
-                <span>Rekap Excel Semester</span>
+                <Download className="w-4 h-4 text-emerald-700 shrink-0" />
+                <span>Rekap Excel</span>
               </button>
 
               {/* Admin Test Simulation Toggle */}
@@ -1024,74 +995,47 @@ export default function PjDashboard() {
               ) : (
                 /* CASE 2: ATTENDANCE UNLOCKED (TODAY IS THE COURSE DAY OR ADMIN SIMULATING) */
                 <div className="space-y-6">
-                  {/* Attendance Session Header & Quick Controls */}
-                  <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200 shadow-sm space-y-5">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span>Presensi Dibuka Hari Ini</span>
-                          </span>
-                          <span className="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-[#9d5f2f] text-white">
-                            Pertemuan Ke-{currentSession ? currentSession.meetingNumber : activeCourseSessions.length + 1}
-                          </span>
-                          <span className="text-xs text-stone-500 font-mono">
-                            {todayFormatted} • {activeCourse.time}
-                          </span>
+                  {/* Attendance Session Header & Quick Controls - Ringkas & Hemat Ruang */}
+                  <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-stone-200 shadow-xs space-y-3">
+                    {/* Baris 1: Info Pertemuan, Tanggal & Tombol Cetak / CSV / Sesi */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-stone-100">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                          <span>Pertemuan Ke-{currentSession ? currentSession.meetingNumber : activeCourseSessions.length + 1}</span>
+                        </span>
 
-                          {/* Interactive Session Date Picker */}
-                          {currentSession && (
-                            <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-lg bg-stone-100 border border-stone-300 text-stone-700 text-xs font-semibold">
-                              <Calendar className="w-3.5 h-3.5 text-[#9d5f2f]" />
-                              <span className="text-[11px] text-stone-600 font-medium">Tanggal:</span>
-                              <input
-                                type="date"
-                                value={currentSession.date}
-                                onChange={(e) => {
-                                  if (e.target.value) {
-                                    appStore.updateSession(currentSession.id, { date: e.target.value });
-                                    showToast(`Tanggal sesi diubah menjadi ${e.target.value}`);
-                                  }
-                                }}
-                                className="bg-white border border-stone-300 rounded px-1.5 py-0.5 text-xs font-bold text-stone-900 focus:outline-none focus:border-[#9d5f2f] cursor-pointer"
-                                title="Ubah tanggal sesi pertemuan ini"
-                              />
-                            </div>
-                          )}
-
-                          {/* Quick Adjust Button if Session Date differs from today */}
-                          {currentSession && currentSession.date !== todayDateStr && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                appStore.updateSession(currentSession.id, { date: todayDateStr });
-                                showToast(`Tanggal sesi disesuaikan ke hari ini (${todayDateStr})!`);
+                        {currentSession && (
+                          <div className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg bg-stone-100 border border-stone-200 text-stone-700 text-xs">
+                            <Calendar className="w-3 h-3 text-[#9d5f2f]" />
+                            <input
+                              type="date"
+                              value={currentSession.date}
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  appStore.updateSession(currentSession.id, { date: e.target.value });
+                                  showToast(`Tanggal sesi diubah menjadi ${e.target.value}`);
+                                }
                               }}
-                              className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-[11px] font-bold transition-all flex items-center space-x-1 shadow-xs"
-                              title="Klik untuk menyesuaikan tanggal sesi ini menjadi hari ini"
-                            >
-                              <Sparkles className="w-3 h-3 text-amber-600" />
-                              <span>Ubah ke Hari Ini ({todayDateStr})</span>
-                            </button>
-                          )}
-                        </div>
+                              className="bg-transparent text-xs font-semibold text-stone-800 focus:outline-none cursor-pointer"
+                              title="Ubah tanggal pertemuan"
+                            />
+                          </div>
+                        )}
 
-                        <h3 className="text-base sm:text-lg font-black text-stone-900 mt-2">
-                          Lembar Absensi {students.length} Mahasiswa — {activeCourse.name}
-                        </h3>
-                        <p className="text-xs text-stone-500 mt-0.5">
-                          Klik tombol status pada masing-masing mahasiswa di bawah untuk mengubah kehadiran (Hadir, Izin, Sakit, Alfa, Dispensasi).
-                        </p>
+                        <span className="text-[11px] text-stone-500 font-mono hidden md:inline">
+                          {activeCourse.time}
+                        </span>
                       </div>
 
-                      {/* Export / Print / Code Actions */}
-                      <div className="flex flex-wrap items-center gap-2">
+                      {/* Tombol Cetak, CSV, Sesi Manual */}
+                      <div className="flex items-center gap-1.5 self-end sm:self-auto">
                         {currentSession && (
                           <>
                             <button
                               onClick={() => setShowPrintModal(true)}
-                              className="px-3.5 py-2 bg-stone-900 hover:bg-black text-white text-xs font-semibold rounded-xl shadow-sm transition-all flex items-center space-x-1.5"
+                              className="px-2.5 py-1.5 bg-stone-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition-all flex items-center space-x-1 shadow-2xs active:scale-95"
+                              title="Cetak Berita Acara & Absensi Resmi (PDF)"
                             >
                               <Printer className="w-3.5 h-3.5 text-amber-400" />
                               <span>Cetak PDF</span>
@@ -1105,10 +1049,11 @@ export default function PjDashboard() {
                                   currentRecords
                                 )
                               }
-                              className="px-3.5 py-2 bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 text-xs font-semibold rounded-xl shadow-xs transition-colors flex items-center space-x-1.5"
+                              className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-700 text-xs font-semibold rounded-xl transition-colors flex items-center space-x-1"
+                              title="Unduh Data CSV"
                             >
                               <Download className="w-3.5 h-3.5 text-emerald-700" />
-                              <span>Unduh CSV</span>
+                              <span>CSV</span>
                             </button>
                           </>
                         )}
@@ -1117,51 +1062,45 @@ export default function PjDashboard() {
                             setNewMeetingNum(activeCourseSessions.length + 1);
                             setShowNewSessionModal(true);
                           }}
-                          className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold rounded-xl transition-colors flex items-center space-x-1.5"
+                          className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl transition-colors flex items-center space-x-1"
+                          title="Buka atau Jadwalkan Sesi Baru Manual"
                         >
-                          <Plus className="w-3.5 h-3.5" />
+                          <Plus className="w-3.5 h-3.5 text-[#8c4e24]" />
                           <span>Sesi Manual</span>
                         </button>
                       </div>
                     </div>
 
-                    {/* Quick Stats Toolbar & Bulk Action */}
-                    <div className="pt-4 border-t border-stone-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      {/* 5 Attendance Status Counters */}
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className="font-bold text-stone-600 mr-1">Rekap:</span>
-                        <span className="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold flex items-center space-x-1">
-                          <span>Hadir:</span>
-                          <strong className="text-emerald-950 font-black">{hadirCount}</strong>
+                    {/* Baris 2: Rekap Mini Ringkas & Tombol Tandai Semua Hadir */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      {/* 5 Status Counters - Ringkas & Satu Deret */}
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold">
+                        <span className="text-[11px] text-stone-400 uppercase font-bold mr-1 hidden xs:inline">Rekap:</span>
+                        <span className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px]">
+                          Hadir: <b>{hadirCount}</b>
                         </span>
-                        <span className="px-2.5 py-1 rounded-xl bg-blue-50 text-blue-800 border border-blue-200 font-bold flex items-center space-x-1">
-                          <span>Izin:</span>
-                          <strong className="text-blue-950 font-black">{izinCount}</strong>
+                        <span className="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 text-[11px]">
+                          Izin: <b>{izinCount}</b>
                         </span>
-                        <span className="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 font-bold flex items-center space-x-1">
-                          <span>Sakit:</span>
-                          <strong className="text-amber-950 font-black">{sakitCount}</strong>
+                        <span className="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-[11px]">
+                          Sakit: <b>{sakitCount}</b>
                         </span>
-                        <span className="px-2.5 py-1 rounded-xl bg-purple-50 text-purple-800 border border-purple-200 font-bold flex items-center space-x-1">
-                          <span>Dispensasi:</span>
-                          <strong className="text-purple-950 font-black">{dispensasiCount}</strong>
+                        <span className="px-2 py-0.5 rounded-lg bg-purple-50 text-purple-800 border border-purple-200 text-[11px]">
+                          Disp: <b>{dispensasiCount}</b>
                         </span>
-                        <span className="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 font-bold flex items-center space-x-1">
-                          <span>Alfa:</span>
-                          <strong className="text-rose-950 font-black">{alpaCount}</strong>
+                        <span className="px-2 py-0.5 rounded-lg bg-rose-50 text-rose-800 border border-rose-200 text-[11px]">
+                          Alfa: <b>{alpaCount}</b>
                         </span>
                       </div>
 
-                      {/* Bulk "Mark All Hadir" Button */}
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={handleMarkAllHadir}
-                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-md shadow-emerald-700/20 flex items-center space-x-1.5 text-xs active:scale-95"
-                        >
-                          <Check className="w-4 h-4" />
-                          <span>Tandai Semua Hadir (1 Klik)</span>
-                        </button>
-                      </div>
+                      {/* Tombol Cepat Tandai Semua Hadir */}
+                      <button
+                        onClick={handleMarkAllHadir}
+                        className="w-full sm:w-auto px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-xs flex items-center justify-center space-x-1.5 active:scale-95 shrink-0"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Semua Hadir (1 Klik)</span>
+                      </button>
                     </div>
                   </div>
 
