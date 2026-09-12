@@ -485,7 +485,7 @@ export default function LibraryDirectoryPage() {
         </div>
 
         {/* HERO BANNER & AKSI UTAMA */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#2a1306] via-[#1c0c04] to-[#100602] text-white p-6 sm:p-9 border-2 border-amber-500/30 shadow-xl shadow-stone-900/10">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#2a1306] via-[#1c0c04] to-[#100602] text-white p-5 sm:p-7 border-2 border-amber-500/30 shadow-xl shadow-stone-900/10">
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
               <div className="inline-flex items-center space-x-2 bg-amber-500/20 border border-amber-400/30 px-3 py-1 rounded-full text-[11px] font-bold text-amber-200">
@@ -498,11 +498,6 @@ export default function LibraryDirectoryPage() {
               <p className="text-xs sm:text-sm text-stone-300 leading-relaxed font-medium">
                 Pusat pengumpulan dan pertukaran makalah, tugas kelompok, artikel jurnal, buku referensi, dan modul perkuliahan seluruh mahasiswa kelas.
               </p>
-              <div className="flex items-center space-x-4 pt-1 text-xs text-amber-200/90 font-medium">
-                <span>📚 Total: <b>{libraryItems.length} Berkas</b></span>
-                <span>•</span>
-                <span>🎓 Status: <b>{auth.role === 'ADMIN' ? 'Admin Kelas' : `Mahasiswa (${auth.name})`}</b></span>
-              </div>
             </div>
 
             {/* ACTION BUTTONS (GOOGLE DRIVE + UNGGAH TUGAS) */}
