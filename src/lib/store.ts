@@ -363,11 +363,11 @@ class Store {
       }
 
 
-      // 7. Fetch Library Items
+      // 7. Fetch Library Items & Auto-Sync Local Uploads to Cloud
       try {
-        const { data: remoteLib } = await supabase.from('library_items').select('*');
-        if (remoteLib && remoteLib.length > 0) {
-          this.state.libraryItems = remoteLib.map((l: any) => ({
+        const { data: remoteLib, error: libErr } = await supabase.from('library_items').select('*');
+        if (!libErr && remoteLib) {
+          const remoteItems = remoteLib.map((l: any) => ({
             id: l.id,
             courseId: l.course_id,
             courseName: l.course_name || undefined,
@@ -383,6 +383,38 @@ class Store {
             uploadedByName: l.uploaded_by_name || 'Mahasiswa',
             uploadedAt: l.uploaded_at || new Date().toISOString().split('T')[0],
           }));
+
+          // Deteksi berkas tugas yang tersimpan di perangkat lokal Admin tapi belum masuk ke Supabase Cloud
+          const remoteIds = new Set(remoteItems.map((r: any) => r.id));
+          const currentLocal = this.state.libraryItems || [];
+          const pendingSync = currentLocal.filter(
+            (local) => !remoteIds.has(local.id) && !INITIAL_LIBRARY_ITEMS.some((init) => init.id === local.id)
+          );
+
+          if (pendingSync.length > 0) {
+            console.log(`Sinkronisasi Cloud: Mengunggah ${pendingSync.length} berkas lokal ke Supabase...`);
+            for (const item of pendingSync) {
+              await supabase.from('library_items').upsert({
+                id: item.id,
+                course_id: item.courseId,
+                course_name: item.courseName || null,
+                semester: item.semester,
+                title: item.title,
+                category: item.category,
+                authors: item.authors,
+                file_url: item.fileUrl,
+                file_type: item.fileType || 'LINK',
+                file_size: item.fileSize || null,
+                description: item.description || null,
+                uploaded_by_nim: item.uploadedByNim,
+                uploaded_by_name: item.uploadedByName,
+                uploaded_at: item.uploadedAt,
+              });
+            }
+            this.state.libraryItems = [...pendingSync, ...remoteItems];
+          } else {
+            this.state.libraryItems = remoteItems.length > 0 ? remoteItems : (this.state.libraryItems || INITIAL_LIBRARY_ITEMS);
+          }
         }
       } catch (libErr) {
         // Fallback: table might not exist in Supabase yet, keep local libraryItems
