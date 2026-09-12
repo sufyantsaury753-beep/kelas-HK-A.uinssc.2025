@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   creator: 'Kelas Hukum Keluarga A 2025',
   publisher: 'UIN Siber Syekh Nurjati Cirebon',
   alternates: {
-    canonical: 'https://kelas-hk-a-uinssc-2025.vercel.app',
+    canonical: '/',
   },
   openGraph: {
     title: 'Portal Kelas HK A 2025 | UIN Siber Syekh Nurjati Cirebon',
