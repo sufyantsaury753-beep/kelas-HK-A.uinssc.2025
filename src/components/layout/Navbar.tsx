@@ -298,8 +298,8 @@ export default function Navbar() {
 
                 {/* User Info Chip */}
                 <div className="text-right pl-2 pr-1">
-                  <p className="text-xs font-bold text-stone-800 line-clamp-1 max-w-[130px]">
-                    {displayedNickname || auth.name}
+                  <p className="text-xs font-bold text-stone-800 line-clamp-1 max-w-[180px]" title={auth.name}>
+                    {auth.name}
                   </p>
                   <p className="text-[10px] text-stone-500 font-mono">
                     {auth.nim ? auth.nim : 'SUPERADMIN'}
@@ -336,12 +336,17 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button & Compact Nickname Badge */}
           <div className="flex md:hidden items-center space-x-2">
             {auth && (
-              <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-950 shadow-2xs border border-amber-300/60">
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(true)}
+                title="Atur Nama Panggilan Badge Navbar"
+                className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 shadow-2xs border border-amber-300/60 active:scale-95 transition-all"
+              >
                 {displayedNickname || (auth.name || 'User').split(' ')[0]}
-              </span>
+              </button>
             )}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
@@ -386,7 +391,7 @@ export default function Navbar() {
                 </button>
               </div>
 
-              {/* User Session Profile Mini */}
+              {/* User Session Profile Mini (Always displays Full Official Name) */}
               {auth && (
                 <div className="my-3.5 p-3 rounded-2xl bg-amber-50/70 border border-amber-200/60 flex items-center justify-between">
                   <div className="flex items-center space-x-2.5 overflow-hidden">
@@ -394,7 +399,9 @@ export default function Navbar() {
                       {auth.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
                     </div>
                     <div className="truncate">
-                      <p className="text-xs font-bold text-stone-900 truncate">{displayedNickname || auth.name}</p>
+                      <p className="text-xs font-bold text-stone-900 truncate" title={auth.name}>
+                        {auth.name}
+                      </p>
                       <p className="text-[10px] text-stone-500 font-mono">
                         {auth.nim ? `NIM: ${auth.nim}` : 'Admin'}
                       </p>
@@ -758,7 +765,7 @@ export default function Navbar() {
                   }`}
                 >
                   <User className="w-3.5 h-3.5" />
-                  <span>Nama di Navbar</span>
+                  <span>Nama Badge Navbar HP</span>
                 </button>
                 {auth.nim && (
                   <button
@@ -785,16 +792,20 @@ export default function Navbar() {
                   <form onSubmit={handleSaveNickname} className="space-y-4">
                     <div>
                       <label className="block text-[11px] font-bold text-stone-700 mb-1">
-                        Nama Lengkap:
+                        Nama Lengkap (Tetap Digunakan di Profil & Sidebar):
                       </label>
                       <p className="text-xs font-semibold text-stone-900 bg-stone-100 p-2.5 rounded-xl border border-stone-200">
                         {auth.name}
                       </p>
                     </div>
 
+                    <div className="p-2.5 rounded-xl bg-amber-50/90 text-amber-900 border border-amber-200/80 text-[11px] leading-relaxed">
+                      💡 <strong>Catatan:</strong> Pilihan nama di bawah hanya tampil pada <strong>badge Navbar HP</strong> agar hemat ruang. Di dalam <strong>sidebar menu</strong> dan <strong>desktop</strong> tetap nama lengkap resmi Anda.
+                    </div>
+
                     <div>
                       <label className="block text-[11px] font-bold text-stone-700 mb-1.5">
-                        Pilih Kata Nama untuk Navbar:
+                        Pilih Kata Nama untuk Badge Navbar HP:
                       </label>
                       <div className="flex flex-wrap gap-1.5">
                         {(auth.name || '')
