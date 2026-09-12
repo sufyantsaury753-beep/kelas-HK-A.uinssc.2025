@@ -510,7 +510,7 @@ export default function LibraryDirectoryPage() {
               {/* TOMBOL GOOGLE DRIVE KELAS */}
               <div className="flex items-center space-x-1.5">
                 <a
-                  href={classDriveUrl || 'https://drive.google.com'}
+                  href={classDriveUrl || 'https://drive.google.com/drive/folders/1Ps47X2kULhZtao3iyxKSqpHVGRn7fTT2'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center space-x-2.5 shadow-lg shadow-emerald-950/40 border border-emerald-400/40 transition-all hover:scale-102 active:scale-98"

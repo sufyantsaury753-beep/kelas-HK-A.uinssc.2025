@@ -97,7 +97,7 @@ function getInitialState(): AppState {
     adminPin: 'adminhk2025',
     activeSemester: 3,
     libraryItems: INITIAL_LIBRARY_ITEMS,
-    classDriveUrl: 'https://drive.google.com/drive/folders/1w7R9K63YJpP_CLASS_HK_A_2025?usp=sharing',
+    classDriveUrl: 'https://drive.google.com/drive/folders/1Ps47X2kULhZtao3iyxKSqpHVGRn7fTT2',
   };
 }
 
@@ -179,7 +179,10 @@ class Store {
           announcements: Array.isArray(parsed.announcements) ? parsed.announcements : INITIAL_ANNOUNCEMENTS,
           adminPin: parsed.adminPin || 'adminhk2025',
           libraryItems: Array.isArray(parsed.libraryItems) && parsed.libraryItems.length > 0 ? parsed.libraryItems : INITIAL_LIBRARY_ITEMS,
-          classDriveUrl: parsed.classDriveUrl || this.state.classDriveUrl,
+          classDriveUrl:
+            parsed.classDriveUrl && !parsed.classDriveUrl.includes('1w7R9K63YJpP_CLASS_HK_A_2025')
+              ? parsed.classDriveUrl
+              : 'https://drive.google.com/drive/folders/1Ps47X2kULhZtao3iyxKSqpHVGRn7fTT2',
         };
       } else {
         this.save();
@@ -345,8 +348,13 @@ class Store {
           this.state.activeSemester = Number(semMeta.content) || 3;
         }
 
+        const driveMeta = remoteAnn.find((a: any) => a.id === 'SYS_CLASS_DRIVE_URL' || a.category === 'SISTEM_DRIVE_URL');
+        if (driveMeta && driveMeta.content && !driveMeta.content.includes('1w7R9K63YJpP_CLASS_HK_A_2025')) {
+          this.state.classDriveUrl = driveMeta.content;
+        }
+
         this.state.announcements = remoteAnn
-          .filter((a: any) => a.id !== 'SYS_ACTIVE_SEMESTER' && a.category !== 'SISTEM_SEMESTER')
+          .filter((a: any) => !['SYS_ACTIVE_SEMESTER', 'SYS_CLASS_DRIVE_URL'].includes(a.id) && !['SISTEM_SEMESTER', 'SISTEM_DRIVE_URL'].includes(a.category))
           .map((a: any) => ({
             id: a.id,
             title: a.title,
@@ -1066,15 +1074,31 @@ class Store {
   }
 
   public getClassDriveUrl(): string {
-    return (
-      this.state.classDriveUrl ||
-      'https://drive.google.com/drive/folders/1w7R9K63YJpP_CLASS_HK_A_2025?usp=sharing'
-    );
+    if (!this.state.classDriveUrl || this.state.classDriveUrl.includes('1w7R9K63YJpP_CLASS_HK_A_2025')) {
+      return 'https://drive.google.com/drive/folders/1Ps47X2kULhZtao3iyxKSqpHVGRn7fTT2';
+    }
+    return this.state.classDriveUrl;
   }
 
-  public setClassDriveUrl(url: string) {
+  public async setClassDriveUrl(url: string) {
     this.state.classDriveUrl = url.trim();
     this.save();
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('announcements').upsert({
+          id: 'SYS_CLASS_DRIVE_URL',
+          title: 'Sistem Google Drive Kelas',
+          content: this.state.classDriveUrl,
+          category: 'SISTEM_DRIVE_URL',
+          author: 'Sistem',
+          date: new Date().toISOString().split('T')[0],
+          pinned: false,
+        });
+      } catch (e) {
+        console.error('Error syncing class drive url to Supabase:', e);
+      }
+    }
   }
 
   // --- Materials ---
