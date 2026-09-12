@@ -150,7 +150,7 @@ export default function CourseLibraryDetailPage() {
 
     try {
       let finalFileUrl = uploadFileUrl.trim();
-      let finalFileType: 'PDF' | 'DOCX' | 'PPTX' | 'LINK' | 'DRIVE' = 'LINK';
+      let finalFileType: 'PDF' | 'DOCX' | 'PPTX' | 'IMG' | 'LINK' | 'DRIVE' = 'LINK';
       let finalFileSize: string | undefined = undefined;
 
       if (uploadMode === 'FILE' && selectedFile) {
@@ -158,13 +158,20 @@ export default function CourseLibraryDetailPage() {
         finalFileType = detectFileType(selectedFile.name);
         finalFileSize = formatFileSize(selectedFile.size);
 
-        const uploadRes = await uploadLibraryFile(selectedFile, course.id);
+        const uploadRes = await uploadLibraryFile(
+          selectedFile,
+          course.id,
+          (status) => setUploadProgressText(status)
+        );
         if (uploadRes.url) {
           finalFileUrl = uploadRes.url;
+          if (uploadRes.file) {
+            finalFileSize = formatFileSize(uploadRes.file.size);
+          }
         } else {
           console.warn('Storage upload note:', uploadRes.error);
           const allowLocal = confirm(
-            `${uploadRes.error}\n\nSimpan sementara di browser lokal perangkat ini agar berkas tidak hilang?\n(Disarankan membuat bucket 'library-files' di Supabase agar teman sekelas bisa mengunduhnya).`
+            `${uploadRes.error}\n\nSimpan sementara di browser lokal perangkat ini agar berkas tidak hilang?`
           );
           if (allowLocal) {
             setUploadProgressText('Menyimpan secara lokal...');
@@ -187,13 +194,13 @@ export default function CourseLibraryDetailPage() {
         semester: Number(course.semester) || 3,
         title: uploadTitle.trim(),
         category: uploadCategory,
-        authors: uploadAuthors.trim() || 'Mahasiswa HK A',
+        authors: uploadAuthors.trim() || auth?.name || 'Mahasiswa HK A',
         fileUrl: finalFileUrl,
         fileType: finalFileType,
         fileSize: finalFileSize,
         description: uploadDescription.trim() || undefined,
         uploadedByNim: auth?.nim || 'ADMIN',
-        uploadedByName: auth?.name || 'Administrator',
+        uploadedByName: auth?.name || 'Mahasiswa HK A',
       });
 
       setUploadNotice('Berkas berhasil disimpan ke E-Library!');
@@ -215,7 +222,7 @@ export default function CourseLibraryDetailPage() {
 
   const handleDeleteItem = (item: LibraryItem) => {
     if (!confirm(`Hapus berkas "${item.title}"?`)) return;
-    appStore.deleteLibraryItem(item.id);
+    appStore.deleteLibraryItem(item.id, auth?.nim, isAdmin);
   };
 
   // Filter tasks for this course
@@ -273,16 +280,16 @@ export default function CourseLibraryDetailPage() {
             className="inline-flex items-center space-x-2 text-xs font-bold text-[#8c4e24] hover:underline p-1.5 -ml-1.5 rounded-xl transition-all select-none"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Kembali ke Daftar Mata Kuliah (Semester {course.semester})</span>
+            <span>Kembali ke E-Library Terpadu</span>
           </Link>
 
-          {isAdmin && (
+          {auth && (
             <button
               type="button"
               onClick={() => {
                 setUploadTitle('');
                 setUploadFileUrl('');
-                setUploadAuthors('');
+                setUploadAuthors(auth.name);
                 setUploadDescription('');
                 setUploadNotice(null);
                 setShowUploadModal(true);
@@ -290,7 +297,7 @@ export default function CourseLibraryDetailPage() {
               className="px-4 py-2 rounded-xl bg-[#8c4e24] hover:bg-[#723f1c] text-white font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-all active:scale-95"
             >
               <Plus className="w-4 h-4" />
-              <span>+ Upload Tugas (Mode Admin)</span>
+              <span>+ Unggah Tugas / Berkas</span>
             </button>
           )}
         </div>
@@ -432,12 +439,12 @@ export default function CourseLibraryDetailPage() {
                       <span>Download</span>
                     </a>
 
-                    {/* Tombol Hapus khusus Admin */}
-                    {isAdmin && (
+                    {/* Tombol Hapus: Admin atau Pemilik Berkas */}
+                    {(isAdmin || (auth?.nim && item.uploadedByNim === auth.nim)) && (
                       <button
                         type="button"
                         onClick={() => handleDeleteItem(item)}
-                        title="Hapus Berkas (Admin)"
+                        title={isAdmin ? 'Hapus Berkas (Admin)' : 'Hapus Berkas Saya'}
                         className="p-2 rounded-xl border border-rose-400/40 bg-rose-950/40 text-rose-300 hover:bg-rose-900/60 transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

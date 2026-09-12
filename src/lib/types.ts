@@ -99,6 +99,7 @@ export type LibraryCategory =
   | 'RESUME'
   | 'TUGAS'
   | 'MODUL'
+  | 'BUKU'
   | 'RPS';
 
 export interface LibraryItem {
@@ -110,7 +111,7 @@ export interface LibraryItem {
   category: LibraryCategory;
   authors: string; // Penyusun / Kelompok
   fileUrl: string; // Link Google Drive atau berkas dokumen
-  fileType?: 'PDF' | 'DOCX' | 'PPTX' | 'DRIVE' | 'LINK';
+  fileType?: 'PDF' | 'DOCX' | 'PPTX' | 'IMG' | 'DRIVE' | 'LINK';
   fileSize?: string;
   description?: string;
   uploadedByNim: string;

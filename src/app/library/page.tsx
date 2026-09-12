@@ -3,77 +3,88 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  BookOpen,
   Library,
-  GraduationCap,
   Search,
-  Plus,
+  Upload,
+  FileText,
+  Download,
+  ExternalLink,
+  BookOpen,
   ArrowLeft,
   Sparkles,
   ShieldCheck,
-  Upload,
-  Link2,
-  FileText,
   User,
+  Clock,
+  Trash2,
+  Filter,
+  CheckCircle2,
+  FolderOpen,
+  FolderDown,
+  GraduationCap,
   Layers,
-  ScrollText,
-  Scale,
-  Briefcase,
-  PieChart,
-  Globe,
-  HeartHandshake,
-  Gavel,
-  MapPin,
-  BookMarked,
-  ShieldAlert,
-  Landmark,
-  Languages,
+  FileCode,
+  FileSpreadsheet,
+  Presentation,
+  File,
+  Settings,
+  Share2,
+  Eye,
+  AlertCircle,
+  HardDrive,
   Check,
   ChevronDown,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import { Course, AuthSession, LibraryItem, LibraryCategory } from '@/lib/types';
-import { formatFileSize, detectFileType, uploadLibraryFile, readFileAsDataUrl } from '@/lib/storage';
+import {
+  formatFileSize,
+  detectFileType,
+  uploadLibraryFile,
+  readFileAsDataUrl,
+} from '@/lib/storage';
 
-// Map academic icons for courses
-function getCourseIcon(courseId: string, courseName: string) {
-  const lower = (courseId + ' ' + courseName).toLowerCase();
-  if (lower.includes('tafsir')) return BookOpen;
-  if (lower.includes('tarikh') || lower.includes('tasyri')) return ScrollText;
-  if (lower.includes('qowaid') || lower.includes('fiqhiyah')) return Scale;
-  if (lower.includes('bisnis')) return Briefcase;
-  if (lower.includes('kewarisan') || lower.includes('waris')) return PieChart;
-  if (lower.includes('internasional')) return Globe;
-  if (lower.includes('perkawinan')) return HeartHandshake;
-  if (lower.includes('ibadah')) return Sparkles;
-  if (lower.includes('perdata')) return Gavel;
-  if (lower.includes('agraria')) return MapPin;
-  if (lower.includes('hadits')) return BookMarked;
-  if (lower.includes('pidana')) return ShieldAlert;
-  if (lower.includes('acara') || lower.includes('sidang') || lower.includes('peradilan')) return Gavel;
-  if (lower.includes('skripsi') || lower.includes('seminar') || lower.includes('komprehensif')) return GraduationCap;
-  if (lower.includes('zakat') || lower.includes('wakaf')) return Landmark;
-  if (lower.includes('bahasa') || lower.includes('arab') || lower.includes('inggris')) return Languages;
-  return BookOpen;
+// Kategori Filter Kotak Persegi Panjang
+interface CategoryFilterOption {
+  key: string;
+  label: string;
+  icon: any;
+  categoryMatch?: LibraryCategory[];
 }
+
+const CATEGORY_FILTERS: CategoryFilterOption[] = [
+  { key: 'ALL', label: 'Semua Berkas', icon: FolderOpen },
+  { key: 'TUGAS', label: 'Tugas Kuliah', icon: FileText, categoryMatch: ['TUGAS'] },
+  { key: 'MAKALAH', label: 'Makalah & Karya Ilmiah', icon: BookOpen, categoryMatch: ['MAKALAH'] },
+  { key: 'ARTIKEL', label: 'Artikel & Jurnal', icon: GraduationCap, categoryMatch: ['ARTIKEL'] },
+  { key: 'BUKU_MODUL', label: 'Buku & Modul', icon: Layers, categoryMatch: ['MODUL', 'BUKU'] },
+  { key: 'RPS', label: 'RPS & Silabus', icon: FileCode, categoryMatch: ['RPS'] },
+  { key: 'PPT', label: 'PPT / Slide', icon: Presentation, categoryMatch: ['PPT'] },
+  { key: 'RESUME', label: 'Resume & Catatan', icon: Sparkles, categoryMatch: ['RESUME'] },
+];
 
 export default function LibraryDirectoryPage() {
   const [auth, setAuth] = useState<AuthSession | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const [activeSemester, setActiveSemester] = useState<number>(3);
-  const [selectedSemester, setSelectedSemester] = useState<number>(3);
-  const [hasManuallySelectedSemester, setHasManuallySelectedSemester] = useState(false);
-  const [showSemesterModal, setShowSemesterModal] = useState(false);
+  const [selectedSemester, setSelectedSemester] = useState<string>('ALL');
+  const [selectedCategoryKey, setSelectedCategoryKey] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'NEWEST' | 'OLDEST' | 'TITLE'>('NEWEST');
 
-  // Upload modal for Admin only
+  // Google Drive URL
+  const [classDriveUrl, setClassDriveUrl] = useState<string>('');
+  const [showDriveEditModal, setShowDriveEditModal] = useState(false);
+  const [newDriveUrlInput, setNewDriveUrlInput] = useState('');
+
+  // Upload Modal (Bisa diakses seluruh mahasiswa login)
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadSemester, setUploadSemester] = useState<number>(3);
   const [uploadCourseId, setUploadCourseId] = useState<string>('');
   const [uploadCustomCourse, setUploadCustomCourse] = useState<string>('');
   const [uploadTitle, setUploadTitle] = useState<string>('');
-  const [uploadCategory, setUploadCategory] = useState<LibraryCategory>('MAKALAH');
+  const [uploadCategory, setUploadCategory] = useState<LibraryCategory>('TUGAS');
   const [uploadAuthors, setUploadAuthors] = useState<string>('');
   const [uploadFileUrl, setUploadFileUrl] = useState<string>('');
   const [uploadDescription, setUploadDescription] = useState<string>('');
@@ -83,6 +94,28 @@ export default function LibraryDirectoryPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgressText, setUploadProgressText] = useState<string>('');
 
+  useEffect(() => {
+    const init = () => {
+      const currentAuth = appStore.getAuth();
+      setAuth(currentAuth);
+      const allCourses = appStore.getCourses();
+      setCourses(allCourses);
+      const currentActiveSem = appStore.getActiveSemester() || 3;
+      setActiveSemester(currentActiveSem);
+      setLibraryItems(appStore.getLibraryItems());
+      const driveLink = appStore.getClassDriveUrl();
+      setClassDriveUrl(driveLink);
+      setNewDriveUrlInput(driveLink);
+    };
+
+    init();
+    const unsub = appStore.subscribe(init);
+    return () => unsub();
+  }, []);
+
+  const isAdmin = auth?.role === 'ADMIN';
+
+  // Handle Pilih Berkas
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -94,6 +127,7 @@ export default function LibraryDirectoryPage() {
       setUploadTitle(formattedTitle);
     }
 
+    // Auto-detect kategori dari ekstensi / nama file
     const lower = file.name.toLowerCase();
     if (lower.endsWith('.ppt') || lower.endsWith('.pptx') || lower.includes('presentasi') || lower.includes('slide')) {
       setUploadCategory('PPT');
@@ -105,48 +139,26 @@ export default function LibraryDirectoryPage() {
       setUploadCategory('RESUME');
     } else if (lower.includes('modul') || lower.includes('buku')) {
       setUploadCategory('MODUL');
-    } else if (lower.includes('tugas') || lower.includes('proyek')) {
-      setUploadCategory('TUGAS');
-    } else {
+    } else if (lower.includes('makalah')) {
       setUploadCategory('MAKALAH');
+    } else {
+      setUploadCategory('TUGAS');
     }
   };
 
-  useEffect(() => {
-    const init = () => {
-      const currentAuth = appStore.getAuth();
-      setAuth(currentAuth);
-      const allCourses = appStore.getCourses();
-      setCourses(allCourses);
-      const currentActiveSem = appStore.getActiveSemester() || 3;
-      setActiveSemester(currentActiveSem);
-      setHasManuallySelectedSemester((manual) => {
-        if (!manual) {
-          setSelectedSemester(currentActiveSem);
-        }
-        return manual;
-      });
-      setLibraryItems(appStore.getLibraryItems());
-    };
+  // Open Upload Modal
+  const openUploadModal = () => {
+    if (!auth) {
+      alert('Silakan login dengan NIM atau akun kelas terlebih dahulu untuk mengunggah tugas!');
+      return;
+    }
+    setUploadSemester(activeSemester);
+    setUploadCourseId(courses[0]?.id || 'custom');
+    setUploadAuthors(auth.name);
+    setShowUploadModal(true);
+  };
 
-    init();
-    const unsub = appStore.subscribe(init);
-    return () => unsub();
-  }, []);
-
-  const isAdmin = auth?.role === 'ADMIN';
-
-  // Filter courses for the selected semester and search query
-  const filteredSemesterCourses = useMemo(() => {
-    return courses.filter((c) => {
-      const matchSem = Number(c.semester) === Number(selectedSemester);
-      const q = searchQuery.toLowerCase().trim();
-      const matchQuery = !q || c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q) || c.dosen.toLowerCase().includes(q);
-      return matchSem && matchQuery;
-    });
-  }, [courses, selectedSemester, searchQuery]);
-
-  // Handle Admin Save
+  // Handle Simpan Berkas (Mahasiswa & Admin)
   const handleSaveItem = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -178,21 +190,28 @@ export default function LibraryDirectoryPage() {
       }
 
       let finalFileUrl = uploadFileUrl.trim();
-      let finalFileType: 'PDF' | 'DOCX' | 'PPTX' | 'LINK' | 'DRIVE' = 'LINK';
+      let finalFileType: 'PDF' | 'DOCX' | 'PPTX' | 'IMG' | 'LINK' | 'DRIVE' = 'LINK';
       let finalFileSize: string | undefined = undefined;
 
       if (uploadMode === 'FILE' && selectedFile) {
-        setUploadProgressText('Mengunggah ke cloud storage...');
         finalFileType = detectFileType(selectedFile.name);
         finalFileSize = formatFileSize(selectedFile.size);
 
-        const uploadRes = await uploadLibraryFile(selectedFile, uploadCourseId || 'general');
+        const uploadRes = await uploadLibraryFile(
+          selectedFile,
+          uploadCourseId === 'custom' ? 'general' : uploadCourseId,
+          (status) => setUploadProgressText(status)
+        );
+
         if (uploadRes.url) {
           finalFileUrl = uploadRes.url;
+          if (uploadRes.file) {
+            finalFileSize = formatFileSize(uploadRes.file.size);
+          }
         } else {
           console.warn('Storage upload note:', uploadRes.error);
           const allowLocal = confirm(
-            `${uploadRes.error}\n\nSimpan sementara di browser lokal perangkat ini agar berkas tidak hilang?\n(Disarankan membuat bucket 'library-files' di Supabase agar teman sekelas bisa mengunduhnya).`
+            `${uploadRes.error}\n\nSimpan sementara di perangkat ini agar berkas tidak hilang?`
           );
           if (allowLocal) {
             setUploadProgressText('Menyimpan secara lokal...');
@@ -215,13 +234,13 @@ export default function LibraryDirectoryPage() {
         semester: Number(uploadSemester),
         title: uploadTitle.trim(),
         category: uploadCategory,
-        authors: uploadAuthors.trim() || 'Mahasiswa HK A',
+        authors: uploadAuthors.trim() || auth?.name || 'Mahasiswa HK A',
         fileUrl: finalFileUrl,
         fileType: finalFileType,
         fileSize: finalFileSize,
         description: uploadDescription.trim() || undefined,
         uploadedByNim: auth?.nim || 'ADMIN',
-        uploadedByName: auth?.name || 'Administrator',
+        uploadedByName: auth?.name || 'Mahasiswa HK A',
       });
 
       setUploadNotice('Berkas berhasil disimpan ke E-Library!');
@@ -241,20 +260,148 @@ export default function LibraryDirectoryPage() {
     }
   };
 
+  // Handle Hapus Berkas (Hanya pemilik berkas atau Admin)
+  const handleDeleteItem = (item: LibraryItem) => {
+    const isOwner = auth?.nim && item.uploadedByNim === auth.nim;
+    if (!isAdmin && !isOwner) {
+      alert('Anda hanya dapat menghapus berkas yang Anda unggah sendiri.');
+      return;
+    }
+
+    if (!confirm(`Apakah Anda yakin ingin menghapus berkas "${item.title}"?`)) {
+      return;
+    }
+
+    const success = appStore.deleteLibraryItem(item.id, auth?.nim, isAdmin);
+    if (success) {
+      alert('Berkas berhasil dihapus.');
+    }
+  };
+
+  // Handle Update Google Drive URL oleh Admin
+  const handleSaveDriveUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin) return;
+    appStore.setClassDriveUrl(newDriveUrlInput);
+    setClassDriveUrl(newDriveUrlInput.trim());
+    setShowDriveEditModal(false);
+    alert('Tautan Google Drive kelas berhasil diperbarui!');
+  };
+
+  // Filter & Search Berkas
+  const filteredItems = useMemo(() => {
+    const activeFilter = CATEGORY_FILTERS.find((f) => f.key === selectedCategoryKey);
+
+    return libraryItems
+      .filter((item) => {
+        // Filter Kategori
+        if (activeFilter && activeFilter.categoryMatch) {
+          if (!activeFilter.categoryMatch.includes(item.category)) {
+            return false;
+          }
+        }
+
+        // Filter Semester
+        if (selectedSemester !== 'ALL') {
+          if (Number(item.semester) !== Number(selectedSemester)) {
+            return false;
+          }
+        }
+
+        // Filter Pencarian
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim();
+          const matchTitle = item.title.toLowerCase().includes(q);
+          const matchCourse = (item.courseName || '').toLowerCase().includes(q);
+          const matchAuthor = (item.authors || '').toLowerCase().includes(q);
+          const matchUploader = (item.uploadedByName || '').toLowerCase().includes(q);
+          const matchDesc = (item.description || '').toLowerCase().includes(q);
+          if (!matchTitle && !matchCourse && !matchAuthor && !matchUploader && !matchDesc) {
+            return false;
+          }
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'NEWEST') {
+          return (b.uploadedAt || '').localeCompare(a.uploadedAt || '');
+        }
+        if (sortBy === 'OLDEST') {
+          return (a.uploadedAt || '').localeCompare(b.uploadedAt || '');
+        }
+        if (sortBy === 'TITLE') {
+          return a.title.localeCompare(b.title);
+        }
+        return 0;
+      });
+  }, [libraryItems, selectedCategoryKey, selectedSemester, searchQuery, sortBy]);
+
+  // Hitung jumlah per kategori
+  const getCategoryCount = (key: string) => {
+    const f = CATEGORY_FILTERS.find((filter) => filter.key === key);
+    if (!f || !f.categoryMatch) return libraryItems.length;
+    return libraryItems.filter((i) => f.categoryMatch?.includes(i.category)).length;
+  };
+
+  // Helper Ikon Format Berkas
+  const renderFileTypeIcon = (fileType?: string) => {
+    switch (fileType) {
+      case 'PDF':
+        return (
+          <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 shadow-xs">
+            <FileText className="w-5 h-5" />
+          </div>
+        );
+      case 'DOCX':
+        return (
+          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 shadow-xs">
+            <FileText className="w-5 h-5" />
+          </div>
+        );
+      case 'PPTX':
+      case 'PPT':
+        return (
+          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 shadow-xs">
+            <Presentation className="w-5 h-5" />
+          </div>
+        );
+      case 'IMG':
+        return (
+          <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 shadow-xs">
+            <ImageIcon className="w-5 h-5" />
+          </div>
+        );
+      case 'DRIVE':
+        return (
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 shadow-xs">
+            <HardDrive className="w-5 h-5" />
+          </div>
+        );
+      default:
+        return (
+          <div className="w-10 h-10 rounded-xl bg-stone-100 text-stone-700 flex items-center justify-center shrink-0 shadow-xs">
+            <File className="w-5 h-5" />
+          </div>
+        );
+    }
+  };
+
+  // Gate jika belum login
   if (!auth) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 sm:p-6">
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 sm:p-6 bg-[#faf8f5]">
         <div className="max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xl text-center space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-amber-100 text-[#8c4e24] flex items-center justify-center mx-auto">
-            <Library className="w-7 h-7" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#8c4e24] to-[#5a2a0c] text-amber-200 flex items-center justify-center mx-auto shadow-md">
+            <Library className="w-8 h-8" />
           </div>
-          <h1 className="text-xl font-black text-stone-900">Perpustakaan & Repositori Tugas</h1>
+          <h1 className="text-xl font-black text-stone-900">E-Library & Repositori Tugas</h1>
           <p className="text-xs text-stone-600 leading-relaxed">
-            Koleksi makalah dan materi perkuliahan kelas Hukum Keluarga A 2025 hanya dapat diakses setelah login.
+            Koleksi makalah, tugas, silabus, dan modul perkuliahan kelas Hukum Keluarga A 2025 hanya dapat diakses setelah login.
           </p>
           <Link
             href="/login"
-            className="inline-flex w-full py-3 rounded-2xl bg-[#8c4e24] text-white font-bold text-xs justify-center items-center space-x-2"
+            className="inline-flex w-full py-3 rounded-2xl bg-[#8c4e24] hover:bg-[#783e18] text-white font-bold text-xs justify-center items-center space-x-2 shadow-md transition-all active:scale-98"
           >
             <span>Masuk dengan NIM / Akun Kelas</span>
           </Link>
@@ -266,501 +413,599 @@ export default function LibraryDirectoryPage() {
   return (
     <div className="min-h-screen bg-[#faf8f5] py-6 sm:py-10 select-none">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-7">
-        {/* BREADCRUMB & HERO */}
-        <div className="space-y-3">
-          <div className="flex items-center space-x-2 text-xs text-stone-500">
-            <Link href="/" className="hover:text-[#8c4e24] transition-colors flex items-center space-x-1">
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Beranda</span>
-            </Link>
-            <span>/</span>
-            <Link href="/mahasiswa" className="hover:text-[#8c4e24] transition-colors">
-              Portal Mahasiswa
-            </Link>
-            <span>/</span>
-            <span className="font-semibold text-stone-800">E-Library HK A 2025</span>
-          </div>
-
-          <div className="bg-gradient-to-br from-[#8c4e24] via-[#783e18] to-[#5a2a0c] rounded-3xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden border border-amber-500/30">
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
-              <div className="space-y-2 max-w-xl">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/30 flex items-center space-x-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>E-Repository & Digital Library</span>
-                  </span>
-                </div>
-
-                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                  Perpustakaan & Repositori Tugas HK A 2025
-                </h1>
-
-                <p className="text-xs sm:text-sm text-stone-300 leading-relaxed">
-                  Pilih semester dan klik lingkaran mata kuliah untuk masuk ke halaman berkas tugas, makalah, dan materi presentasi.
-                </p>
-              </div>
-
-              {isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUploadSemester(selectedSemester);
-                    const sc = courses.filter((c) => Number(c.semester) === Number(selectedSemester));
-                    setUploadCourseId(sc[0]?.id || 'custom');
-                    setUploadTitle('');
-                    setUploadFileUrl('');
-                    setUploadNotice(null);
-                    setShowUploadModal(true);
-                  }}
-                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-extrabold text-xs flex items-center justify-center space-x-2 shadow-lg transition-all active:scale-95"
-                >
-                  <Plus className="w-4 h-4 stroke-[3]" />
-                  <span>+ Unggah Tugas (Mode Admin)</span>
-                </button>
-              )}
-            </div>
-          </div>
+        {/* BREADCRUMB */}
+        <div className="flex items-center space-x-2 text-xs text-stone-500">
+          <Link href="/" className="hover:text-[#8c4e24] transition-colors flex items-center space-x-1">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Beranda</span>
+          </Link>
+          <span>/</span>
+          <span className="font-semibold text-stone-800">E-Library Kelas HK A</span>
         </div>
 
-        {/* COMPACT LUXURY SEMESTER SELECTOR BAR */}
-        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-stone-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-amber-100 text-[#8c4e24] flex items-center justify-center flex-shrink-0 shadow-2xs border border-amber-200/60">
-              <GraduationCap className="w-5 h-5" />
+        {/* HERO BANNER & AKSI UTAMA */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#2a1306] via-[#1c0c04] to-[#100602] text-white p-6 sm:p-9 border-2 border-amber-500/30 shadow-xl shadow-stone-900/10">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-3 max-w-2xl">
+              <div className="inline-flex items-center space-x-2 bg-amber-500/20 border border-amber-400/30 px-3 py-1 rounded-full text-[11px] font-bold text-amber-200">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>Repositori Tugas & Dokumen Akademik Bersama</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
+                E-Library HK A 2025
+              </h1>
+              <p className="text-xs sm:text-sm text-stone-300 leading-relaxed font-medium">
+                Pusat pengumpulan dan pertukaran makalah, tugas kelompok, artikel jurnal, buku referensi, dan modul perkuliahan seluruh mahasiswa kelas.
+              </p>
+              <div className="flex items-center space-x-4 pt-1 text-xs text-amber-200/90 font-medium">
+                <span>📚 Total: <b>{libraryItems.length} Berkas</b></span>
+                <span>•</span>
+                <span>🎓 Status: <b>{auth.role === 'ADMIN' ? 'Admin Kelas' : `Mahasiswa (${auth.name})`}</b></span>
+              </div>
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h2 className="text-base sm:text-lg font-black text-stone-900">
-                  Semester {selectedSemester}
-                </h2>
-                {selectedSemester === activeSemester ? (
-                  <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    Semester Aktif
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">
-                    Arsip Semester
-                  </span>
+
+            {/* ACTION BUTTONS (GOOGLE DRIVE + UNGGAH TUGAS) */}
+            <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">
+              {/* TOMBOL GOOGLE DRIVE KELAS */}
+              <div className="flex items-center space-x-1.5">
+                <a
+                  href={classDriveUrl || 'https://drive.google.com'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center space-x-2.5 shadow-lg shadow-emerald-950/40 border border-emerald-400/40 transition-all hover:scale-102 active:scale-98"
+                  title="Buka Folder Google Drive Utama Kelas"
+                >
+                  <HardDrive className="w-4 h-4 text-emerald-200" />
+                  <span>📁 Buka Google Drive Kelas</span>
+                  <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                </a>
+
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setShowDriveEditModal(true)}
+                    className="p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-amber-200 border border-amber-400/30 transition-all"
+                    title="Ubah Tautan Google Drive (Admin Only)"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
                 )}
               </div>
-              <p className="text-xs text-stone-500 mt-0.5">
-                {libraryItems.filter((i) => Number(i.semester) === Number(selectedSemester)).length} Berkas Tugas Tersedia • Semester {activeSemester === selectedSemester ? 'Aktif Saat Ini' : `Arsip`}
-              </p>
+
+              {/* TOMBOL UNGGAH BERKAS (SEMUA MAHASISWA LOGIN) */}
+              <button
+                type="button"
+                onClick={openUploadModal}
+                className="w-full py-3 px-5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-extrabold text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-lg shadow-amber-950/30 transition-all hover:scale-102 active:scale-98"
+              >
+                <Upload className="w-4 h-4" />
+                <span>+ Unggah Tugas / Berkas</span>
+              </button>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setShowSemesterModal(true)}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-[#8c4e24] hover:bg-[#723f1c] text-white font-extrabold text-xs flex items-center justify-center space-x-2 shadow-sm transition-all active:scale-95 [-webkit-tap-highlight-color:transparent]"
-          >
-            <GraduationCap className="w-4 h-4 text-amber-300" />
-            <span>Pilih Semester (1 - 8)</span>
-            <ChevronDown className="w-4 h-4 text-amber-200" />
-          </button>
         </div>
 
-        {/* TAMPILAN MATA KULIAH BULAT MEWAH (KLIK MASUK KE HALAMAN BARU) */}
-        <section className="bg-white rounded-3xl p-5 sm:p-7 border border-stone-200/80 shadow-xs space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
-            <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-[#8c4e24] border border-amber-200 flex items-center justify-center shadow-2xs">
-                <BookOpen className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-extrabold text-stone-900">
-                  Daftar Mata Kuliah Semester {selectedSemester}
-                </h3>
-                <p className="text-[11px] text-stone-500">
-                  Klik lingkaran mata kuliah untuk membuka halaman berkas tugas:
-                </p>
-              </div>
-            </div>
-
-            {/* Live Search for courses */}
-            <div className="relative w-full sm:w-64">
-              <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari mata kuliah..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8c4e24]/30"
-              />
-            </div>
+        {/* KOTAK FILTER PERSEGI PANJANG (KARYA ILMIAH, TUGAS, BUKU, DLL) */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold text-stone-600 uppercase tracking-wider">
+              Kategori Berkas & Tugas
+            </h2>
+            <span className="text-[11px] text-stone-500">
+              Menampilkan {filteredItems.length} dari {libraryItems.length} berkas
+            </span>
           </div>
 
-          {/* CIRCULAR BUBBLES GRID */}
-          {filteredSemesterCourses.length === 0 ? (
-            <div className="text-center py-10 text-stone-400 text-xs">
-              Tidak ada mata kuliah yang cocok dengan kata kunci &quot;{searchQuery}&quot; di Semester {selectedSemester}.
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-y-7 gap-x-2 sm:gap-5 py-2">
-              {filteredSemesterCourses.map((c) => {
-                const CourseIcon = getCourseIcon(c.id, c.name);
-                const courseFilesCount = libraryItems.filter(
-                  (i) => Number(i.semester) === Number(selectedSemester) && i.courseId === c.id
-                ).length;
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+            {CATEGORY_FILTERS.map((cat) => {
+              const Icon = cat.icon;
+              const isSelected = selectedCategoryKey === cat.key;
+              const count = getCategoryCount(cat.key);
 
-                return (
-                  <Link
-                    key={c.id}
-                    href={`/library/${c.id}`}
-                    className="group flex flex-col items-center text-center outline-none focus:outline-none focus:ring-0 select-none transition-all hover:-translate-y-1 active:scale-95 [-webkit-tap-highlight-color:transparent]"
-                    style={{ WebkitTapHighlightColor: 'transparent', outline: 'none' }}
-                  >
-                    {/* Circular Bubble with luxury espresso gradient & golden ring (sama persis Beranda) */}
+              return (
+                <button
+                  key={cat.key}
+                  type="button"
+                  onClick={() => setSelectedCategoryKey(cat.key)}
+                  className={`flex items-center justify-between p-3.5 rounded-2xl border text-left transition-all duration-200 active:scale-98 ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-[#2a1306] to-[#1a0b04] text-white border-amber-500/50 shadow-md ring-2 ring-amber-400/40'
+                      : 'bg-white hover:bg-stone-50 text-stone-800 border-stone-200/90 shadow-xs'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5 truncate">
                     <div
-                      className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-b from-[#2a1306] via-[#1c0c04] to-[#100602] text-white p-1 shadow-md shadow-amber-950/40 group-hover:shadow-xl group-hover:shadow-[#8c4e24]/30 transition-all duration-300 flex flex-col items-center justify-center border-2 border-amber-500/40 group-hover:border-amber-300 group-hover:scale-105 select-none"
-                      style={{ WebkitTapHighlightColor: 'transparent', outline: 'none' }}
-                    >
-                      <div className="absolute inset-1 rounded-full bg-radial from-amber-500/10 to-transparent pointer-events-none" />
-                      <CourseIcon className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300 drop-shadow-[0_2px_6px_rgba(245,158,11,0.3)] mb-1 relative z-10" />
-                      <span className="relative z-10 text-[9px] sm:text-[10px] font-mono font-extrabold text-amber-200/95 tracking-tight px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/25">
-                        {c.sks} SKS
-                      </span>
-                    </div>
-
-                    <span className="text-[11px] sm:text-xs font-bold text-stone-900 mt-2 line-clamp-2 max-w-[90px] sm:max-w-[105px] leading-tight group-hover:text-[#8c4e24] transition-colors select-none pointer-events-none">
-                      {c.name}
-                    </span>
-
-                    <span
-                      className={`text-[9px] px-2 py-0.5 rounded-full mt-1 font-semibold select-none pointer-events-none ${
-                        courseFilesCount > 0
-                          ? 'bg-amber-100 text-[#723f1c] font-bold'
-                          : 'bg-stone-100 text-stone-400'
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                        isSelected ? 'bg-amber-400/20 text-amber-300' : 'bg-stone-100 text-stone-600'
                       }`}
                     >
-                      {courseFilesCount} Berkas →
-                    </span>
-                  </Link>
-                );
-              })}
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-bold truncate">{cat.label}</span>
+                  </div>
+                  <span
+                    className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ml-1.5 shrink-0 ${
+                      isSelected
+                        ? 'bg-amber-400 text-stone-950 font-black'
+                        : 'bg-stone-100 text-stone-600'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* TOOLBAR PENCARIAN & FILTER SEMESTER */}
+        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          {/* SEARCH BAR */}
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Cari judul tugas, mata kuliah, nama penyusun, atau pengunggah..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 rounded-xl border border-stone-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#8c4e24] focus:border-transparent bg-stone-50/50 text-stone-900 placeholder:text-stone-400"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2.5 shrink-0">
+            {/* FILTER SEMESTER */}
+            <div className="flex items-center space-x-1.5 bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs">
+              <span className="text-stone-500 font-bold px-2">Semester:</span>
+              <select
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(e.target.value)}
+                className="bg-white text-stone-900 font-bold px-2.5 py-1 rounded-lg border-none text-xs focus:outline-none shadow-xs"
+              >
+                <option value="ALL">Semua (1-8)</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                  <option key={s} value={s}>
+                    Semester {s} {s === activeSemester ? '⭐' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
-        </section>
+
+            {/* SORTING */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-white text-stone-800 font-semibold px-3 py-2 rounded-xl border border-stone-200 text-xs focus:outline-none shadow-xs"
+            >
+              <option value="NEWEST">Terbaru</option>
+              <option value="OLDEST">Terlama</option>
+              <option value="TITLE">Judul A-Z</option>
+            </select>
+          </div>
+        </div>
+
+        {/* FEED DAFTAR BERKAS TUGAS (GRID MODERN) */}
+        {filteredItems.length === 0 ? (
+          <div className="bg-white rounded-3xl p-10 border border-stone-200 text-center space-y-3 shadow-xs">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-[#8c4e24] flex items-center justify-center mx-auto">
+              <FolderDown className="w-7 h-7" />
+            </div>
+            <h3 className="text-base font-bold text-stone-900">Belum Ada Berkas yang Cocok</h3>
+            <p className="text-xs text-stone-500 max-w-sm mx-auto">
+              Tidak ada tugas atau berkas yang sesuai dengan filter kategori atau kata kunci pencarian Anda.
+            </p>
+            <button
+              type="button"
+              onClick={openUploadModal}
+              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-[#8c4e24] text-white font-bold text-xs shadow-sm hover:bg-[#753e1f] transition-colors"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Unggah Berkas Pertama di Kategori Ini</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredItems.map((item) => {
+              const isOwner = auth?.nim && item.uploadedByNim === auth.nim;
+              const canDelete = isAdmin || isOwner;
+
+              return (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-2xl p-5 border border-stone-200 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4 group hover:border-amber-300"
+                >
+                  <div className="space-y-3">
+                    {/* TOP BADGES */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center space-x-2.5">
+                        {renderFileTypeIcon(item.fileType)}
+                        <div>
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-[#723f1c] border border-amber-200">
+                            {item.category}
+                          </span>
+                          <span className="ml-1.5 text-[10px] font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full">
+                            Sem. {item.semester}
+                          </span>
+                        </div>
+                      </div>
+
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteItem(item)}
+                          className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title={isAdmin ? 'Hapus berkas (Moderasi Admin)' : 'Hapus berkas saya'}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* MATA KULIAH TAG */}
+                    <div className="text-[11px] font-bold text-[#8c4e24] truncate">
+                      📖 {item.courseName || 'Mata Kuliah Umum'}
+                    </div>
+
+                    {/* JUDUL TUGAS */}
+                    <h3 className="font-extrabold text-sm text-stone-900 leading-snug line-clamp-2 group-hover:text-[#8c4e24] transition-colors">
+                      {item.title}
+                    </h3>
+
+                    {/* PENYUSUN / AUTHORS */}
+                    <p className="text-[11px] text-stone-500 font-medium line-clamp-1">
+                      Penyusun: <span className="text-stone-700 font-semibold">{item.authors || 'Mahasiswa HK A'}</span>
+                    </p>
+
+                    {/* DESKRIPSI JIKA ADA */}
+                    {item.description && (
+                      <p className="text-[11px] text-stone-600 line-clamp-2 bg-stone-50 p-2 rounded-lg border border-stone-100">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* BOTTOM INFO & ACTION BUTTONS */}
+                  <div className="pt-3 border-t border-stone-100 space-y-3">
+                    <div className="flex items-center justify-between text-[10px] text-stone-400">
+                      <span className="truncate max-w-[150px]" title={`Diupload oleh ${item.uploadedByName} (${item.uploadedByNim})`}>
+                        👤 {item.uploadedByName}
+                      </span>
+                      <span>{item.fileSize ? `${item.fileSize} • ` : ''}{item.uploadedAt}</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <a
+                        href={item.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2 px-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors text-center"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-stone-600" />
+                        <span>Buka / Lihat</span>
+                      </a>
+
+                      <a
+                        href={item.fileUrl}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2 px-3 rounded-xl bg-[#8c4e24] hover:bg-[#753e1f] text-white font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors shadow-xs text-center"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Unduh</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* MODAL UPLOAD TUGAS (KHUSUS MODE ADMIN) */}
-      {showUploadModal && isAdmin && (
+      {/* MODAL UPLOAD TUGAS (MAHASISWA & ADMIN) */}
+      {showUploadModal && (
         <div className="fixed inset-0 z-50 bg-stone-950/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-stone-200 shadow-2xl space-y-4 my-8 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <div>
-                <h3 className="font-black text-stone-900 text-base">Unggah Tugas Baru (Admin)</h3>
-                <p className="text-xs text-stone-500">Perpustakaan Digital HK A 2025</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowUploadModal(false)}
-                className="text-stone-400 hover:text-stone-700 p-1 font-bold text-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            {uploadNotice && (
-              <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-[#723f1c] text-xs font-semibold flex items-center space-x-2">
-                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                <span>{uploadNotice}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSaveItem} className="space-y-3.5 text-xs">
-              {/* Tab Selector Mode Upload */}
-              <div className="flex rounded-2xl bg-stone-100 p-1 border border-stone-200">
-                <button
-                  type="button"
-                  onClick={() => setUploadMode('FILE')}
-                  className={`flex-1 py-2 rounded-xl font-bold text-xs flex items-center justify-center space-x-1.5 transition-all ${
-                    uploadMode === 'FILE'
-                      ? 'bg-white text-[#8c4e24] shadow-xs'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Upload Langsung (HP/Laptop)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUploadMode('LINK')}
-                  className={`flex-1 py-2 rounded-xl font-bold text-xs flex items-center justify-center space-x-1.5 transition-all ${
-                    uploadMode === 'LINK'
-                      ? 'bg-white text-[#8c4e24] shadow-xs'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  <Link2 className="w-3.5 h-3.5" />
-                  <span>Tautan Google Drive</span>
-                </button>
-              </div>
-
-              {/* Mode 1: Direct File Upload */}
-              {uploadMode === 'FILE' ? (
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">
-                    Pilih Berkas dari Perangkat
-                  </label>
-                  {selectedFile ? (
-                    <div className="p-3.5 rounded-2xl border-2 border-amber-400 bg-amber-50/50 flex items-center justify-between gap-3">
-                      <div className="flex items-center space-x-3 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-amber-100 text-[#8c4e24] flex items-center justify-center flex-shrink-0 shadow-2xs">
-                          <FileText className="w-5 h-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-extrabold text-stone-900 text-xs truncate max-w-[200px] sm:max-w-[250px]">
-                            {selectedFile.name}
-                          </p>
-                          <p className="text-[10px] text-[#723f1c] font-semibold mt-0.5">
-                            {formatFileSize(selectedFile.size)} • Siap disimpan
-                          </p>
-                        </div>
-                      </div>
-                      <label className="px-3 py-1.5 rounded-xl bg-white hover:bg-stone-100 text-[#8c4e24] text-[11px] font-bold border border-stone-200 cursor-pointer shadow-2xs flex-shrink-0 active:scale-95">
-                        Ganti File
-                        <input
-                          type="file"
-                          onChange={handleFileSelect}
-                          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar,image/*"
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  ) : (
-                    <label className="border-2 border-dashed border-stone-300 hover:border-[#8c4e24] bg-stone-50/70 hover:bg-amber-50/40 rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all group active:scale-98">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 text-[#8c4e24] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                        <Upload className="w-5 h-5" />
-                      </div>
-                      <span className="font-extrabold text-stone-900 text-xs">
-                        Ketuk untuk pilih berkas dari HP / Laptop
-                      </span>
-                      <span className="text-[10px] text-stone-500 mt-0.5">
-                        Mendukung PDF, Word (DOC/DOCX), PowerPoint (PPT/PPTX), dll.
-                      </span>
-                      <input
-                        type="file"
-                        onChange={handleFileSelect}
-                        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar,image/*"
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
-              ) : (
-                /* Mode 2: Google Drive Link */
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">Tautan Berkas (Google Drive)</label>
-                  <input
-                    type="url"
-                    value={uploadFileUrl}
-                    onChange={(e) => setUploadFileUrl(e.target.value)}
-                    placeholder="https://drive.google.com/file/d/..."
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300 font-mono text-[11px]"
-                  />
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">Semester</label>
-                  <select
-                    value={uploadSemester}
-                    onChange={(e) => {
-                      const sem = Number(e.target.value);
-                      setUploadSemester(sem);
-                      const sc = courses.filter((c) => Number(c.semester) === sem);
-                      setUploadCourseId(sc[0]?.id || 'custom');
-                    }}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white font-semibold"
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-                      <option key={s} value={s}>
-                        Semester {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">Jenis Dokumen</label>
-                  <select
-                    value={uploadCategory}
-                    onChange={(e) => setUploadCategory(e.target.value as LibraryCategory)}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white font-semibold"
-                  >
-                    <option value="MAKALAH">Makalah</option>
-                    <option value="ARTIKEL">Artikel Ilmiah</option>
-                    <option value="PPT">Slide Presentasi (PPT)</option>
-                    <option value="RESUME">Resume & Catatan</option>
-                    <option value="TUGAS">Tugas Proyek</option>
-                    <option value="MODUL">Modul & Buku</option>
-                    <option value="RPS">RPS & Silabus</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">Mata Kuliah</label>
-                <select
-                  value={uploadCourseId}
-                  onChange={(e) => setUploadCourseId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white font-semibold"
-                >
-                  {courses
-                    .filter((c) => Number(c.semester) === Number(uploadSemester))
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.code} — {c.name}
-                      </option>
-                    ))}
-                  <option value="custom">+ Tulis Manual</option>
-                </select>
-              </div>
-
-              {uploadCourseId === 'custom' && (
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">Nama Mata Kuliah Baru</label>
-                  <input
-                    type="text"
-                    required
-                    value={uploadCustomCourse}
-                    onChange={(e) => setUploadCustomCourse(e.target.value)}
-                    placeholder="Nama mata kuliah..."
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">Judul Tugas / Karya</label>
-                <input
-                  type="text"
-                  required
-                  value={uploadTitle}
-                  onChange={(e) => setUploadTitle(e.target.value)}
-                  placeholder="Contoh: Makalah Analisis Hak Hadhanah Anak"
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300 font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">Penyusun / Kelompok (Opsional)</label>
-                <input
-                  type="text"
-                  value={uploadAuthors}
-                  onChange={(e) => setUploadAuthors(e.target.value)}
-                  placeholder="Contoh: Kelompok 1 (Ahmad, Siti, Budi)"
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300 font-medium"
-                />
-              </div>
-
-              <div className="flex items-center justify-end space-x-2 pt-2 border-t border-stone-100">
-                <button
-                  type="button"
-                  onClick={() => setShowUploadModal(false)}
-                  className="px-4 py-2 rounded-xl border border-stone-200 text-stone-600 font-semibold"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-5 py-2 rounded-xl bg-[#8c4e24] hover:bg-[#723f1c] text-white font-bold flex items-center space-x-1.5 active:scale-95 shadow-xs"
-                >
-                  {isSubmitting ? (
-                    <span>{uploadProgressText || 'Menyimpan...'}</span>
-                  ) : (
-                    <span>Simpan Tugas</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL PILIH SEMESTER (1 S.D. 8) */}
-      {showSemesterModal && (
-        <div className="fixed inset-0 z-50 bg-stone-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 border border-stone-200 shadow-2xl space-y-4 my-8 animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-xl bg-amber-100 text-[#8c4e24] flex items-center justify-center">
-                  <GraduationCap className="w-4 h-4" />
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-[#8c4e24] flex items-center justify-center font-bold">
+                  <Upload className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-black text-stone-900 text-sm sm:text-base">Pilih Semester Perkuliahan</h3>
+                  <h3 className="font-extrabold text-stone-900 text-sm">Unggah Tugas & Berkas</h3>
                   <p className="text-[11px] text-stone-500">
-                    Semester Aktif Saat Ini:{' '}
-                    <strong className="text-[#8c4e24]">Semester {activeSemester}</strong>
+                    Oleh: {auth.name} ({auth.nim || 'Admin'})
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setShowSemesterModal(false)}
-                className="text-stone-400 hover:text-stone-700 p-1 font-bold text-lg"
+                onClick={() => setShowUploadModal(false)}
+                className="text-stone-400 hover:text-stone-600 p-1"
               >
                 ✕
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 py-1">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => {
-                const isSelected = selectedSemester === sem;
-                const isActiveSem = activeSemester === sem;
-                const countInSem = libraryItems.filter((i) => Number(i.semester) === sem).length;
-
-                return (
+            {uploadNotice ? (
+              <div className="p-4 bg-emerald-50 text-emerald-800 rounded-2xl text-center border border-emerald-200 font-bold text-xs flex items-center justify-center space-x-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <span>{uploadNotice}</span>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveItem} className="space-y-3.5 text-xs">
+                {/* PILIHAN MODE UPLOAD */}
+                <div className="grid grid-cols-2 gap-2 bg-stone-100 p-1 rounded-xl">
                   <button
-                    key={sem}
                     type="button"
-                    onClick={() => {
-                      setSelectedSemester(sem);
-                      setHasManuallySelectedSemester(true);
-                      setShowSemesterModal(false);
-                    }}
-                    className={`py-3 px-2 rounded-2xl text-center transition-all relative border outline-none active:scale-95 [-webkit-tap-highlight-color:transparent] ${
-                      isSelected
-                        ? 'bg-gradient-to-b from-[#8c4e24] to-[#723f1c] text-white border-[#723f1c] shadow-md shadow-[#8c4e24]/25 scale-102 font-bold'
-                        : 'bg-stone-50 hover:bg-amber-50 text-stone-700 border-stone-200 hover:border-amber-300'
+                    onClick={() => setUploadMode('FILE')}
+                    className={`py-2 rounded-lg font-bold transition-all text-xs flex items-center justify-center space-x-1.5 ${
+                      uploadMode === 'FILE'
+                        ? 'bg-white text-[#8c4e24] shadow-xs'
+                        : 'text-stone-500 hover:text-stone-800'
                     }`}
                   >
-                    {isActiveSem && (
-                      <span
-                        className={`absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-extrabold px-1.5 py-0.2 rounded-full border shadow-2xs uppercase tracking-tighter ${
-                          isSelected
-                            ? 'bg-amber-400 text-stone-950 border-amber-300'
-                            : 'bg-[#8c4e24] text-white border-amber-400/40'
-                        }`}
-                      >
-                        Aktif
-                      </span>
-                    )}
-                    <div className="text-xs sm:text-sm font-black">Semester {sem}</div>
-                    <div
-                      className={`text-[10px] font-medium mt-0.5 ${
-                        isSelected ? 'text-amber-200' : 'text-stone-400'
-                      }`}
-                    >
-                      {countInSem} Berkas
-                    </div>
+                    <FolderDown className="w-3.5 h-3.5" />
+                    <span>Upload HP / Laptop</span>
                   </button>
-                );
-              })}
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => setUploadMode('LINK')}
+                    className={`py-2 rounded-lg font-bold transition-all text-xs flex items-center justify-center space-x-1.5 ${
+                      uploadMode === 'LINK'
+                        ? 'bg-white text-[#8c4e24] shadow-xs'
+                        : 'text-stone-500 hover:text-stone-800'
+                    }`}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Link Google Drive</span>
+                  </button>
+                </div>
 
-            <div className="pt-2 border-t border-stone-100 flex justify-end">
+                {/* DROPZONE ATAU LINK */}
+                {uploadMode === 'FILE' ? (
+                  <div className="space-y-1">
+                    <label className="font-bold text-stone-700">Pilih Berkas dari Perangkat:</label>
+                    <div className="border-2 border-dashed border-stone-200 hover:border-amber-400 rounded-2xl p-4 text-center transition-colors bg-stone-50/50">
+                      {selectedFile ? (
+                        <div className="space-y-2">
+                          <div className="w-10 h-10 rounded-xl bg-amber-100 text-[#8c4e24] flex items-center justify-center mx-auto">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <p className="font-bold text-stone-800 text-xs truncate max-w-[280px] mx-auto">
+                            {selectedFile.name}
+                          </p>
+                          <span className="text-[10px] text-stone-500 bg-stone-200/70 px-2 py-0.5 rounded-full font-semibold">
+                            {formatFileSize(selectedFile.size)}
+                          </span>
+                          <div>
+                            <label
+                              htmlFor="reselect-file"
+                              className="inline-block mt-1 text-[11px] text-[#8c4e24] font-bold hover:underline cursor-pointer"
+                            >
+                              Ganti Berkas
+                            </label>
+                            <input
+                              id="reselect-file"
+                              type="file"
+                              className="hidden"
+                              onChange={handleFileSelect}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <label className="cursor-pointer block space-y-1.5 py-2">
+                          <Upload className="w-6 h-6 text-[#8c4e24] mx-auto" />
+                          <p className="font-bold text-stone-700 text-xs">
+                            Ketuk untuk memilih berkas dokumen atau foto
+                          </p>
+                          <p className="text-[10px] text-stone-400">
+                            PDF, Word (DOC/DOCX), PPT, Modul, Gambar (Auto-Compress)
+                          </p>
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={handleFileSelect}
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="font-bold text-stone-700">Tautan Berkas (Google Drive / URL Publik):</label>
+                    <input
+                      type="url"
+                      placeholder="https://drive.google.com/file/d/..."
+                      value={uploadFileUrl}
+                      onChange={(e) => setUploadFileUrl(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 rounded-xl border border-stone-200 text-xs focus:ring-2 focus:ring-[#8c4e24] focus:outline-none"
+                    />
+                  </div>
+                )}
+
+                {/* MATA KULIAH */}
+                <div>
+                  <label className="font-bold text-stone-700">Mata Kuliah Terkait:</label>
+                  <select
+                    value={uploadCourseId}
+                    onChange={(e) => setUploadCourseId(e.target.value)}
+                    className="w-full mt-1 px-3 py-2 rounded-xl border border-stone-200 text-xs focus:ring-2 focus:ring-[#8c4e24] focus:outline-none bg-white font-medium"
+                  >
+                    <optgroup label="Mata Kuliah Semester 3">
+                      {courses
+                        .filter((c) => Number(c.semester) === 3)
+                        .map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} ({c.code})
+                          </option>
+                        ))}
+                    </optgroup>
+                    <optgroup label="Lainnya">
+                      <option value="custom">Mata Kuliah Lain / Umum (Ketik Manual)</option>
+                    </optgroup>
+                  </select>
+
+                  {uploadCourseId === 'custom' && (
+                    <input
+                      type="text"
+                      placeholder="Ketik nama mata kuliah / kegiatan..."
+                      value={uploadCustomCourse}
+                      onChange={(e) => setUploadCustomCourse(e.target.value)}
+                      className="w-full mt-2 px-3 py-2 rounded-xl border border-amber-300 text-xs focus:ring-2 focus:ring-[#8c4e24] focus:outline-none"
+                    />
+                  )}
+                </div>
+
+                {/* SEMESTER & KATEGORI */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="font-bold text-stone-700">Semester:</label>
+                    <select
+                      value={uploadSemester}
+                      onChange={(e) => setUploadSemester(Number(e.target.value))}
+                      className="w-full mt-1 px-3 py-2 rounded-xl border border-stone-200 text-xs focus:ring-2 focus:ring-[#8c4e24] focus:outline-none bg-white font-medium"
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                        <option key={s} value={s}>
+                          Semester {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-stone-700">Kategori:</label>
+                    <select
+                      value={uploadCategory}
+                      onChange={(e) => setUploadCategory(e.target.value as any)}
+                      className="w-full mt-1 px-3 py-2 rounded-xl border border-stone-200 text-xs focus:ring-2 focus:ring-[#8c4e24] focus:outline-none bg-white font-medium"
+                    >
+                      <option value="TUGAS">Tugas Kuliah</option>
+                      <option value="MAKALAH">Makalah</option>
+                      <option value="ARTIKEL">Artikel & Jurnal</option>
+                      <option value="MODUL">Modul & Buku</option>
+                      <option value="RPS">RPS & Silabus</option>
+                      <option value="PPT">PPT / Slide</option>
+                      <option value="RESUME">Resume & Catatan</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* JUDUL TUGAS */}
+                <div>
+                  <label className="font-bold text-stone-700">Judul Tugas / Berkas:</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Makalah Hukum Perdata Internasional Kelompok 1"
+                    value={uploadTitle}
+                    onChange={(e) => setUploadTitle(e.target.value)}
+                    className="w-full mt-1 px-3 py-2 rounded-xl border border-stone-200 text-xs focus:ring-2 focus:ring-[#8c4e24] focus:outline-none"
+                  />
+                </div>
+
+                {/* PENYUSUN / KELOMPOK */}
+                <div>
+                  <label className="font-bold text-stone-700">Penyusun / Nama Kelompok:</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Kelompok 2 (Siti, Ahmad, Budi) atau Nama Anda"
+                    value={uploadAuthors}
+                    onChange={(e) => setUploadAuthors(e.target.value)}
+                    className="w-full mt-1 px-3 py-2 rounded-xl border border-stone-200 text-xs focus:ring-2 focus:ring-[#8c4e24] focus:outline-none"
+                  />
+                </div>
+
+                {/* KETERANGAN OPSIONAL */}
+                <div>
+                  <label className="font-bold text-stone-700">Keterangan / Catatan (Opsional):</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Catatan tambahan untuk teman sekelas..."
+                    value={uploadDescription}
+                    onChange={(e) => setUploadDescription(e.target.value)}
+                    className="w-full mt-1 px-3 py-2 rounded-xl border border-stone-200 text-xs focus:ring-2 focus:ring-[#8c4e24] focus:outline-none resize-none"
+                  />
+                </div>
+
+                {uploadProgressText && (
+                  <p className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-xl border border-amber-200 animate-pulse text-center font-bold">
+                    ⏳ {uploadProgressText}
+                  </p>
+                )}
+
+                <div className="pt-2 flex items-center justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowUploadModal(false)}
+                    className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-5 py-2 rounded-xl bg-[#8c4e24] hover:bg-[#783e18] text-white font-bold transition-colors shadow-md disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Mengunggah...' : 'Simpan Berkas'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDIT GOOGLE DRIVE URL (ADMIN ONLY) */}
+      {showDriveEditModal && isAdmin && (
+        <div className="fixed inset-0 z-50 bg-stone-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-stone-200 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center space-x-2">
+                <Settings className="w-5 h-5 text-[#8c4e24]" />
+                <h3 className="font-extrabold text-stone-900 text-sm">Pengaturan Google Drive Kelas</h3>
+              </div>
               <button
                 type="button"
-                onClick={() => setShowSemesterModal(false)}
-                className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs"
+                onClick={() => setShowDriveEditModal(false)}
+                className="text-stone-400 hover:text-stone-600"
               >
-                Tutup
+                ✕
               </button>
             </div>
+
+            <form onSubmit={handleSaveDriveUrl} className="space-y-3.5 text-xs">
+              <div>
+                <label className="font-bold text-stone-700">Tautan Folder Google Drive Utama Kelas:</label>
+                <p className="text-[11px] text-stone-500 mb-1.5">
+                  Masukkan link share folder Google Drive yang telah Anda buat untuk kelas HK A 2025.
+                </p>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://drive.google.com/drive/folders/..."
+                  value={newDriveUrlInput}
+                  onChange={(e) => setNewDriveUrlInput(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-stone-200 text-xs focus:ring-2 focus:ring-[#8c4e24] focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDriveEditModal(false)}
+                  className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-[#8c4e24] hover:bg-[#783e18] text-white font-bold shadow-md"
+                >
+                  Simpan Tautan Drive
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

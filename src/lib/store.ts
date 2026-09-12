@@ -34,6 +34,7 @@ interface AppState {
   adminPin: string;
   activeSemester?: number;
   libraryItems: LibraryItem[];
+  classDriveUrl?: string;
 }
 
 // Helper to sort students ascending by NIM (e.g. 03, 04, 05, etc.)
@@ -96,6 +97,7 @@ function getInitialState(): AppState {
     adminPin: 'adminhk2025',
     activeSemester: 3,
     libraryItems: INITIAL_LIBRARY_ITEMS,
+    classDriveUrl: 'https://drive.google.com/drive/folders/1w7R9K63YJpP_CLASS_HK_A_2025?usp=sharing',
   };
 }
 
@@ -138,6 +140,14 @@ class Store {
               this.syncFromSupabase();
             }
           )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'library_items' },
+            () => {
+              console.log('Realtime update: Perubahan data library_items terdeteksi dari cloud.');
+              this.syncFromSupabase();
+            }
+          )
           .subscribe();
       } catch (e) {
         console.warn('Realtime subscription notice:', e);
@@ -169,6 +179,7 @@ class Store {
           announcements: Array.isArray(parsed.announcements) ? parsed.announcements : INITIAL_ANNOUNCEMENTS,
           adminPin: parsed.adminPin || 'adminhk2025',
           libraryItems: Array.isArray(parsed.libraryItems) && parsed.libraryItems.length > 0 ? parsed.libraryItems : INITIAL_LIBRARY_ITEMS,
+          classDriveUrl: parsed.classDriveUrl || this.state.classDriveUrl,
         };
       } else {
         this.save();
@@ -1029,8 +1040,16 @@ class Store {
     return newItem;
   }
 
-  public deleteLibraryItem(id: string) {
-    if (!this.state.libraryItems) return;
+  public deleteLibraryItem(id: string, requesterNim?: string, isAdmin?: boolean): boolean {
+    if (!this.state.libraryItems) return false;
+    const target = this.state.libraryItems.find((i) => i.id === id);
+    if (!target) return false;
+
+    // Hanya Admin atau mahasiswa yang mengunggah berkas tersebut yang berhak menghapus
+    if (!isAdmin && requesterNim && target.uploadedByNim && target.uploadedByNim !== requesterNim) {
+      return false;
+    }
+
     this.state.libraryItems = this.state.libraryItems.filter((i) => i.id !== id);
     this.save();
 
@@ -1043,6 +1062,19 @@ class Store {
           if (error) console.warn('Supabase library_items delete note:', error);
         });
     }
+    return true;
+  }
+
+  public getClassDriveUrl(): string {
+    return (
+      this.state.classDriveUrl ||
+      'https://drive.google.com/drive/folders/1w7R9K63YJpP_CLASS_HK_A_2025?usp=sharing'
+    );
+  }
+
+  public setClassDriveUrl(url: string) {
+    this.state.classDriveUrl = url.trim();
+    this.save();
   }
 
   // --- Materials ---
