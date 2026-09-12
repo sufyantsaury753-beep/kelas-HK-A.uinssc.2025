@@ -597,6 +597,25 @@ class Store {
     return false;
   }
 
+  public getStudentNickname(nim: string): string {
+    if (typeof window !== 'undefined' && nim) {
+      const stored = localStorage.getItem(`hk_nickname_${nim.trim()}`);
+      if (stored && stored.trim()) return stored.trim();
+    }
+    const student = this.state.students.find((s) => (s.nim || '').trim() === (nim || '').trim());
+    if (student && student.name) {
+      return student.name.split(' ')[0];
+    }
+    return '';
+  }
+
+  public setStudentNickname(nim: string, nickname: string) {
+    if (typeof window !== 'undefined' && nim) {
+      localStorage.setItem(`hk_nickname_${nim.trim()}`, nickname.trim());
+    }
+    this.notify();
+  }
+
   public deleteStudent(nim: string) {
     this.state.students = this.state.students.filter((s) => s.nim.trim() !== nim.trim());
     this.state.courses.forEach((c) => {
