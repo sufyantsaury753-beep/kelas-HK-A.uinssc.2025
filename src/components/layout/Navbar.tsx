@@ -153,6 +153,10 @@ export default function Navbar() {
     router.replace('/');
   };
 
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-40 no-print">
       {/* Official University Portal Top Bar */}

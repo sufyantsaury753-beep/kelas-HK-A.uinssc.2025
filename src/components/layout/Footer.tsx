@@ -1,5 +1,8 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   MapPin,
   ShieldCheck,
@@ -16,7 +19,12 @@ export const HELPDESK_PHONE_DISPLAY = '+62 831-8389-4058'; // Tampilan teks nomo
 export const HELPDESK_PHONE_WA = '6283183894058';         // Format WhatsApp (angka saja tanpa simbol +, spasi, atau strip)
 
 export default function Footer() {
+  const pathname = usePathname();
   const currentYear = new Date().getFullYear();
+
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <footer className="w-full bg-[#140b05] text-stone-300 border-t border-[#8c4e24]/25 no-print mt-auto relative overflow-hidden">

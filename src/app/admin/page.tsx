@@ -35,6 +35,8 @@ import {
   ArrowLeft,
   Video,
   ExternalLink,
+  Menu,
+  X,
 } from 'lucide-react';
 import { appStore } from '@/lib/store';
 import {
@@ -57,6 +59,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [auth, setAuth] = useState<AuthSession | null>(null);
   const [activeTab, setActiveTab] = useState<'PJ' | 'REVISI_ABSENSI' | 'STUDENTS' | 'ANNOUNCEMENTS' | 'SETTINGS'>('PJ');
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -477,133 +480,331 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 ${showRevPrintModal ? 'print:hidden' : ''}`}>
-      {/* Header Admin Banner */}
-      <div className="bg-gradient-to-r from-stone-900 via-stone-800 to-stone-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-5 border border-stone-800">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-400 text-stone-950 flex items-center space-x-1.5 shadow-sm">
-              <ShieldCheck className="w-3.5 h-3.5 text-stone-950" />
-              <span>Superadmin Portal</span>
-            </span>
-            <span className="text-xs text-stone-400 font-mono">HK A 2025 • UIN SSC</span>
-          </div>
-          <h1 className="text-xl sm:text-3xl font-black mt-2 text-white">
-            Panel Kendali Utama Administrator
-          </h1>
-          <p className="text-xs sm:text-sm text-stone-400 mt-0.5">
-            Kelola mata kuliah ({courses.length} MK), penugasan PJ, whitelist mahasiswa, pengumuman, dan sistem presensi.
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-3">
-          <Link
-            href="/"
-            replace
-            className="hidden md:inline-flex px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-semibold border border-stone-700 transition-all items-center space-x-1.5"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Kembali ke Beranda</span>
-          </Link>
-          <Link
-            href="/pj"
-            replace
-            className="px-4 py-2.5 rounded-xl bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold shadow-md transition-all flex items-center space-x-1.5"
-          >
-            <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>Mode PJ Presensi</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="flex overflow-x-auto border-b border-stone-200 gap-2 pb-px scrollbar-none">
-        <button
-          onClick={() => setActiveTab('PJ')}
-          className={`px-5 py-3 rounded-t-2xl text-xs sm:text-sm font-bold transition-all flex items-center space-x-2 border-b-2 ${
-            activeTab === 'PJ'
-              ? 'border-[#9d5f2f] text-[#9d5f2f] bg-white'
-              : 'border-transparent text-stone-500 hover:text-stone-800 hover:bg-stone-50'
-          }`}
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>Penugasan PJ & Mata Kuliah ({courses.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('REVISI_ABSENSI')}
-          className={`px-5 py-3 rounded-t-2xl text-xs sm:text-sm font-bold transition-all flex items-center space-x-2 border-b-2 ${
-            activeTab === 'REVISI_ABSENSI'
-              ? 'border-[#9d5f2f] text-[#9d5f2f] bg-white'
-              : 'border-transparent text-stone-500 hover:text-stone-800 hover:bg-stone-50'
-          }`}
-        >
-          <CalendarDays className="w-4 h-4 text-amber-500" />
-          <span>Intervensi Kalender Absensi</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('STUDENTS')}
-          className={`px-5 py-3 rounded-t-2xl text-xs sm:text-sm font-bold transition-all flex items-center space-x-2 border-b-2 ${
-            activeTab === 'STUDENTS'
-              ? 'border-[#9d5f2f] text-[#9d5f2f] bg-white'
-              : 'border-transparent text-stone-500 hover:text-stone-800 hover:bg-stone-50'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>Whitelist Mahasiswa ({students.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('ANNOUNCEMENTS')}
-          className={`px-5 py-3 rounded-t-2xl text-xs sm:text-sm font-bold transition-all flex items-center space-x-2 border-b-2 ${
-            activeTab === 'ANNOUNCEMENTS'
-              ? 'border-[#9d5f2f] text-[#9d5f2f] bg-white'
-              : 'border-transparent text-stone-500 hover:text-stone-800 hover:bg-stone-50'
-          }`}
-        >
-          <Bell className="w-4 h-4" />
-          <span>Papan Pengumuman</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('SETTINGS')}
-          className={`px-5 py-3 rounded-t-2xl text-xs sm:text-sm font-bold transition-all flex items-center space-x-2 border-b-2 ${
-            activeTab === 'SETTINGS'
-              ? 'border-[#9d5f2f] text-[#9d5f2f] bg-white'
-              : 'border-transparent text-stone-500 hover:text-stone-800 hover:bg-stone-50'
-          }`}
-        >
-          <Database className="w-4 h-4" />
-          <span>Pengaturan & Backup</span>
-        </button>
-      </div>
-
-      {/* TAB 1: PENUGASAN PJ & KELOLA MATA KULIAH */}
-      {activeTab === 'PJ' && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className={`min-h-screen bg-[#fcfaf7] flex flex-col md:flex-row text-stone-800 ${showRevPrintModal ? 'print:hidden' : ''}`}>
+        {/* MOBILE TOPBAR (Visible only on mobile/tablet) */}
+        <div className="md:hidden bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#8c4e24] to-[#5a2a0c] text-white flex items-center justify-center font-black text-xs shadow-xs">
+              HK
+            </div>
             <div>
-              <h2 className="text-lg font-bold text-stone-900">
-                Kelola Mata Kuliah & Penugasan PJ ({courses.length} Mata Kuliah)
-              </h2>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Admin dapat menambah mata kuliah baru, mengubah data perkuliahan (SKS, nama, dosen, semester), mengatur PJ, hingga menghapus mata kuliah untuk semester berikutnya.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2.5">
-              <button
-                onClick={() => setShowAddCourseModal(true)}
-                className="px-4 py-2.5 bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold rounded-2xl shadow-md transition-all flex items-center space-x-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Tambah Mata Kuliah</span>
-              </button>
-              <span className="text-xs font-semibold px-3 py-2 bg-amber-100 text-amber-900 rounded-2xl w-fit">
-                {courses.length} Terdaftar
-              </span>
+              <h1 className="text-xs font-bold text-stone-900 leading-none">HK A 2025 Admin</h1>
+              <span className="text-[10px] text-stone-400">UIN Siber Cirebon</span>
             </div>
           </div>
+          <div className="flex items-center space-x-2">
+            <Link
+              href="/"
+              className="px-2.5 py-1 text-[11px] font-semibold text-stone-600 bg-stone-100 rounded-lg hover:bg-stone-200"
+            >
+              Web
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+              className="p-1.5 rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200 transition-colors"
+              aria-label="Toggle Menu"
+            >
+              {mobileSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+
+        {/* SIDEBAR KIRI (Desktop Fixed/Sticky, Mobile Drawer) */}
+        {mobileSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-stone-900/50 z-40 md:hidden backdrop-blur-xs transition-opacity"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+        )}
+
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-stone-200/90 flex flex-col justify-between transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:h-screen md:sticky md:top-0 shrink-0 select-none shadow-[2px_0_12px_rgba(0,0,0,0.02)] ${
+            mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <div>
+            {/* Sidebar Header Brand */}
+            <div className="p-5 border-b border-stone-100 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#8c4e24] to-[#5a2a0c] text-white flex items-center justify-center font-black text-sm shadow-sm">
+                  HK
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-stone-900 tracking-tight leading-none">HK A 2025</h2>
+                  <p className="text-[11px] text-stone-400 mt-1 font-medium">UIN Siber Cirebon</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileSidebarOpen(false)}
+                className="md:hidden p-1 rounded-lg text-stone-400 hover:text-stone-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Sidebar Navigation */}
+            <div className="p-3.5 space-y-5">
+              <div>
+                <div className="px-3 pb-2 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                  Manajemen Kelas
+                </div>
+                <nav className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('PJ');
+                      setMobileSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      activeTab === 'PJ'
+                        ? 'bg-amber-50 text-[#8c4e24] shadow-xs border border-amber-200/60'
+                        : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900 font-semibold'
+                    }`}
+                  >
+                    <span className="flex items-center space-x-2.5">
+                      <BookOpen className={`w-4 h-4 ${activeTab === 'PJ' ? 'text-[#8c4e24]' : 'text-stone-400'}`} />
+                      <span>Mata Kuliah & PJ</span>
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        activeTab === 'PJ' ? 'bg-[#8c4e24] text-white' : 'bg-stone-100 text-stone-600'
+                      }`}
+                    >
+                      {courses.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('REVISI_ABSENSI');
+                      setMobileSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      activeTab === 'REVISI_ABSENSI'
+                        ? 'bg-amber-50 text-[#8c4e24] shadow-xs border border-amber-200/60'
+                        : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900 font-semibold'
+                    }`}
+                  >
+                    <span className="flex items-center space-x-2.5">
+                      <CalendarDays className={`w-4 h-4 ${activeTab === 'REVISI_ABSENSI' ? 'text-[#8c4e24]' : 'text-stone-400'}`} />
+                      <span>Kalender Presensi</span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('STUDENTS');
+                      setMobileSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      activeTab === 'STUDENTS'
+                        ? 'bg-amber-50 text-[#8c4e24] shadow-xs border border-amber-200/60'
+                        : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900 font-semibold'
+                    }`}
+                  >
+                    <span className="flex items-center space-x-2.5">
+                      <Users className={`w-4 h-4 ${activeTab === 'STUDENTS' ? 'text-[#8c4e24]' : 'text-stone-400'}`} />
+                      <span>Whitelist Mahasiswa</span>
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        activeTab === 'STUDENTS' ? 'bg-[#8c4e24] text-white' : 'bg-stone-100 text-stone-600'
+                      }`}
+                    >
+                      {students.length}
+                    </span>
+                  </button>
+                </nav>
+              </div>
+
+              <div>
+                <div className="px-3 pb-2 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                  Komunikasi & Sistem
+                </div>
+                <nav className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('ANNOUNCEMENTS');
+                      setMobileSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      activeTab === 'ANNOUNCEMENTS'
+                        ? 'bg-amber-50 text-[#8c4e24] shadow-xs border border-amber-200/60'
+                        : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900 font-semibold'
+                    }`}
+                  >
+                    <span className="flex items-center space-x-2.5">
+                      <Bell className={`w-4 h-4 ${activeTab === 'ANNOUNCEMENTS' ? 'text-[#8c4e24]' : 'text-stone-400'}`} />
+                      <span>Papan Pengumuman</span>
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        activeTab === 'ANNOUNCEMENTS' ? 'bg-[#8c4e24] text-white' : 'bg-stone-100 text-stone-600'
+                      }`}
+                    >
+                      {announcements.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('SETTINGS');
+                      setMobileSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      activeTab === 'SETTINGS'
+                        ? 'bg-amber-50 text-[#8c4e24] shadow-xs border border-amber-200/60'
+                        : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900 font-semibold'
+                    }`}
+                  >
+                    <span className="flex items-center space-x-2.5">
+                      <Database className={`w-4 h-4 ${activeTab === 'SETTINGS' ? 'text-[#8c4e24]' : 'text-stone-400'}`} />
+                      <span>Pengaturan & Backup</span>
+                    </span>
+                  </button>
+                </nav>
+              </div>
+
+              {/* Quick Mode PJ button in sidebar */}
+              <div className="pt-2">
+                <Link
+                  href="/pj"
+                  className="w-full px-3 py-2.5 rounded-xl bg-stone-100 hover:bg-amber-100/70 text-[#8c4e24] text-xs font-bold transition-all flex items-center justify-between group"
+                >
+                  <span className="flex items-center space-x-2">
+                    <Sparkles className="w-3.5 h-3.5 text-[#8c4e24]" />
+                    <span>Mode PJ Presensi</span>
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar Footer */}
+          <div className="p-3.5 border-t border-stone-100">
+            <div className="p-2.5 rounded-2xl bg-stone-50 border border-stone-200/70 flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-[#783e18] font-black text-xs flex items-center justify-center border border-amber-200">
+                  AD
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-stone-900 truncate">Administrator</div>
+                  <div className="text-[10px] font-medium text-emerald-600 flex items-center space-x-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>Superadmin</span>
+                  </div>
+                </div>
+              </div>
+              <Link
+                href="/"
+                className="text-stone-400 hover:text-stone-700 p-1.5 rounded-lg hover:bg-stone-200/60 transition-colors"
+                title="Keluar ke Beranda"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </aside>
+
+        {/* MAIN CONTENT AREA (Kanan) */}
+        <main className="flex-1 min-w-0 flex flex-col bg-[#fcfaf7]">
+          {/* Topbar Minimalis */}
+          <header className="h-16 bg-white border-b border-stone-200/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+            <div className="flex items-center space-x-3">
+              <nav className="flex items-center space-x-2 text-xs text-stone-500 font-medium">
+                <span className="text-stone-400">Portal Admin</span>
+                <span className="text-stone-300">/</span>
+                <span className="font-bold text-stone-900">
+                  {activeTab === 'PJ' && 'Mata Kuliah & PJ'}
+                  {activeTab === 'REVISI_ABSENSI' && 'Intervensi Presensi'}
+                  {activeTab === 'STUDENTS' && 'Whitelist Mahasiswa'}
+                  {activeTab === 'ANNOUNCEMENTS' && 'Papan Pengumuman'}
+                  {activeTab === 'SETTINGS' && 'Pengaturan & Backup'}
+                </span>
+              </nav>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <span className="hidden sm:inline-flex text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-stone-100 text-stone-600 border border-stone-200">
+                Semester {activeSemester} (Ganjil)
+              </span>
+              <Link
+                href="/"
+                target="_blank"
+                className="px-3 py-1.5 rounded-xl border border-stone-200 hover:border-amber-300 text-stone-700 hover:text-[#8c4e24] text-xs font-semibold hover:bg-amber-50/50 flex items-center space-x-1.5 transition-all shadow-2xs"
+              >
+                <span>Lihat Web</span>
+                <ExternalLink className="w-3 h-3 text-stone-400" />
+              </Link>
+            </div>
+          </header>
+
+          {/* Body Content Container */}
+          <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+
+            {/* TAB 1: PENUGASAN PJ & KELOLA MATA KULIAH */}
+            {activeTab === 'PJ' && (
+              <div className="space-y-6">
+                {/* Header Bersih & Rapi */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h1 className="text-2xl font-black text-stone-900 tracking-tight">
+                      Mata Kuliah & Penugasan PJ
+                    </h1>
+                    <p className="text-xs text-stone-400 mt-0.5">
+                      Semester {activeSemester} (Ganjil) • {courses.length} Mata Kuliah Terdaftar
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowAddCourseModal(true)}
+                    className="px-4 py-2.5 bg-[#8c4e24] hover:bg-[#723f1c] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center space-x-2 active:scale-95 w-fit"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Tambah Mata Kuliah</span>
+                  </button>
+                </div>
+
+                {/* 3 Metric Cards Ringkas & Elegan */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-white p-4 rounded-2xl border border-stone-200/80 shadow-2xs flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Total MK</span>
+                      <div className="text-2xl font-black text-stone-900 mt-0.5">{courses.length} MK</div>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 text-[#8c4e24] flex items-center justify-center">
+                      <BookOpen className="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-2xl border border-stone-200/80 shadow-2xs flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Total SKS</span>
+                      <div className="text-2xl font-black text-stone-900 mt-0.5">
+                        {courses.reduce((acc, c) => acc + (c.sks || 0), 0)} SKS
+                      </div>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 text-[#8c4e24] flex items-center justify-center">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-2xl border border-stone-200/80 shadow-2xs flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Mahasiswa Terdaftar</span>
+                      <div className="text-2xl font-black text-stone-900 mt-0.5">{students.length} Mahasiswa</div>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                      <Users className="w-5 h-5" />
+                    </div>
+                  </div>
+                </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {courses.map((crs) => {
@@ -902,30 +1103,23 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* Top Overview & Instructions */}
-            <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Header Bersih & Rapi */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <div className="flex items-center space-x-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 flex items-center space-x-1">
-                    <Calendar className="w-3.5 h-3.5 text-amber-700" />
-                    <span>Mode Intervensi Absensi Superadmin</span>
-                  </span>
-                  <span className="text-xs text-stone-500 font-mono">Revisi & Backfill Tanggal</span>
-                </div>
-                <h2 className="text-lg font-bold text-stone-900 mt-1">
-                  Kalender Intervensi & Koreksi Absensi Perkuliahan
-                </h2>
-                <p className="text-xs text-stone-500 mt-0.5">
-                  Pilih tanggal mana saja pada kalender (hari ini atau lampau). Sistem otomatis membuka jadwal hari tersebut dan mengizinkan Anda merevisi kehadiran mahasiswa.
+                <h1 className="text-2xl font-black text-stone-900 tracking-tight">
+                  Kalender Intervensi Presensi
+                </h1>
+                <p className="text-xs text-stone-400 mt-0.5">
+                  Pilih tanggal untuk melihat jadwal dan mengoreksi data presensi perkuliahan.
                 </p>
               </div>
 
               <div className="flex items-center space-x-2">
                 <button
                   onClick={handleJumpToday}
-                  className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold rounded-xl transition-all flex items-center space-x-1.5"
+                  className="px-4 py-2 bg-white hover:bg-stone-50 text-stone-800 text-xs font-bold rounded-xl border border-stone-200 shadow-2xs transition-all flex items-center space-x-1.5 active:scale-95"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#8c4e24]" />
                   <span>Lompat ke Hari Ini</span>
                 </button>
               </div>
@@ -942,7 +1136,7 @@ export default function AdminDashboard() {
                     <h3 className="text-base font-black text-stone-900">
                       {MONTH_NAMES_ID[calMonth]} {calYear}
                     </h3>
-                    <p className="text-[11px] text-stone-500">Klik tanggal untuk membuka absensi</p>
+                    <p className="text-[11px] text-stone-400">Pilih tanggal perkuliahan</p>
                   </div>
                   <div className="flex items-center space-x-1">
                     <button
@@ -1343,31 +1537,32 @@ export default function AdminDashboard() {
       {/* TAB 3: WHITELIST MAHASISWA & UPLOAD PDF */}
       {activeTab === 'STUDENTS' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* Header Bersih & Rapi */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-stone-900">
-                Daftar Whitelist Mahasiswa Resmi HK A 2025
-              </h2>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Hanya mahasiswa yang tercantum di sini yang diizinkan masuk ke portal.
+              <h1 className="text-2xl font-black text-stone-900 tracking-tight">
+                Whitelist Mahasiswa
+              </h1>
+              <p className="text-xs text-stone-400 mt-0.5">
+                Total {students.length} Mahasiswa Terdaftar di HK A 2025
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
               <button
                 onClick={() => setShowUploadModal(true)}
-                className="px-4 py-2.5 bg-stone-900 hover:bg-black text-amber-300 text-xs font-bold rounded-xl shadow-md transition-all flex items-center space-x-1.5"
+                className="px-4 py-2.5 bg-white hover:bg-stone-50 border border-stone-200 text-stone-700 text-xs font-bold rounded-xl shadow-xs transition-all flex items-center space-x-1.5 active:scale-95"
               >
-                <Upload className="w-4 h-4 text-amber-400" />
-                <span>Unggah Berkas PDF / CSV Roster</span>
+                <Upload className="w-4 h-4 text-[#8c4e24]" />
+                <span>Unggah PDF / CSV</span>
               </button>
 
               <button
                 onClick={() => setShowAddStudentModal(true)}
-                className="px-4 py-2.5 bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold rounded-xl shadow-md shadow-[#9d5f2f]/20 transition-all flex items-center space-x-1.5"
+                className="px-4 py-2.5 bg-[#8c4e24] hover:bg-[#723f1c] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center space-x-1.5 active:scale-95"
               >
                 <Plus className="w-4 h-4" />
-                <span>Tambah Mahasiswa Manual</span>
+                <span>Tambah Mahasiswa</span>
               </button>
             </div>
           </div>
@@ -1481,16 +1676,19 @@ export default function AdminDashboard() {
       {/* TAB 3: PENGUMUMAN KELAS */}
       {activeTab === 'ANNOUNCEMENTS' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* Header Bersih & Rapi */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-stone-900">Papan Pengumuman & Informasi Kelas</h2>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Pengumuman yang dibuat di sini akan tampil di halaman depan untuk seluruh mahasiswa.
+              <h1 className="text-2xl font-black text-stone-900 tracking-tight">
+                Papan Pengumuman Kelas
+              </h1>
+              <p className="text-xs text-stone-400 mt-0.5">
+                {announcements.length} Pengumuman Terbit
               </p>
             </div>
             <button
               onClick={() => setShowAnnModal(true)}
-              className="px-4 py-2.5 bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold rounded-xl shadow-md shadow-[#9d5f2f]/20 transition-all flex items-center space-x-1.5"
+              className="px-4 py-2.5 bg-[#8c4e24] hover:bg-[#723f1c] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center space-x-1.5 active:scale-95"
             >
               <Plus className="w-4 h-4" />
               <span>Buat Pengumuman Baru</span>
@@ -1530,7 +1728,18 @@ export default function AdminDashboard() {
 
       {/* TAB 4: PENGATURAN & BACKUP */}
       {activeTab === 'SETTINGS' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          {/* Header Bersih & Rapi */}
+          <div>
+            <h1 className="text-2xl font-black text-stone-900 tracking-tight">
+              Pengaturan & Pencadangan Data
+            </h1>
+            <p className="text-xs text-stone-400 mt-0.5">
+              Kelola semester akademik berjalan, keamanan password admin, dan pencadangan basis data.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Semester Setting */}
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
             <div>
@@ -1665,6 +1874,7 @@ export default function AdminDashboard() {
               </button>
             </div>
           </div>
+        </div>
         </div>
       )}
 
@@ -2527,6 +2737,8 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+          </div>
+        </main>
       </div>
 
       {/* Print Official Sheet Modal (Outside dashboard to allow clean paper print without UI) */}
