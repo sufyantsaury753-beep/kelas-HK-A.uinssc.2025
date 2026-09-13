@@ -360,9 +360,6 @@ export default function MahasiswaDashboard() {
               <BookOpen className="w-5 h-5 text-[#9d5f2f]" />
               <span>Rekapitulasi Kehadiran Mata Kuliah ({courses.length})</span>
             </h2>
-            <p className="text-xs text-stone-500 mt-0.5">
-              Klik pada mata kuliah untuk melihat rincian kehadiran tiap pertemuan (Pertemuan 1 - 16).
-            </p>
           </div>
           <span className="text-xs font-semibold px-3 py-1 rounded-full bg-stone-100 text-stone-700">
             Total: {courses.length} Mata Kuliah

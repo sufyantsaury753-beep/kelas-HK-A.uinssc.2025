@@ -800,13 +800,10 @@ export default function PjDashboard() {
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-300">
-                        ⚪ Belum Disematkan (Tombol Abu-abu)
+                        ⚪ Belum Disematkan
                       </span>
                     )}
                   </h3>
-                  <p className="text-[11px] text-stone-500 mt-0.5">
-                    Semua mahasiswa di beranda & jadwal akan melihat tombol <strong>{activeCourse.meetingUrl ? 'aktif hijau' : 'abu-abu (belum ada link)'}</strong> secara otomatis.
-                  </p>
                 </div>
               </div>
             </div>
@@ -845,7 +842,7 @@ export default function PjDashboard() {
                     type="button"
                     onClick={handleClearMeetingUrl}
                     className="px-3 py-2.5 rounded-xl bg-stone-100 hover:bg-rose-50 hover:text-rose-700 text-stone-600 border border-stone-200 text-xs font-semibold transition-colors flex items-center justify-center space-x-1 flex-shrink-0"
-                    title="Hapus tautan dan kembalikan tombol mahasiswa ke abu-abu"
+                    title="Hapus tautan kuliah online"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Kosongkan</span>
@@ -1100,7 +1097,7 @@ export default function PjDashboard() {
                       className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs sm:text-sm transition-all shadow-md shadow-emerald-700/20 flex items-center justify-center space-x-2"
                     >
                       <Check className="w-4 h-4 stroke-[3]" />
-                      <span>Tandai Semua Hadir (1 Klik)</span>
+                      <span>Tandai Semua Hadir</span>
                     </button>
                   </div>
 

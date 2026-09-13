@@ -308,7 +308,7 @@ function CourseMeetingGatewayContent() {
                 </div>
 
                 <p className="text-xs text-stone-300 leading-relaxed">
-                  Tautan resmi perkuliahan telah disematkan oleh Penanggung Jawab (PJ) / Dosen. Klik tombol di bawah untuk langsung membuka ruang tatap muka.
+                  Tautan perkuliahan resmi dari Penanggung Jawab (PJ) atau Dosen.
                 </p>
 
                 {/* Big Action Button */}

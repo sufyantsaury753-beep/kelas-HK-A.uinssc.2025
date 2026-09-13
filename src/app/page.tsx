@@ -448,9 +448,6 @@ export default function HomePage() {
                 <h2 className="text-lg sm:text-xl font-bold text-stone-900 tracking-tight">
                   Jadwal Kuliah Hari Ini ({todayName})
                 </h2>
-                <p className="text-xs text-stone-500">
-                  Rangkaian perkuliahan aktif kelas HK A 2025 untuk hari ini.
-                </p>
               </div>
             </div>
             <span className="text-xs font-bold px-3.5 py-1.5 bg-[#8c4e24] text-white rounded-full w-fit shadow-xs">
@@ -464,8 +461,8 @@ export default function HomePage() {
                 <Calendar className="w-5 h-5" />
               </div>
               <h3 className="text-sm sm:text-base font-bold text-[#783e18]">Tidak Ada Jadwal Kuliah Hari Ini</h3>
-              <p className="text-xs text-stone-600 mt-1 max-w-md mx-auto">
-                Hari ini ({todayName}) tidak ada perkuliahan tatap muka. Anda dapat mengakses materi dan tugas 11 mata kuliah di bawah.
+              <p className="text-xs text-stone-500 mt-1 max-w-md mx-auto">
+                Hari ini ({todayName}) tidak ada perkuliahan terjadwal.
               </p>
             </div>
           ) : (
@@ -553,9 +550,6 @@ export default function HomePage() {
                 <h2 className="text-lg sm:text-xl font-bold text-stone-900 tracking-tight">
                   {courses.length} Mata Kuliah & Repositori
                 </h2>
-                <p className="text-xs text-stone-500">
-                  Klik lingkaran mata kuliah untuk melihat materi & mengunggah tugas.
-                </p>
               </div>
             </div>
 
@@ -763,8 +757,8 @@ export default function HomePage() {
                     </h4>
                     <p className="text-[11px] text-stone-500">
                       {auth
-                        ? 'Pilih berkas untuk diunggah atau klik tombol untuk mengunduh materi.'
-                        : 'Berkas materi dan tugas hanya dapat diunggah dan diunduh oleh mahasiswa yang telah login.'}
+                        ? 'Daftar materi dan tugas perkuliahan.'
+                        : 'Login diperlukan untuk mengunggah materi.'}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -816,11 +810,11 @@ export default function HomePage() {
                     <p className="font-semibold text-stone-600">
                       Belum ada berkas atau tugas yang diunggah untuk mata kuliah ini.
                     </p>
-                    <p className="text-[11px] text-stone-400">
-                      {auth
-                        ? 'Klik tombol "Upload File / Tugas" di atas untuk langsung memilih dan mengunggah berkas!'
-                        : 'Silakan login terlebih dahulu untuk mengunggah materi perkuliahan.'}
-                    </p>
+                    {!auth && (
+                      <p className="text-[11px] text-stone-400">
+                        Silakan login terlebih dahulu untuk mengunggah materi perkuliahan.
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-2.5">
