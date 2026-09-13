@@ -484,8 +484,12 @@ export default function AdminDashboard() {
         {/* MOBILE TOPBAR (Visible only on mobile/tablet) */}
         <div className="md:hidden bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#8c4e24] to-[#5a2a0c] text-white flex items-center justify-center font-black text-xs shadow-xs">
-              HK
+            <div className="w-8 h-8 rounded-full bg-stone-950/90 border border-amber-500/50 p-0.5 shadow-2xs flex items-center justify-center flex-shrink-0">
+              <img
+                src="/logo.png"
+                alt="Logo HK A 2025"
+                className="w-full h-full object-contain rounded-full"
+              />
             </div>
             <div>
               <h1 className="text-xs font-bold text-stone-900 leading-none">HK A 2025 Admin</h1>
@@ -527,8 +531,12 @@ export default function AdminDashboard() {
             {/* Sidebar Header Brand */}
             <div className="p-5 border-b border-stone-100 flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#8c4e24] to-[#5a2a0c] text-white flex items-center justify-center font-black text-sm shadow-sm">
-                  HK
+                <div className="w-10 h-10 rounded-full bg-stone-950/90 border border-amber-500/50 p-0.5 shadow-sm flex items-center justify-center flex-shrink-0">
+                  <img
+                    src="/logo.png"
+                    alt="Logo HK A 2025"
+                    className="w-full h-full object-contain rounded-full"
+                  />
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-stone-900 tracking-tight leading-none">HK A 2025</h2>
