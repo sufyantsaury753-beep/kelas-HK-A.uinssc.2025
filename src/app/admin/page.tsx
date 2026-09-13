@@ -854,7 +854,7 @@ export default function AdminDashboard() {
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       ) : (
-                        <span className="text-stone-400 font-semibold italic">⚪ Belum ada link (Abu-abu)</span>
+                        <span className="text-stone-400 font-medium text-[11px]">⚪ Belum ada tautan</span>
                       )}
                     </div>
 
@@ -877,7 +877,7 @@ export default function AdminDashboard() {
                             >
                               <div>
                                 <p className="font-bold text-stone-900">{st.name}</p>
-                                <p className="text-[10px] text-stone-400 font-mono">{st.nim}</p>
+                                <p className="text-[10px] text-stone-400 font-mono">NIM: {st.nim}</p>
                               </div>
                               <button
                                 onClick={() => handleTogglePj(crs.id, st.nim)}
@@ -893,40 +893,42 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="mt-4 pt-3 border-t border-stone-100 space-y-2">
+                  {/* Action Buttons: 2x2 Grid Rapi & Kompak */}
+                  <div className="mt-4 pt-3 border-t border-stone-100 grid grid-cols-2 gap-2">
                     <button
+                      type="button"
                       onClick={() => handleOpenEditCourse(crs)}
-                      className="w-full py-2 bg-[#9d5f2f] hover:bg-[#864d23] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1.5"
+                      className="py-2 px-2.5 bg-[#8c4e24] hover:bg-[#723f1c] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1.5 active:scale-95"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
-                      <span>Setting Mata Kuliah (Dosen, Jam & Ruang)</span>
+                      <span>Edit Info</span>
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => setSelectedCourseForPj(crs)}
-                      className="w-full py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5"
+                      className="py-2 px-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 active:scale-95"
                     >
-                      <UserPlus className="w-3.5 h-3.5" />
-                      <span>Atur & Tambah PJ Mata Kuliah</span>
+                      <UserPlus className="w-3.5 h-3.5 text-[#8c4e24]" />
+                      <span>Atur PJ</span>
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => handleOpenEnrollModal(crs)}
-                      className="w-full py-2 bg-amber-50 hover:bg-amber-100 text-[#8c4e24] text-xs font-bold rounded-xl border border-amber-200/80 transition-all flex items-center justify-center space-x-1.5 shadow-2xs"
+                      className="py-2 px-2.5 bg-amber-50 hover:bg-amber-100 text-[#8c4e24] text-xs font-bold rounded-xl border border-amber-200/80 transition-all flex items-center justify-center space-x-1.5 shadow-2xs active:scale-95"
                     >
-                      <Users className="w-3.5 h-3.5 text-[#9d5f2f]" />
-                      <span>
-                        Atur Peserta Mahasiswa ({crs.enrolledStudentNims && crs.enrolledStudentNims.length > 0 ? crs.enrolledStudentNims.length : students.length} Mhs)
-                      </span>
+                      <Users className="w-3.5 h-3.5 text-[#8c4e24]" />
+                      <span>Peserta ({crs.enrolledStudentNims && crs.enrolledStudentNims.length > 0 ? crs.enrolledStudentNims.length : students.length})</span>
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => handleDeleteCourse(crs)}
-                      className="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl border border-rose-200/80 transition-all flex items-center justify-center space-x-1.5"
+                      className="py-2 px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl border border-rose-200/80 transition-all flex items-center justify-center space-x-1.5 active:scale-95"
                     >
                       <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                      <span>Hapus Mata Kuliah Ini</span>
+                      <span>Hapus MK</span>
                     </button>
                   </div>
                 </div>
