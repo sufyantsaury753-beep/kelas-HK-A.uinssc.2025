@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Video,
   Sparkles,
@@ -60,6 +61,8 @@ function getCourseIcon(courseId: string, courseName: string) {
 }
 
 export default function KuliahOnlineIndexPage() {
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [auth, setAuth] = useState<AuthSession | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -76,9 +79,15 @@ export default function KuliahOnlineIndexPage() {
   const todayDayName = INDONESIAN_DAYS[today.getDay()];
 
   useEffect(() => {
+    setMounted(true);
     const update = () => {
+      const currentAuth = appStore.getAuth();
+      if (!currentAuth) {
+        router.replace('/login?redirect=/kuliah-online');
+        return;
+      }
+      setAuth(currentAuth);
       setCourses(appStore.getCourses());
-      setAuth(appStore.getAuth());
     };
     update();
     if (typeof window !== 'undefined') {
@@ -86,7 +95,7 @@ export default function KuliahOnlineIndexPage() {
     }
     const unsub = appStore.subscribe(update);
     return () => unsub();
-  }, []);
+  }, [router]);
 
   const isUserAdmin = auth?.role === 'ADMIN';
   const isUserPjForCourse = (crs: Course) => {
@@ -139,6 +148,18 @@ export default function KuliahOnlineIndexPage() {
     const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, '_blank');
   };
+
+  if (!mounted || !auth) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-10 h-10 border-3 border-[#8c4e24] border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-sm font-bold text-stone-800">Mengarahkan ke Halaman Login...</p>
+        <p className="text-xs text-stone-500 mt-1">
+          Akses Ruang Kuliah Online HK A 2025 memerlukan login akun mahasiswa atau pengurus.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8 animate-in fade-in duration-200">

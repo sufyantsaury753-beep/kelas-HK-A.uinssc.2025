@@ -725,7 +725,7 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center space-x-2 self-end sm:self-center flex-shrink-0">
                   <Link
-                    href={`/kuliah-online/${selectedCourse.id}`}
+                    href={auth ? `/kuliah-online/${selectedCourse.id}` : `/login?redirect=/kuliah-online/${selectedCourse.id}`}
                     className="px-4 py-2 rounded-xl bg-[#8c4e24] hover:bg-[#723f1c] text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-[#8c4e24]/20 transition-all active:scale-95"
                   >
                     <Video className="w-3.5 h-3.5 text-amber-300" />

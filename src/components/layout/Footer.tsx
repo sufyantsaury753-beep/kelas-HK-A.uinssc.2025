@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { appStore } from '@/lib/store';
 import {
   MapPin,
   ShieldCheck,
@@ -20,7 +21,16 @@ export const HELPDESK_PHONE_WA = '6283183894058';         // Format WhatsApp (an
 
 export default function Footer() {
   const pathname = usePathname();
+  const router = useRouter();
   const currentYear = new Date().getFullYear();
+
+  const handleKuliahOnlineClick = (e: React.MouseEvent) => {
+    const auth = appStore.getAuth();
+    if (!auth) {
+      e.preventDefault();
+      router.push('/login?redirect=/kuliah-online');
+    }
+  };
 
   if (pathname?.startsWith('/admin')) {
     return null;
@@ -102,7 +112,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/kuliah-online" className="hover:text-white transition-colors flex items-center group">
+                <Link
+                  href="/kuliah-online"
+                  onClick={handleKuliahOnlineClick}
+                  className="hover:text-white transition-colors flex items-center group"
+                >
                   <span className="group-hover:translate-x-0.5 transition-transform">Kuliah Online (Meet Virtual)</span>
                 </Link>
               </li>

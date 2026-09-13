@@ -235,16 +235,18 @@ export default function Navbar() {
             >
               Jadwal Seminggu
             </button>
-            <Link
-              href="/kuliah-online"
-              className={`px-2.5 lg:px-3 py-1.5 rounded-lg text-xs lg:text-[13px] font-medium transition-colors ${
-                pathname.startsWith('/kuliah-online')
-                  ? 'text-[#8c4e24] bg-amber-50/80 font-bold'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
-              }`}
-            >
-              Kuliah Online
-            </Link>
+            {auth && (
+              <Link
+                href="/kuliah-online"
+                className={`px-2.5 lg:px-3 py-1.5 rounded-lg text-xs lg:text-[13px] font-medium transition-colors ${
+                  pathname.startsWith('/kuliah-online')
+                    ? 'text-[#8c4e24] bg-amber-50/80 font-bold'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
+                }`}
+              >
+                Kuliah Online
+              </Link>
+            )}
             <Link
               href="/library"
               className={`px-2.5 lg:px-3 py-1.5 rounded-lg text-xs lg:text-[13px] font-medium transition-colors ${
@@ -454,6 +456,28 @@ export default function Navbar() {
                   </div>
                   <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
                 </Link>
+
+                {/* Kuliah Online (Khusus Pengguna Login) */}
+                {auth && (
+                  <Link
+                    href="/kuliah-online"
+                    replace
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${
+                      pathname.startsWith('/kuliah-online')
+                        ? 'bg-amber-50 text-[#8c4e24] font-bold'
+                        : 'text-stone-700 hover:bg-stone-50'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-7 h-7 rounded-xl bg-amber-100 text-[#8c4e24] flex items-center justify-center">
+                        <Video className="w-3.5 h-3.5" />
+                      </div>
+                      <span>Kuliah Online</span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+                  </Link>
+                )}
 
                 {/* Portal Mahasiswa */}
                 {auth && auth.role !== 'ADMIN' && (

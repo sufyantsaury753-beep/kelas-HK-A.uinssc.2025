@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   GraduationCap,
@@ -20,8 +20,13 @@ import { appStore } from '@/lib/store';
 import { Student } from '@/lib/types';
 import PinSetupModal from '@/components/auth/PinSetupModal';
 
-export default function LoginPage() {
+function LoginFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get('redirect');
+  const redirectUrl = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/';
+  const isFromKuliahOnline = Boolean(redirectParam && redirectParam.includes('kuliah-online'));
+
   const [activeTab, setActiveTab] = useState<'MAHASISWA' | 'ADMIN'>('MAHASISWA');
 
   // Mahasiswa Login Form State
@@ -86,8 +91,8 @@ export default function LoginPage() {
       isLoggedIn: true,
     });
 
-    // Arahkan ke Beranda utama terlebih dahulu
-    router.replace('/');
+    // Arahkan ke target URL atau Beranda
+    router.replace(redirectUrl);
   };
 
   const handlePinCreated = (newPin: string) => {
@@ -110,8 +115,8 @@ export default function LoginPage() {
     });
 
     setPendingStudent(null);
-    // Arahkan ke Beranda utama terlebih dahulu
-    router.replace('/');
+    // Arahkan ke target URL atau Beranda
+    router.replace(redirectUrl);
   };
 
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -127,8 +132,8 @@ export default function LoginPage() {
         name: 'Administrator Kelas HK A',
         isLoggedIn: true,
       });
-      // Arahkan ke Beranda utama terlebih dahulu
-      router.replace('/');
+      // Arahkan ke target URL atau Beranda
+      router.replace(redirectUrl);
     } else {
       setErrorMsg('Username atau Password Admin salah. (Default: admin / adminhk2025)');
     }
@@ -201,6 +206,15 @@ export default function LoginPage() {
 
         {/* Body Form */}
         <div className="p-6 sm:p-7">
+          {isFromKuliahOnline && (
+            <div className="mb-4 p-3.5 bg-amber-50 border border-amber-300/80 rounded-xl text-xs text-amber-950 flex items-start space-x-2.5 animate-in fade-in">
+              <Sparkles className="w-4 h-4 flex-shrink-0 text-[#8c4e24] mt-0.5" />
+              <div className="leading-relaxed">
+                <strong>Akses Kuliah Online Terproteksi:</strong> Silakan masuk dengan NIM dan PIN Anda untuk mengakses ruang tatap muka virtual.
+              </div>
+            </div>
+          )}
+
           {errorMsg && (
             <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-start space-x-2.5 animate-in fade-in">
               <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600 mt-0.5" />
@@ -345,5 +359,19 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[85vh] flex items-center justify-center p-4 sm:p-6">
+          <div className="w-10 h-10 border-3 border-[#8c4e24] border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <LoginFormContent />
+    </Suspense>
   );
 }
