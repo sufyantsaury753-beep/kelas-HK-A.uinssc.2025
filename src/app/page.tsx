@@ -541,7 +541,7 @@ export default function HomePage() {
 
         {/* 11 MATA KULIAH - 3-CIRCLE GRID (Bulat Grid 3 Sesuai Sketsa User) */}
         <section id="matakuliah" className="scroll-mt-24">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          <div className="flex items-center justify-between gap-3 mb-6">
             <div className="flex items-center space-x-3">
               <div className="w-9 h-9 rounded-xl bg-amber-50 text-[#8c4e24] flex items-center justify-center border border-amber-200/60 shadow-xs">
                 <BookOpen className="w-5 h-5" />
@@ -552,29 +552,15 @@ export default function HomePage() {
                 </h2>
               </div>
             </div>
-
-            {/* Search Input */}
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
-              <input
-                type="text"
-                placeholder="Cari mata kuliah atau dosen..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#8c4e24] bg-white shadow-xs"
-              />
-            </div>
+            <span className="text-xs font-bold px-3.5 py-1.5 rounded-full bg-amber-50 text-[#8c4e24] border border-amber-200/80 shadow-2xs">
+              {courses.length} Mata Kuliah
+            </span>
           </div>
 
           {/* 3-Column Circular Bubble Grid (Mobile: 3 Bulat per baris, Tablet: 4, Desktop: 6) */}
           <div className="bg-white rounded-3xl p-5 sm:p-8 border border-stone-200/80 shadow-xs">
-            {filteredCourses.length === 0 ? (
-              <div className="text-center py-10 text-stone-400 text-xs">
-                Mata kuliah tidak ditemukan dengan kata kunci &quot;{searchQuery}&quot;
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-y-7 gap-x-2 sm:gap-6 py-2">
-                {filteredCourses.map((c) => {
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-y-7 gap-x-2 sm:gap-6 py-2">
+              {courses.map((c) => {
                   const courseMats = materials.filter((m) => m.courseId === c.id);
                   const CourseIcon = getCourseIcon(c.id, c.name);
 
@@ -619,7 +605,6 @@ export default function HomePage() {
                   );
                 })}
               </div>
-            )}
           </div>
         </section>
 
