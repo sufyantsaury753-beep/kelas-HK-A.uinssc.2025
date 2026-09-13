@@ -201,7 +201,7 @@ export default function Navbar() {
                 </span>
               </div>
               <p className="text-[11px] text-stone-400 font-medium tracking-tight mt-1 line-clamp-1">
-                UIN Siber Cirebon
+                UIN Siber Syekh Nurjati Cirebon
               </p>
             </div>
           </Link>

@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://kelas-hk-a-uinssc-2025.vercel.app'),
   title: {
     default: 'Portal Kelas HK A 2025 | UIN Siber Syekh Nurjati Cirebon',
-    template: '%s | HK A 2025 UIN Siber Cirebon',
+    template: '%s | HK A 2025 UIN Siber Syekh Nurjati Cirebon',
   },
   description:
     'Portal Resmi Kelas Hukum Keluarga A 2025, Fakultas Syariah, UIN Siber Syekh Nurjati Cirebon (Cyber Islamic University). Presensi digital, jadwal perkuliahan, repositori materi, dan video conference kuliah online.',

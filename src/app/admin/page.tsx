@@ -493,7 +493,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <h1 className="text-xs font-bold text-stone-900 leading-none">HK A 2025 Admin</h1>
-              <span className="text-[10px] text-stone-400">UIN Siber Cirebon</span>
+              <span className="text-[10px] text-stone-400">UIN Siber Syekh Nurjati Cirebon</span>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -540,7 +540,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-stone-900 tracking-tight leading-none">HK A 2025</h2>
-                  <p className="text-[11px] text-stone-400 mt-1 font-medium">UIN Siber Cirebon</p>
+                  <p className="text-[11px] text-stone-400 mt-1 font-medium">UIN Siber Syekh Nurjati Cirebon</p>
                 </div>
               </div>
               <button

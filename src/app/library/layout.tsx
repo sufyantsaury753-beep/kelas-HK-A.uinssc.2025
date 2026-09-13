@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'E-Library & Repositori Tugas',
   description:
-    'Perpustakaan digital, modul, silabus, dan repositori berkas tugas mahasiswa Kelas HK A 2025 UIN Siber Cirebon.',
+    'Perpustakaan digital, modul, silabus, dan repositori berkas tugas mahasiswa Kelas HK A 2025 UIN Siber Syekh Nurjati Cirebon.',
 };
 
 export default function LibraryLayout({
