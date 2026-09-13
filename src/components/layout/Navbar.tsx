@@ -32,6 +32,7 @@ import {
   CheckCircle2,
   AlertCircle,
   User,
+  Search,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -41,6 +42,8 @@ export default function Navbar() {
   const [students, setStudents] = useState<Student[]>([]);
   const [activeSemester, setActiveSemester] = useState<number>(3);
   const [showWeeklyScheduleModal, setShowWeeklyScheduleModal] = useState(false);
+  const [scheduleDayFilter, setScheduleDayFilter] = useState<string>('all');
+  const [scheduleSearchQuery, setScheduleSearchQuery] = useState<string>('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasPjRole, setHasPjRole] = useState(false);
 
@@ -235,18 +238,6 @@ export default function Navbar() {
             >
               Jadwal Seminggu
             </button>
-            {auth && (
-              <Link
-                href="/kuliah-online"
-                className={`px-2.5 lg:px-3 py-1.5 rounded-lg text-xs lg:text-[13px] font-medium transition-colors ${
-                  pathname.startsWith('/kuliah-online')
-                    ? 'text-[#8c4e24] bg-amber-50/80 font-bold'
-                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
-                }`}
-              >
-                Kuliah Online
-              </Link>
-            )}
             <Link
               href="/library"
               className={`px-2.5 lg:px-3 py-1.5 rounded-lg text-xs lg:text-[13px] font-medium transition-colors ${
@@ -457,28 +448,6 @@ export default function Navbar() {
                   <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
                 </Link>
 
-                {/* Kuliah Online (Khusus Pengguna Login) */}
-                {auth && (
-                  <Link
-                    href="/kuliah-online"
-                    replace
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${
-                      pathname.startsWith('/kuliah-online')
-                        ? 'bg-amber-50 text-[#8c4e24] font-bold'
-                        : 'text-stone-700 hover:bg-stone-50'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-7 h-7 rounded-xl bg-amber-100 text-[#8c4e24] flex items-center justify-center">
-                        <Video className="w-3.5 h-3.5" />
-                      </div>
-                      <span>Kuliah Online</span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-                  </Link>
-                )}
-
                 {/* Portal Mahasiswa */}
                 {auth && auth.role !== 'ADMIN' && (
                   <Link
@@ -601,110 +570,272 @@ export default function Navbar() {
       {mounted &&
         showWeeklyScheduleModal &&
         createPortal(
-          <div className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full my-auto overflow-hidden border border-stone-200 flex flex-col max-h-[90vh]">
-              {/* Modal Header */}
-              <div className="bg-gradient-to-br from-[#9d5f2f] via-[#8c4e24] to-[#753e1f] text-white p-5 sm:p-6 relative">
+          <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full my-auto overflow-hidden border border-stone-200/90 flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-150">
+              {/* Modal Header (Luxury Espresso & Class Identity) */}
+              <div className="bg-gradient-to-r from-[#200e05] via-[#2f1407] to-[#170903] text-white p-5 sm:p-6 relative border-b border-amber-500/20">
                 <button
                   type="button"
                   onClick={() => setShowWeeklyScheduleModal(false)}
-                  className="absolute top-4 right-4 sm:top-5 sm:right-5 w-9 h-9 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-colors shadow-xs"
+                  className="absolute top-4 right-4 sm:top-5 sm:right-5 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all shadow-xs active:scale-95"
                   title="Tutup Modal"
                 >
                   <X className="w-5 h-5" />
                 </button>
-                <div className="flex items-center space-x-2.5 mb-2">
-                  <span className="text-[10px] uppercase font-extrabold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-400/25 border border-amber-300/40 text-amber-100">
-                    Jadwal Kuliah Terpadu
-                  </span>
-                  <span className="text-xs text-amber-200/80 font-medium">Semester Ganjil 2026/2027</span>
+
+                <div className="flex items-center space-x-3.5 pr-10">
+                  <div className="w-12 h-12 rounded-2xl bg-stone-950 p-1 border border-amber-400/50 shadow-md flex items-center justify-center shrink-0">
+                    <img src="/logo.png" alt="Logo HK A" className="w-full h-full object-contain rounded-xl" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-[10px] uppercase font-extrabold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/35 text-amber-200">
+                        Jadwal Kuliah Terpadu
+                      </span>
+                      <span className="text-xs text-amber-200/80 font-medium hidden sm:inline">
+                        Semester Ganjil 2026/2027
+                      </span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
+                      Jadwal Kuliah Mingguan HK A
+                    </h3>
+                    <p className="text-xs text-amber-100/80 mt-0.5 line-clamp-1">
+                      Fakultas Syariah • UIN Siber Syekh Nurjati Cirebon
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                  Jadwal Kuliah Mingguan HK A
-                </h3>
-                <p className="text-xs sm:text-sm text-amber-100/85 mt-1 font-medium">
-                  Rincian jadwal hari Senin sampai Sabtu lengkap dengan jam, ruangan, dosen pengampu, dan PJ kelas.
-                </p>
               </div>
 
-              {/* Modal Body */}
-              <div className="overflow-y-auto p-4 sm:p-6 space-y-4 bg-stone-50/60">
-                {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map((day) => {
-                  const dayCourses = (courses || []).filter((c) => (c?.day || '').toLowerCase() === day.toLowerCase());
-                  const isWeekend = day === 'Minggu';
+              {/* Filter Tabs & Search Bar Strip */}
+              <div className="bg-white border-b border-stone-200 px-4 sm:px-6 py-3 space-y-2.5 shrink-0">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  {/* Search Bar */}
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={scheduleSearchQuery}
+                      onChange={(e) => setScheduleSearchQuery(e.target.value)}
+                      placeholder="Cari mata kuliah, dosen, ruang, atau PJ..."
+                      className="w-full pl-9 pr-8 py-2 text-xs bg-stone-50 hover:bg-stone-100/80 focus:bg-white rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#8c4e24]/30 focus:border-[#8c4e24] transition-all"
+                    />
+                    {scheduleSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setScheduleSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Summary Metric Badge */}
+                  <div className="flex items-center space-x-2 text-xs self-end sm:self-center">
+                    <span className="font-extrabold px-3 py-1 rounded-xl bg-amber-50 text-[#8c4e24] border border-amber-200/80 shadow-2xs">
+                      11 Mata Kuliah • 27 SKS
+                    </span>
+                  </div>
+                </div>
+
+                {/* Day Filter Pills */}
+                <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => setScheduleDayFilter('all')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                      scheduleDayFilter === 'all'
+                        ? 'bg-[#8c4e24] text-white shadow-xs'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-900'
+                    }`}
+                  >
+                    Semua Hari (11 MK)
+                  </button>
+                  {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'].map((d) => {
+                    const dCount = (courses || []).filter((c) => (c?.day || '').toLowerCase() === d.toLowerCase()).length;
+                    const INDONESIAN_DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                    const todayDayName = INDONESIAN_DAY_NAMES[new Date().getDay()];
+                    const isToday = d.toLowerCase() === todayDayName.toLowerCase();
+                    const isSelected = scheduleDayFilter.toLowerCase() === d.toLowerCase();
+
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => setScheduleDayFilter(d)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center space-x-1.5 ${
+                          isSelected
+                            ? 'bg-[#8c4e24] text-white shadow-xs'
+                            : isToday
+                            ? 'bg-amber-100/90 text-amber-950 border border-amber-300 hover:bg-amber-200/70'
+                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-900'
+                        }`}
+                      >
+                        <span>{d}</span>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                            isSelected
+                              ? 'bg-white/20 text-white font-bold'
+                              : 'bg-stone-200/80 text-stone-700'
+                          }`}
+                        >
+                          {dCount}
+                        </span>
+                        {isToday && (
+                          <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-amber-300' : 'bg-amber-600'} animate-pulse`} title="Hari Ini" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Modal Body: Days & Courses */}
+              <div className="overflow-y-auto p-4 sm:p-6 space-y-5 bg-stone-50/70">
+                {(scheduleDayFilter === 'all' ? ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'] : [scheduleDayFilter]).map((day) => {
+                  let dayCourses = (courses || []).filter((c) => (c?.day || '').toLowerCase() === day.toLowerCase());
+                  const INDONESIAN_DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                  const todayDayName = INDONESIAN_DAY_NAMES[new Date().getDay()];
+                  const isToday = day.toLowerCase() === todayDayName.toLowerCase();
+
+                  if (scheduleSearchQuery.trim()) {
+                    const q = scheduleSearchQuery.toLowerCase();
+                    dayCourses = dayCourses.filter(
+                      (c) =>
+                        c.name.toLowerCase().includes(q) ||
+                        c.code.toLowerCase().includes(q) ||
+                        c.dosen.toLowerCase().includes(q) ||
+                        c.room.toLowerCase().includes(q) ||
+                        getPjNames(c.pjNims).toLowerCase().includes(q)
+                    );
+                  }
+
+                  // Chronological sorting: 07:30 before 10:00!
+                  const sortedCourses = [...dayCourses].sort((a, b) => {
+                    const parseMinutes = (timeStr: string) => {
+                      const match = (timeStr || '').match(/(\d{1,2}):(\d{2})/);
+                      if (!match) return 9999;
+                      return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+                    };
+                    return parseMinutes(a.time) - parseMinutes(b.time);
+                  });
+
+                  const daySks = sortedCourses.reduce((acc, c) => acc + (c.sks || 0), 0);
+
+                  if (scheduleSearchQuery.trim() && sortedCourses.length === 0 && scheduleDayFilter === 'all') {
+                    return null;
+                  }
 
                   return (
                     <div
                       key={day}
-                      className="bg-white rounded-2xl p-4 border border-stone-200 shadow-xs hover:border-amber-400/50 transition-all"
+                      className="bg-white rounded-3xl p-4 sm:p-5 border border-stone-200/90 shadow-2xs space-y-3.5"
                     >
-                      {/* Day Header */}
-                      <div className="flex items-center justify-between mb-3 pb-2 border-b border-stone-100">
-                        <div className="flex items-center space-x-2">
-                          <span className={`w-3 h-3 rounded-full ${dayCourses.length > 0 ? 'bg-[#9d5f2f]' : 'bg-stone-300'}`} />
-                          <h4 className="font-bold text-stone-900 text-sm sm:text-base tracking-tight">
-                            {day}
-                          </h4>
+                      {/* Day Header Banner */}
+                      <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-xs shadow-2xs ${
+                            sortedCourses.length > 0
+                              ? 'bg-gradient-to-br from-[#8c4e24] to-[#602e11] text-white'
+                              : 'bg-stone-100 text-stone-400'
+                          }`}>
+                            {day.slice(0, 3).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-extrabold text-stone-900 text-base sm:text-lg tracking-tight">
+                                {day}
+                              </h4>
+                              {isToday && (
+                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs">
+                                  Hari Ini
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-stone-500 font-medium">
+                              {sortedCourses.length > 0
+                                ? `${sortedCourses.length} Mata Kuliah • Total ${daySks} SKS`
+                                : day === 'Sabtu'
+                                ? 'Libur Perkuliahan'
+                                : 'Tidak Ada Jadwal Kuliah'}
+                            </p>
+                          </div>
                         </div>
+
                         <span
-                          className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                            dayCourses.length > 0
-                              ? 'bg-amber-100 text-amber-900 border border-amber-200'
-                              : 'bg-stone-100 text-stone-500'
+                          className={`text-xs font-bold px-3 py-1 rounded-full ${
+                            sortedCourses.length > 0
+                              ? 'bg-amber-50 text-[#8c4e24] border border-amber-200'
+                              : 'bg-stone-100 text-stone-400'
                           }`}
                         >
-                          {dayCourses.length > 0
-                            ? `${dayCourses.length} Mata Kuliah`
-                            : isWeekend
-                            ? 'Libur Akhir Pekan'
-                            : 'Tidak Ada Jadwal'}
+                          {sortedCourses.length > 0 ? `${sortedCourses.length} MK` : 'Libur'}
                         </span>
                       </div>
 
-                      {/* Courses List */}
-                      {dayCourses.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {dayCourses.map((c) => (
+                      {/* Course Cards Grid */}
+                      {sortedCourses.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+                          {sortedCourses.map((c) => (
                             <div
                               key={c.id}
-                              className="p-3.5 rounded-xl bg-stone-50 hover:bg-amber-50/40 border border-stone-200/80 hover:border-amber-300 transition-all flex flex-col justify-between space-y-2.5"
+                              className="p-4 rounded-2xl bg-stone-50/70 hover:bg-white border border-stone-200/90 hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between space-y-3 group"
                             >
-                              <div>
-                                <div className="flex items-center justify-between gap-2 mb-1.5">
-                                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-stone-200 text-stone-700">
-                                    {c.code} • {c.sks} SKS
+                              {/* Top Bar: Code & SKS (Left), Time (Right) */}
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center space-x-1.5">
+                                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-stone-200/80 text-stone-700">
+                                    {c.code}
                                   </span>
-                                  <div className="flex items-center space-x-1 text-[11px] font-bold text-[#8c4e24] bg-amber-100/70 px-2 py-0.5 rounded-md">
-                                    <Clock className="w-3 h-3" />
-                                    <span>{c.time.replace(' WIB', '')}</span>
-                                  </div>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200">
+                                    {c.sks} SKS
+                                  </span>
                                 </div>
-                                <h5 className="font-bold text-stone-900 text-sm tracking-tight line-clamp-1">
-                                  {c.name}
-                                </h5>
-                                <p className="text-[11px] text-stone-600 line-clamp-1 mt-1 flex items-center space-x-1 font-medium">
-                                  <GraduationCap className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
-                                  <span>{c.dosen}</span>
-                                </p>
+                                <div className="flex items-center space-x-1.5 text-xs font-bold text-stone-900 bg-amber-100/80 border border-amber-300/80 px-2.5 py-1 rounded-xl">
+                                  <Clock className="w-3.5 h-3.5 text-[#8c4e24]" />
+                                  <span>{c.time.replace(' WIB', '')} WIB</span>
+                                </div>
                               </div>
 
-                              <div className="pt-2 border-t border-stone-200/60 flex items-center justify-between text-[10px] text-stone-500">
-                                <span className="flex items-center space-x-1 line-clamp-1 max-w-[150px]">
-                                  <MapPin className="w-3 h-3 text-amber-600 flex-shrink-0" />
-                                  <span className="line-clamp-1 font-medium text-stone-600">{c.room}</span>
-                                </span>
-                                <span className="flex items-center space-x-1 line-clamp-1 text-right text-stone-600 font-medium">
-                                  <Users className="w-3 h-3 text-stone-400 flex-shrink-0" />
-                                  <span className="line-clamp-1 max-w-[130px]">PJ: {getPjNames(c.pjNims)}</span>
-                                </span>
+                              {/* Course Name & Academic Icon */}
+                              <div className="flex items-start space-x-3">
+                                <div className="w-9 h-9 rounded-xl bg-amber-100/60 text-[#8c4e24] border border-amber-200/80 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#8c4e24] group-hover:text-white transition-colors">
+                                  <BookOpen className="w-4 h-4" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="font-extrabold text-stone-900 text-sm sm:text-[15px] tracking-tight leading-snug group-hover:text-[#8c4e24] transition-colors">
+                                    {c.name}
+                                  </h5>
+                                  <p className="text-xs text-stone-600 mt-1 flex items-center space-x-1.5 font-medium">
+                                    <GraduationCap className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                    <span className="truncate">{c.dosen}</span>
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Bottom Info: Room & PJ */}
+                              <div className="pt-2.5 border-t border-stone-200/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/70 font-semibold text-[11px]">
+                                  <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                  <span className="truncate max-w-[130px] sm:max-w-[160px]">{c.room}</span>
+                                </div>
+
+                                <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-stone-100/90 text-stone-700 border border-stone-200 font-semibold text-[11px]">
+                                  <Users className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                  <span className="truncate max-w-[130px] sm:max-w-[160px]">PJ: {getPjNames(c.pjNims)}</span>
+                                </div>
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-stone-400 italic py-1">
-                          {isWeekend ? 'Waktu istirahat / libur perkuliahan.' : 'Tidak ada jadwal mata kuliah terjadwal pada hari ini.'}
-                        </p>
+                        <div className="py-4 text-center text-xs text-stone-400 italic">
+                          {day === 'Sabtu'
+                            ? 'Waktu istirahat / libur akhir pekan perkuliahan.'
+                            : scheduleSearchQuery
+                            ? 'Tidak ada mata kuliah yang cocok dengan kata kunci pencarian.'
+                            : 'Tidak ada jadwal mata kuliah terjadwal pada hari ini.'}
+                        </div>
                       )}
                     </div>
                   );
@@ -712,14 +843,15 @@ export default function Navbar() {
               </div>
 
               {/* Modal Footer */}
-              <div className="p-4 bg-white border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-2">
-                <p className="text-[11px] text-stone-400 text-center sm:text-left">
-                  * Jadwal dapat disesuaikan sewaktu-waktu oleh Dosen Pengampu & PJ Mata Kuliah.
-                </p>
+              <div className="p-4 bg-white border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                <div className="flex items-center space-x-2 text-xs text-stone-500 font-medium text-center sm:text-left">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <span>Waktu Indonesia Barat (WIB) • Jadwal dapat disesuaikan oleh Dosen Pengampu & PJ Kelas.</span>
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowWeeklyScheduleModal(false)}
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#9d5f2f] hover:bg-[#864d23] text-white font-bold text-xs shadow-sm transition-all"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#8c4e24] hover:bg-[#723f1c] text-white font-bold text-xs shadow-xs transition-all active:scale-95"
                 >
                   Tutup Jadwal
                 </button>
